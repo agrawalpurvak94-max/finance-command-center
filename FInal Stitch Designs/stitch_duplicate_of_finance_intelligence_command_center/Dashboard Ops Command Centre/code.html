@@ -1,0 +1,742 @@
+<!doctype html>
+<html class="dark" lang="en" style="">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Operational Command Center | FinOps Core</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 20;
+        font-size: 20px;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #131315;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #434655;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #8d90a0;
+      }
+      .data-grid-compact {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'secondary-fixed-dim': '#b7c8e1',
+              'on-surface-variant': '#c3c6d7',
+              'tertiary-fixed-dim': '#ffb596',
+              outline: '#8d90a0',
+              'surface-container-lowest': '#0e0e10',
+              'on-secondary-container': '#a9bad3',
+              tertiary: '#ffb596',
+              'surface-tint': '#b4c5ff',
+              'outline-variant': '#434655',
+              'tertiary-fixed': '#ffdbcd',
+              'on-tertiary-container': '#ffede6',
+              'on-error': '#690005',
+              'on-tertiary-fixed': '#360f00',
+              'surface-dim': '#131315',
+              'on-primary-fixed': '#00174b',
+              'on-error-container': '#ffdad6',
+              'on-primary': '#002a78',
+              'on-surface': '#e5e1e4',
+              'surface-container-low': '#1c1b1d',
+              'primary-container': '#2563eb',
+              primary: '#b4c5ff',
+              'on-primary-fixed-variant': '#003ea8',
+              background: '#131315',
+              'surface-container-high': '#2a2a2c',
+              'on-secondary': '#213145',
+              surface: '#131315',
+              'surface-variant': '#353437',
+              'on-tertiary-fixed-variant': '#7d2d00',
+              'on-primary-container': '#eeefff',
+              error: '#ffb4ab',
+              'error-container': '#93000a',
+              'secondary-fixed': '#d3e4fe',
+              'primary-fixed': '#dbe1ff',
+              'on-secondary-fixed': '#0b1c30',
+              'primary-fixed-dim': '#b4c5ff',
+              'surface-container': '#201f22',
+              'on-tertiary': '#581e00',
+              'on-background': '#e5e1e4',
+              'surface-bright': '#39393b',
+              'surface-container-highest': '#353437',
+              'inverse-primary': '#0053db',
+              secondary: '#b7c8e1',
+              'inverse-on-surface': '#313032',
+              'tertiary-container': '#bc4800',
+              'secondary-container': '#3a4a5f',
+              'inverse-surface': '#e5e1e4',
+              'on-secondary-fixed-variant': '#38485d',
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px',
+            },
+            spacing: {
+              xs: '4px',
+              lg: '24px',
+              xl: '32px',
+              sm: '8px',
+              md: '16px',
+              gutter: '16px',
+              'margin-mobile': '16px',
+              'margin-desktop': '32px',
+            },
+            fontFamily: {
+              'table-mono': ['Geist'],
+              'headline-sm': ['Geist'],
+              'display-kpi': ['Geist'],
+              'label-caps': ['Geist'],
+              'body-sm': ['Geist'],
+              'body-md': ['Geist'],
+              'headline-lg': ['Geist'],
+            },
+            fontSize: {
+              'table-mono': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'headline-sm': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+              'display-kpi': [
+                '36px',
+                { lineHeight: '44px', letterSpacing: '-0.04em', fontWeight: '600' },
+              ],
+              'label-caps': [
+                '11px',
+                { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' },
+              ],
+              'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+              'headline-lg': [
+                '24px',
+                { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '600' },
+              ],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body class="bg-background text-on-background font-body-md overflow-hidden flex">
+    <!-- Sidebar -->
+    <aside
+      class="w-[240px] h-screen fixed left-0 top-0 bg-surface-dim border-r border-outline-variant flex flex-col z-[60]"
+    >
+      <div class="p-md flex flex-col gap-sm">
+        <div class="flex items-center gap-sm px-xs mb-md">
+          <div
+            class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary"
+          >
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1"
+              >account_balance</span
+            >
+          </div>
+          <div>
+            <h1 class="font-headline-sm text-headline-sm font-bold text-on-surface leading-none">
+              FinOps Core
+            </h1>
+            <p class="text-[10px] uppercase tracking-wider text-outline mt-xs">FY 2024-25</p>
+          </div>
+        </div>
+        <nav class="flex flex-col gap-1">
+          <!-- Dashboard Active -->
+          <a
+            class="flex items-center gap-md p-sm rounded-lg bg-secondary-container text-on-secondary-container font-medium transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="font-body-sm text-body-sm">Dashboard</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">group</span>
+            <span class="font-body-sm text-body-sm">Clients</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">account_balance</span>
+            <span class="font-body-sm text-body-sm">Accounts</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">credit_card</span>
+            <span class="font-body-sm text-body-sm">Credit Cards</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">receipt_long</span>
+            <span class="font-body-sm text-body-sm">Transactions</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">description</span>
+            <span class="font-body-sm text-body-sm">Statements</span>
+          </a>
+          <div class="h-px bg-outline-variant my-xs mx-sm"></div>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">category</span>
+            <span class="font-body-sm text-body-sm">Categories</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">storefront</span>
+            <span class="font-body-sm text-body-sm">Merchant Center</span>
+          </a>
+          <a
+            class="flex items-center gap-md p-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-150 cursor-pointer"
+            href="#"
+          >
+            <span class="material-symbols-outlined">analytics</span>
+            <span class="font-body-sm text-body-sm">Analytics</span>
+          </a>
+        </nav>
+      </div>
+      <div class="mt-auto p-md border-t border-outline-variant">
+        <button
+          class="w-full bg-primary-container text-on-primary-container p-sm rounded-lg font-medium flex items-center justify-center gap-xs cursor-pointer active:opacity-80 transition-all"
+        >
+          <span class="material-symbols-outlined">add</span>
+          <span class="font-body-sm text-body-sm">New Transaction</span>
+        </button>
+      </div>
+    </aside>
+    <!-- Main Wrapper -->
+    <div class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden">
+      <!-- Top Bar -->
+      <header
+        class="h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg sticky top-0 z-50"
+      >
+        <div class="flex items-center gap-lg">
+          <div class="relative group">
+            <span
+              class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline"
+              >search</span
+            >
+            <input
+              class="bg-surface-container-low border border-outline-variant rounded-lg pl-xl pr-md py-xs text-body-sm font-body-sm w-80 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+              placeholder="Search transactions, clients, or tags..."
+              type="text"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-md">
+          <div
+            class="flex items-center gap-xs text-on-surface-variant hover:bg-surface-container p-xs px-sm rounded-lg transition-colors cursor-pointer"
+          >
+            <span class="material-symbols-outlined">notifications</span>
+            <div class="w-2 h-2 bg-error rounded-full -mt-2 -ml-2"></div>
+          </div>
+          <div
+            class="flex items-center gap-xs text-on-surface-variant hover:bg-surface-container p-xs px-sm rounded-lg transition-colors cursor-pointer"
+          >
+            <span class="material-symbols-outlined">help_outline</span>
+          </div>
+          <div class="h-6 w-px bg-outline-variant mx-xs"></div>
+          <div class="flex items-center gap-sm cursor-pointer group">
+            <div class="text-right">
+              <p class="font-body-sm text-body-sm font-medium text-on-surface">Global Workspace</p>
+              <p class="text-[10px] text-outline uppercase font-bold tracking-tighter">
+                Admin View
+              </p>
+            </div>
+            <div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+              <img
+                class="w-full h-full object-cover"
+                data-alt="A sharp, high-contrast professional profile headshot of a financial administrator in a corporate setting. The lighting is dramatic and clinical, featuring cool blue and deep zinc tones. The style is inspired by modern tech aesthetics with high-end digital precision. Background is a blurred office interior with subtle light trails."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgibLZ_BIkhi7Tyoh-U41ZaDqZFiK4z21gtxMrTs2lQH2EOTpJPuA9dVcIDwnSbgfMx1-S5xGS0ougcXWieP1Y4otlOwXMPZKIh3RUUjHgUFE5Czyc27MsfCcc1-oE7ptzon_1FxWq7oPQGOAxXmtlZFAdVmeD3q2b1Ksk9gHeUtzDWDqu8pcQtIr3QaYK2oKKXn1DQvOCF5R4H1C1CgtX_B1iMWowMGaifEEBgtKdk9GblRX6HBUV"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+      <!-- Main Content -->
+      <main class="flex-1 overflow-y-auto p-lg bg-surface-dim">
+        <!-- Header -->
+        <div class="flex justify-between items-end mb-xl">
+          <div>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">
+              Operational Command Center
+            </h2>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-xs">
+              Real-time fiscal monitoring and processing queue for all connected corporate accounts.
+            </p>
+          </div>
+          <div class="flex items-center gap-sm">
+            <span
+              class="text-table-mono font-table-mono text-outline px-sm py-xs border border-outline-variant rounded-md bg-surface-container"
+              >Refreshed: 14:02:45</span
+            >
+            <button
+              class="bg-surface-container text-on-surface p-sm rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors flex items-center gap-xs"
+            >
+              <span class="material-symbols-outlined">sync</span>
+            </button>
+          </div>
+        </div>
+        <!-- Section 1: KPI Cards -->
+        <div class="grid grid-cols-4 gap-md mb-xl">
+          <div
+            class="bg-surface-container-low border border-outline-variant p-md rounded-lg flex flex-col justify-between"
+          >
+            <div>
+              <span class="font-label-caps text-label-caps text-outline uppercase"
+                >Total Spend (MTD)</span
+              >
+              <div class="font-display-kpi text-display-kpi text-on-surface mt-xs">₹84,22,190</div>
+            </div>
+            <div class="flex items-center gap-xs mt-md text-error text-table-mono">
+              <span class="material-symbols-outlined text-sm">trending_up</span>
+              <span class="">12.4% vs last month</span>
+            </div>
+          </div>
+          <div
+            class="bg-surface-container-low border border-outline-variant p-md rounded-lg flex flex-col justify-between"
+          >
+            <div>
+              <span class="font-label-caps text-label-caps text-outline uppercase"
+                >Total Income (MTD)</span
+              >
+              <div class="font-display-kpi text-display-kpi text-on-surface mt-xs">
+                ₹1,42,08,500
+              </div>
+            </div>
+            <div class="flex items-center gap-xs mt-md text-secondary text-table-mono">
+              <span class="material-symbols-outlined text-sm">trending_up</span>
+              <span class="">8.2% vs last month</span>
+            </div>
+          </div>
+
+          <div
+            class="bg-surface-container-low border border-outline-variant p-md rounded-lg flex flex-col justify-between border-l-4 border-l-error"
+          >
+            <div>
+              <span class="font-label-caps text-label-caps text-outline uppercase"
+                >CC Outstanding</span
+              >
+              <div class="font-display-kpi text-display-kpi text-on-surface mt-xs">₹12,45,600</div>
+            </div>
+            <div
+              class="flex items-center gap-xs mt-md text-error font-medium text-table-mono uppercase tracking-widest"
+            >
+              <span class="material-symbols-outlined text-sm">warning</span>
+              <span class="">Due in 48h</span>
+            </div>
+          </div>
+        </div>
+        <!-- Section 2: Credit & Bank Accounts -->
+        <div class="mb-xl">
+          <h3
+            class="font-headline-sm text-headline-sm text-on-surface mb-md flex items-center gap-sm"
+          >
+            Connected Facilities
+            <span class="h-px flex-1 bg-outline-variant"></span>
+          </h3>
+          <div class="grid grid-cols-3 gap-md">
+            <!-- High Priority Card -->
+            <div
+              class="bg-surface-container border border-error p-md rounded-lg relative overflow-hidden"
+            >
+              <div
+                class="absolute top-0 right-0 p-xs bg-error text-on-error font-label-caps text-[9px] px-sm"
+              >
+                URGENT
+              </div>
+              <div class="flex justify-between items-start mb-md">
+                <div>
+                  <p class="font-label-caps text-label-caps text-outline">
+                    HDFC Corporate Platinum
+                  </p>
+                  <p class="font-table-mono text-table-mono text-on-surface-variant">xxxx 8829</p>
+                </div>
+                <span class="material-symbols-outlined text-outline">credit_card</span>
+              </div>
+              <div class="mb-md">
+                <p class="text-on-surface font-headline-sm">
+                  ₹8,42,100 <span class="text-xs text-outline font-normal">due</span>
+                </p>
+                <p class="text-error font-medium text-body-sm">Due Date: 28 Oct (2 days left)</p>
+              </div>
+              <div
+                class="flex justify-between items-center text-table-mono text-xs border-t border-outline-variant pt-sm"
+              >
+                <span class="text-outline">Daily Avg: ₹42,000</span>
+                <button class="text-primary hover:underline">Pay Now</button>
+              </div>
+            </div>
+            <!-- Regular Card -->
+            <div class="bg-surface-container-low border border-outline-variant p-md rounded-lg">
+              <div class="flex justify-between items-start mb-md">
+                <div>
+                  <p class="font-label-caps text-label-caps text-outline">ICICI Current Account</p>
+                  <p class="font-table-mono text-table-mono text-on-surface-variant">xxxx 1102</p>
+                </div>
+                <span class="material-symbols-outlined text-outline">account_balance</span>
+              </div>
+              <div class="mb-md">
+                <p class="text-on-surface font-headline-sm">₹2,84,10,200</p>
+                <p class="text-on-surface-variant text-body-sm">Last Sync: 10m ago</p>
+              </div>
+              <div
+                class="flex justify-between items-center text-table-mono text-xs border-t border-outline-variant pt-sm"
+              >
+                <span class="text-secondary">Inflow: +₹12.4L</span>
+                <span class="text-error">Outflow: -₹3.1L</span>
+              </div>
+            </div>
+            <!-- Regular Card -->
+            <div class="bg-surface-container-low border border-outline-variant p-md rounded-lg">
+              <div class="flex justify-between items-start mb-md">
+                <div>
+                  <p class="font-label-caps text-label-caps text-outline">Kotak Treasury Account</p>
+                  <p class="font-table-mono text-table-mono text-on-surface-variant">xxxx 4001</p>
+                </div>
+                <span class="material-symbols-outlined text-outline">account_balance</span>
+              </div>
+              <div class="mb-md">
+                <p class="text-on-surface font-headline-sm">₹1,28,20,680</p>
+                <p class="text-on-surface-variant text-body-sm">Last Sync: 2h ago</p>
+              </div>
+              <div
+                class="flex justify-between items-center text-table-mono text-xs border-t border-outline-variant pt-sm"
+              >
+                <span class="text-secondary">Inflow: +₹0.5L</span>
+                <span class="text-error">Outflow: -₹0.0L</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Two-Column Layout for Middle Section -->
+        <div class="grid grid-cols-12 gap-xl mb-xl">
+          <!-- Section 3: Pending Resolution Queue -->
+          <div class="col-span-4 flex flex-col gap-md">
+            <div class="flex items-center justify-between">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">Resolution Queue</h3>
+              <span
+                class="bg-error-container text-on-error-container px-sm py-0.5 rounded-full text-[10px] font-bold"
+                >12 ACTIONABLE</span
+              >
+            </div>
+            <div
+              class="bg-surface-container-high border border-outline-variant rounded-lg overflow-hidden flex flex-col divide-y divide-outline-variant"
+            >
+              <div class="p-md hover:bg-surface-bright transition-colors group">
+                <div class="flex justify-between items-start mb-xs">
+                  <span class="font-label-caps text-label-caps text-tertiary">Uncategorized</span>
+                  <span class="text-table-mono text-outline">Oct 24</span>
+                </div>
+                <p class="font-body-md text-on-surface mb-md">Amazon Pay (Retail &amp; Ent.)</p>
+                <div class="flex items-center justify-between">
+                  <span class="font-table-mono text-on-surface-variant">₹4,200.00</span>
+                  <button
+                    class="bg-primary text-on-primary px-sm py-xs rounded text-body-sm font-medium hover:bg-primary-fixed transition-all"
+                  >
+                    Resolve
+                  </button>
+                </div>
+              </div>
+              <div class="p-md hover:bg-surface-bright transition-colors group">
+                <div class="flex justify-between items-start mb-xs">
+                  <span class="font-label-caps text-label-caps text-error">Missing GST</span>
+                  <span class="text-table-mono text-outline">Oct 25</span>
+                </div>
+                <p class="font-body-md text-on-surface mb-md">Swiggy Ltd (Vendor: Bundl)</p>
+                <div class="flex items-center justify-between">
+                  <span class="font-table-mono text-on-surface-variant">₹890.50</span>
+                  <button
+                    class="bg-primary text-on-primary px-sm py-xs rounded text-body-sm font-medium hover:bg-primary-fixed transition-all"
+                  >
+                    Resolve
+                  </button>
+                </div>
+              </div>
+              <div class="p-md hover:bg-surface-bright transition-colors group">
+                <div class="flex justify-between items-start mb-xs">
+                  <span class="font-label-caps text-label-caps text-tertiary">Tag Required</span>
+                  <span class="text-table-mono text-outline">Oct 26</span>
+                </div>
+                <p class="font-body-md text-on-surface mb-md">TDS Payment - Q3 Filing</p>
+                <div class="flex items-center justify-between">
+                  <span class="font-table-mono text-on-surface-variant">₹1,45,000.00</span>
+                  <button
+                    class="bg-primary text-on-primary px-sm py-xs rounded text-body-sm font-medium hover:bg-primary-fixed transition-all"
+                  >
+                    Resolve
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Section 4: Recent Transactions Table -->
+          <div class="col-span-8">
+            <div class="flex items-center justify-between mb-md">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Transactions</h3>
+              <a class="text-primary text-body-sm hover:underline" href="#">View All Records</a>
+            </div>
+            <div
+              class="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden"
+            >
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-surface-container-high">
+                    <th class="px-md py-sm font-label-caps text-label-caps text-outline uppercase">
+                      Date
+                    </th>
+                    <th class="px-md py-sm font-label-caps text-label-caps text-outline uppercase">
+                      Merchant
+                    </th>
+                    <th class="px-md py-sm font-label-caps text-label-caps text-outline uppercase">
+                      Category
+                    </th>
+                    <th
+                      class="px-md py-sm font-label-caps text-label-caps text-outline uppercase text-right"
+                    >
+                      Amount
+                    </th>
+                    <th class="px-md py-sm font-label-caps text-label-caps text-outline uppercase">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant">
+                  <tr class="hover:bg-surface-container transition-colors">
+                    <td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant">
+                      26 Oct
+                    </td>
+                    <td class="px-md py-sm font-body-sm text-on-surface">Google Cloud Platform</td>
+                    <td class="px-md py-sm">
+                      <span
+                        class="px-sm py-0.5 bg-surface-variant rounded text-[10px] text-on-surface-variant"
+                        >Software/SaaS</span
+                      >
+                    </td>
+                    <td
+                      class="px-md py-sm font-table-mono text-table-mono text-right text-on-surface"
+                    >
+                      ₹45,210.00
+                    </td>
+                    <td class="px-md py-sm">
+                      <div
+                        class="flex items-center gap-xs text-[10px] text-secondary font-bold uppercase tracking-wider"
+                      >
+                        <div class="w-1.5 h-1.5 bg-secondary rounded-full"></div>
+                        Processed
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-surface-container transition-colors">
+                    <td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant">
+                      26 Oct
+                    </td>
+                    <td class="px-md py-sm font-body-sm text-on-surface">Starbucks Corporate</td>
+                    <td class="px-md py-sm">
+                      <span
+                        class="px-sm py-0.5 bg-surface-variant rounded text-[10px] text-on-surface-variant"
+                        >F&amp;B</span
+                      >
+                    </td>
+                    <td
+                      class="px-md py-sm font-table-mono text-table-mono text-right text-on-surface"
+                    >
+                      ₹1,240.00
+                    </td>
+                    <td class="px-md py-sm">
+                      <div
+                        class="flex items-center gap-xs text-[10px] text-outline font-bold uppercase tracking-wider"
+                      >
+                        <div class="w-1.5 h-1.5 bg-outline rounded-full"></div>
+                        Pending
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-surface-container transition-colors">
+                    <td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant">
+                      25 Oct
+                    </td>
+                    <td class="px-md py-sm font-body-sm text-on-surface">HDFC Insurance Ltd</td>
+                    <td class="px-md py-sm">
+                      <span
+                        class="px-sm py-0.5 bg-surface-variant rounded text-[10px] text-on-surface-variant"
+                        >Statutory</span
+                      >
+                    </td>
+                    <td
+                      class="px-md py-sm font-table-mono text-table-mono text-right text-on-surface"
+                    >
+                      ₹12,00,000.00
+                    </td>
+                    <td class="px-md py-sm">
+                      <div
+                        class="flex items-center gap-xs text-[10px] text-secondary font-bold uppercase tracking-wider"
+                      >
+                        <div class="w-1.5 h-1.5 bg-secondary rounded-full"></div>
+                        Processed
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-surface-container transition-colors">
+                    <td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant">
+                      25 Oct
+                    </td>
+                    <td class="px-md py-sm font-body-sm text-on-surface">Uber India Tech</td>
+                    <td class="px-md py-sm">
+                      <span
+                        class="px-sm py-0.5 bg-surface-variant rounded text-[10px] text-on-surface-variant"
+                        >Travel</span
+                      >
+                    </td>
+                    <td
+                      class="px-md py-sm font-table-mono text-table-mono text-right text-on-surface"
+                    >
+                      ₹480.00
+                    </td>
+                    <td class="px-md py-sm">
+                      <div
+                        class="flex items-center gap-xs text-[10px] text-error font-bold uppercase tracking-wider"
+                      >
+                        <div class="w-1.5 h-1.5 bg-error rounded-full"></div>
+                        Flagged
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-surface-container transition-colors">
+                    <td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant">
+                      24 Oct
+                    </td>
+                    <td class="px-md py-sm font-body-sm text-on-surface">Amazon AWS Services</td>
+                    <td class="px-md py-sm">
+                      <span
+                        class="px-sm py-0.5 bg-surface-variant rounded text-[10px] text-on-surface-variant"
+                        >Cloud</span
+                      >
+                    </td>
+                    <td
+                      class="px-md py-sm font-table-mono text-table-mono text-right text-on-surface"
+                    >
+                      ₹1,12,000.00
+                    </td>
+                    <td class="px-md py-sm">
+                      <div
+                        class="flex items-center gap-xs text-[10px] text-secondary font-bold uppercase tracking-wider"
+                      >
+                        <div class="w-1.5 h-1.5 bg-secondary rounded-full"></div>
+                        Processed
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom Section Grid -->
+        <div class="grid grid-cols-12 gap-xl">
+          <!-- Section 5: Statement Import & Alerts -->
+          <div class="col-span-8">
+            <div class="grid grid-cols-2 gap-md"></div>
+          </div>
+          <!-- Section 6: Quick Actions Grid -->
+          <div class="col-span-4">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Quick Actions</h3>
+            <div class="grid grid-cols-2 gap-sm">
+              <button
+                class="bg-surface-container border border-outline-variant p-sm rounded-lg hover:bg-surface-container-high transition-all flex flex-col items-center gap-xs group"
+              >
+                <span
+                  class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform"
+                  >add_circle</span
+                >
+                <span class="text-xs font-medium">Add Transaction</span>
+              </button>
+              <button
+                class="bg-surface-container border border-outline-variant p-sm rounded-lg hover:bg-surface-container-high transition-all flex flex-col items-center gap-xs group"
+              >
+                <span
+                  class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform"
+                  >person_add</span
+                >
+                <span class="text-xs font-medium">Add Client</span>
+              </button>
+              <button
+                class="bg-surface-container border border-outline-variant p-sm rounded-lg hover:bg-surface-container-high transition-all flex flex-col items-center gap-xs group"
+              >
+                <span
+                  class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform"
+                  >store</span
+                >
+                <span class="text-xs font-medium">Add Merchant</span>
+              </button>
+              <button
+                class="bg-surface-container border border-outline-variant p-sm rounded-lg hover:bg-surface-container-high transition-all flex flex-col items-center gap-xs group"
+              >
+                <span
+                  class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform"
+                  >request_quote</span
+                >
+                <span class="text-xs font-medium">New Report</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <!-- Micro-interaction script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Subtle pulse for urgent items
+        const urgentBadge = document.querySelector('.bg-error')
+        if (urgentBadge) {
+          setInterval(() => {
+            urgentBadge.classList.toggle('opacity-80')
+          }, 1000)
+        }
+      })
+    </script>
+  </body>
+</html>
