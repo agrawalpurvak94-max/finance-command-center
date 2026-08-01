@@ -1,6 +1,6 @@
 import { InlineSelector } from '@/components/transactions/InlineSelector'
 import { useTransactionCategories } from '@/hooks/useTransactions'
-import type { Category } from '@/types/transaction'
+import type { Category } from '@/domain/Category'
 
 interface CategorySelectorProps {
   category: Category | null

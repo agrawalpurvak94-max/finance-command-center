@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { transactionsToCsv } from '@/utils/csv'
-import type { Transaction } from '@/types/transaction'
+import type { Transaction } from '@/domain/Transaction'
 
 const baseTransaction: Transaction = {
   id: 'txn-1',

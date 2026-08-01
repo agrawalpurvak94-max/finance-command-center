@@ -18,7 +18,7 @@ import { CategorySelector } from '@/components/transactions/CategorySelector'
 import { ClientSelector } from '@/components/transactions/ClientSelector'
 import { BizPersonalPill } from '@/components/transactions/BizPersonalPill'
 import { formatINR } from '@/utils/currency'
-import type { Transaction, TransactionPatch } from '@/types/transaction'
+import type { Transaction, TransactionPatch } from '@/domain/Transaction'
 
 interface TransactionDetailsDrawerProps {
   transaction: Transaction | null

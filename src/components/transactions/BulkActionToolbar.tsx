@@ -33,7 +33,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import type { Category, Client, Merchant } from '@/types/transaction'
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { Merchant } from '@/domain/Merchant'
 
 interface BulkActionToolbarProps {
   selectedCount: number

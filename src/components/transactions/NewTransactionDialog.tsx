@@ -19,13 +19,10 @@ import {
 } from '@/components/ui/select'
 import { BizPersonalPill } from '@/components/transactions/BizPersonalPill'
 import { cn } from '@/lib/utils'
-import type {
-  Category,
-  Client,
-  OwnerType,
-  TransactionAccount,
-  TransactionCreateInput,
-} from '@/types/transaction'
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { TransactionAccount } from '@/domain/Account'
+import type { OwnerType, TransactionCreateInput } from '@/domain/Transaction'
 
 interface NewTransactionDialogProps {
   open: boolean

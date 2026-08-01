@@ -4,7 +4,7 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { EmptyState } from '@/components/EmptyState'
 import { Gauge } from 'lucide-react'
-import type { FinancialSnapshotMetric } from '@/types/dashboard'
+import type { FinancialSnapshotMetric } from '@/domain/Dashboard'
 
 interface FinancialSnapshotWidgetProps {
   query: UseQueryResult<FinancialSnapshotMetric[]>

@@ -1,4 +1,4 @@
-import type { Transaction, TransactionStatus } from '@/types/transaction'
+import type { Transaction, TransactionStatus } from '@/domain/Transaction'
 import {
   mockAccounts,
   mockCategories,

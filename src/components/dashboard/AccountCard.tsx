@@ -2,7 +2,7 @@ import { Landmark, CreditCard, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
 import { Button } from '@/components/ui/button'
-import type { ConnectedAccount } from '@/types/dashboard'
+import type { ConnectedAccount } from '@/domain/Account'
 
 interface AccountCardProps {
   account: ConnectedAccount

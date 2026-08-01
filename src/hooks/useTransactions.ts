@@ -5,7 +5,7 @@ import type {
   TransactionCreateInput,
   TransactionListParams,
   TransactionPatch,
-} from '@/types/transaction'
+} from '@/domain/Transaction'
 
 export function useTransactionsList(params: TransactionListParams) {
   return useQuery({

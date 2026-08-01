@@ -1,4 +1,4 @@
-import type { TransactionListParams } from '@/types/transaction'
+import type { TransactionListParams } from '@/domain/Transaction'
 
 export const queryKeys = {
   dashboard: {

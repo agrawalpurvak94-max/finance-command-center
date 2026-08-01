@@ -1,4 +1,4 @@
-import type { Transaction } from '@/types/transaction'
+import type { Transaction } from '@/domain/Transaction'
 
 function escapeCsvValue(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {

@@ -1,7 +1,7 @@
 import { TrendingDown, TrendingUp, Minus, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
-import type { FinancialSnapshotMetric } from '@/types/dashboard'
+import type { FinancialSnapshotMetric } from '@/domain/Dashboard'
 
 const trendIcon = {
   up: TrendingUp,

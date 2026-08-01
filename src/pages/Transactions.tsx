@@ -27,7 +27,7 @@ import {
   useUpdateTransaction,
 } from '@/hooks/useTransactions'
 import { downloadCsv, transactionsToCsv } from '@/utils/csv'
-import type { Transaction, TransactionFilters, TransactionSort } from '@/types/transaction'
+import type { Transaction, TransactionFilters, TransactionSort } from '@/domain/Transaction'
 
 const emptyFilters: TransactionFilters = {}
 

@@ -1,34 +1,14 @@
+import type { Merchant } from '@/domain/Merchant'
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { TransactionAccount } from '@/domain/Account'
+
 export type TransactionStatus =
   'reviewed' | 'uncategorized' | 'duplicate' | 'flagged' | 'verified' | 'pending_review'
 
 export type OwnerType = 'business' | 'personal'
 
 export type TransactionType = 'debit' | 'credit'
-
-export type AccountKind = 'bank' | 'credit_card'
-
-export interface Merchant {
-  readonly id: string
-  readonly name: string
-}
-
-export interface Category {
-  readonly id: string
-  readonly name: string
-}
-
-export interface Client {
-  readonly id: string
-  readonly name: string
-}
-
-export interface TransactionAccount {
-  readonly id: string
-  readonly kind: AccountKind
-  readonly bankName: string
-  readonly cardNetwork?: string
-  readonly last4: string
-}
 
 /**
  * Mirrors the eventual `transactions` Supabase table (see CLAUDE.md Part 3 —

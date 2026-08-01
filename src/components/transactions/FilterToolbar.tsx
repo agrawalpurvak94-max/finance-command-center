@@ -21,13 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import type {
-  Category,
-  Client,
-  Merchant,
-  TransactionAccount,
-  TransactionFilters,
-} from '@/types/transaction'
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { Merchant } from '@/domain/Merchant'
+import type { TransactionAccount } from '@/domain/Account'
+import type { TransactionFilters } from '@/domain/Transaction'
 
 interface FilterToolbarProps {
   draft: TransactionFilters

@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { Transaction } from '@/types/transaction'
+import type { Transaction } from '@/domain/Transaction'
 
 interface RowActionsMenuProps {
   transaction: Transaction

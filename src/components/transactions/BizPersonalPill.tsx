@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import type { OwnerType } from '@/types/transaction'
+import type { OwnerType } from '@/domain/Transaction'
 
 interface BizPersonalPillProps {
   value: OwnerType

@@ -1,5 +1,5 @@
 import { Building2 } from 'lucide-react'
-import type { Merchant } from '@/types/transaction'
+import type { Merchant } from '@/domain/Merchant'
 
 interface MerchantCellProps {
   merchant: Merchant

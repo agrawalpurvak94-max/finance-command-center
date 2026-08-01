@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { CirclePlus, UserPlus, Store, FileText, type LucideIcon } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
-import type { QuickAction } from '@/types/dashboard'
+import type { QuickAction } from '@/domain/Dashboard'
 
 const actionIcon: Record<string, LucideIcon> = {
   'add-transaction': CirclePlus,

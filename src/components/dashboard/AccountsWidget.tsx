@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { AccountCard } from '@/components/dashboard/AccountCard'
-import type { ConnectedAccount } from '@/types/dashboard'
+import type { ConnectedAccount } from '@/domain/Account'
 
 interface AccountsWidgetProps {
   title: string

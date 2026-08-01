@@ -1,14 +1,14 @@
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { Merchant } from '@/domain/Merchant'
+import type { TransactionAccount } from '@/domain/Account'
 import type {
-  Category,
-  Client,
-  Merchant,
   Transaction,
-  TransactionAccount,
   TransactionCreateInput,
   TransactionListParams,
   TransactionListResult,
   TransactionPatch,
-} from '@/types/transaction'
+} from '@/domain/Transaction'
 import type { TransactionRepository } from '@/repositories/transaction.repository'
 import { mockTransactions } from '@/repositories/mock-data/generate-transactions'
 import {

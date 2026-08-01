@@ -3207,6 +3207,38 @@ Example
 
 feat: add dashboard cashflow widgets
 
+Module-scoped feature commits
+
+Every feature commit for Modules 4 and onward must scope the type with the module number.
+
+Format
+
+feat(module-N): implement \<module-name\> module
+
+Mapping
+
+feat(module-4): implement statements module
+
+feat(module-5): implement accounts module
+
+feat(module-6): implement credit cards module
+
+feat(module-7): implement categories module
+
+feat(module-8): implement merchants module
+
+feat(module-9): implement clients module
+
+feat(module-10): implement analytics module
+
+feat(module-11): implement settings module
+
+feat(module-12): integrate supabase
+
+The module report is included in the SAME commit as the feature. See MODULE COMPLETION GIT PROTOCOL below.
+
+Documentation-only commits (plain docs:, no module scope) are only used when documentation changes independently of a feature — never as a second commit immediately following a feature commit for the same module.
+
 Never commit
 
 node\_modules
@@ -3247,7 +3279,7 @@ Playwright
 
 Fix every issue before committing.
 
-5\. Commit using Conventional Commits.
+5\. Commit using Conventional Commits, module-scoped per the Commit Format section above (feat(module-N): ...).
 
 6\. Push automatically to GitHub.
 

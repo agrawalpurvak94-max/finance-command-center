@@ -1,4 +1,4 @@
-import type { TransactionAccount } from '@/types/transaction'
+import type { TransactionAccount } from '@/domain/Account'
 
 interface AccountCellProps {
   account: TransactionAccount

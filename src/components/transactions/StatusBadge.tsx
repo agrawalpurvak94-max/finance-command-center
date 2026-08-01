@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { TransactionStatus } from '@/types/transaction'
+import type { TransactionStatus } from '@/domain/Transaction'
 
 const statusConfig: Record<TransactionStatus, { label: string; className: string }> = {
   reviewed: {

@@ -18,7 +18,7 @@ import { ClientSelector } from '@/components/transactions/ClientSelector'
 import { BizPersonalPill } from '@/components/transactions/BizPersonalPill'
 import { StatusBadge } from '@/components/transactions/StatusBadge'
 import { RowActionsMenu } from '@/components/transactions/RowActionsMenu'
-import type { Transaction, TransactionPatch, TransactionSort } from '@/types/transaction'
+import type { Transaction, TransactionPatch, TransactionSort } from '@/domain/Transaction'
 
 interface TransactionTableProps {
   transactions: readonly Transaction[]

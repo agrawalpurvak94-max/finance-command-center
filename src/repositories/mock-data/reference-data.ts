@@ -1,4 +1,7 @@
-import type { Category, Client, Merchant, TransactionAccount } from '@/types/transaction'
+import type { Category } from '@/domain/Category'
+import type { Client } from '@/domain/Client'
+import type { Merchant } from '@/domain/Merchant'
+import type { TransactionAccount } from '@/domain/Account'
 
 // 5 bank (current/savings) accounts.
 export const mockBankAccounts: readonly TransactionAccount[] = [

@@ -6,7 +6,7 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
-import type { ResolutionQueueItem } from '@/types/dashboard'
+import type { ResolutionQueueItem } from '@/domain/Dashboard'
 
 const reasonToneClass: Record<ResolutionQueueItem['reason'], string> = {
   uncategorized: 'text-tertiary',

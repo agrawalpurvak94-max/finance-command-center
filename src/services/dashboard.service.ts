@@ -1,10 +1,10 @@
+import type { ConnectedAccount } from '@/domain/Account'
 import type {
-  ConnectedAccount,
   FinancialSnapshotMetric,
   QuickAction,
   RecentTransaction,
   ResolutionQueueItem,
-} from '@/types/dashboard'
+} from '@/domain/Dashboard'
 
 /**
  * Mock data source. CLAUDE.md's Module 2 contract calls for these to read

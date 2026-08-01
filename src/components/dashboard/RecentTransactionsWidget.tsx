@@ -6,21 +6,21 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
-import type { RecentTransaction, TransactionStatus } from '@/types/dashboard'
+import type { RecentTransaction, RecentTransactionStatus } from '@/domain/Dashboard'
 
-const statusDotClass: Record<TransactionStatus, string> = {
+const statusDotClass: Record<RecentTransactionStatus, string> = {
   processed: 'bg-secondary',
   pending: 'bg-muted-foreground',
   flagged: 'bg-destructive',
 }
 
-const statusTextClass: Record<TransactionStatus, string> = {
+const statusTextClass: Record<RecentTransactionStatus, string> = {
   processed: 'text-secondary',
   pending: 'text-muted-foreground',
   flagged: 'text-destructive',
 }
 
-const statusLabel: Record<TransactionStatus, string> = {
+const statusLabel: Record<RecentTransactionStatus, string> = {
   processed: 'Processed',
   pending: 'Pending',
   flagged: 'Flagged',

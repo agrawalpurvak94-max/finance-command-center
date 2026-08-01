@@ -1,6 +1,6 @@
 import { InlineSelector } from '@/components/transactions/InlineSelector'
 import { useTransactionClients } from '@/hooks/useTransactions'
-import type { Client } from '@/types/transaction'
+import type { Client } from '@/domain/Client'
 
 interface ClientSelectorProps {
   client: Client | null
