@@ -1,0 +1,770 @@
+<!doctype html>
+<html
+  class="dark"
+  lang="en"
+  style="width: 1280px; height: 1024px; overflow: hidden; position: relative"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Finance Command Center - Client Management</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        vertical-align: middle;
+      }
+      body {
+        font-family: 'Geist', sans-serif;
+        background-color: #131315;
+        color: #e5e1e4;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1c1b1d;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #434655;
+        border-radius: 2px;
+      }
+      .modal-overlay {
+        backdrop-filter: blur(4px);
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-container-low': '#1c1b1d',
+              'tertiary-container': '#bc4800',
+              'on-secondary-fixed-variant': '#38485d',
+              'on-tertiary-fixed-variant': '#7d2d00',
+              error: '#ffb4ab',
+              'on-secondary-fixed': '#0b1c30',
+              'surface-container': '#201f22',
+              'on-tertiary-fixed': '#360f00',
+              'inverse-on-surface': '#313032',
+              'error-container': '#93000a',
+              'tertiary-fixed-dim': '#ffb596',
+              secondary: '#b7c8e1',
+              'surface-container-highest': '#353437',
+              surface: '#131315',
+              'secondary-fixed': '#d3e4fe',
+              'primary-fixed-dim': '#b4c5ff',
+              'outline-variant': '#434655',
+              'on-surface': '#e5e1e4',
+              'surface-bright': '#39393b',
+              'primary-fixed': '#dbe1ff',
+              'secondary-fixed-dim': '#b7c8e1',
+              'surface-tint': '#b4c5ff',
+              tertiary: '#ffb596',
+              primary: '#b4c5ff',
+              'on-primary-fixed-variant': '#003ea8',
+              'on-background': '#e5e1e4',
+              'surface-dim': '#131315',
+              'on-error': '#690005',
+              'inverse-primary': '#0053db',
+              outline: '#8d90a0',
+              'on-surface-variant': '#c3c6d7',
+              'on-secondary': '#213145',
+              'on-primary-fixed': '#00174b',
+              background: '#131315',
+              'on-secondary-container': '#a9bad3',
+              'on-primary-container': '#eeefff',
+              'on-error-container': '#ffdad6',
+              'on-tertiary': '#581e00',
+              'surface-variant': '#353437',
+              'primary-container': '#2563eb',
+              'surface-container-lowest': '#0e0e10',
+              'tertiary-fixed': '#ffdbcd',
+              'secondary-container': '#3a4a5f',
+              'surface-container-high': '#2a2a2c',
+              'on-primary': '#002a78',
+              'on-tertiary-container': '#ffede6',
+              'inverse-surface': '#e5e1e4',
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px',
+            },
+            spacing: {
+              sm: '8px',
+              'margin-mobile': '16px',
+              gutter: '16px',
+              xl: '32px',
+              lg: '24px',
+              md: '16px',
+              'margin-desktop': '32px',
+              xs: '4px',
+            },
+            fontFamily: {
+              'body-md': ['Geist'],
+              'headline-lg': ['Geist'],
+              'body-sm': ['Geist'],
+              'table-mono': ['Geist'],
+              'label-caps': ['Geist'],
+              'headline-sm': ['Geist'],
+              'display-kpi': ['Geist'],
+            },
+            fontSize: {
+              'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+              'headline-lg': [
+                '24px',
+                { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '600' },
+              ],
+              'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'table-mono': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'label-caps': [
+                '11px',
+                { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' },
+              ],
+              'headline-sm': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+              'display-kpi': [
+                '36px',
+                { lineHeight: '44px', letterSpacing: '-0.04em', fontWeight: '600' },
+              ],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body class="bg-background text-on-background min-h-screen overflow-hidden flex">
+    <!-- SideNavBar Anchor -->
+    <aside
+      class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col py-6 z-50"
+    >
+      <div class="px-6 mb-8">
+        <h1 class="text-headline-md font-bold text-on-surface">Finance Command Center</h1>
+        <p class="text-label-md text-on-surface-variant uppercase tracking-wider mt-1">
+          Enterprise Intelligence
+        </p>
+      </div>
+      <nav class="flex-1 px-3 space-y-1">
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">dashboard</span>
+          <span class="text-label-md font-label-md">Dashboard</span>
+        </a>
+        <!-- Active Tab: Accounts (Mapping to Client Management) -->
+        <a
+          class="flex items-center px-3 py-2 text-primary font-bold bg-secondary-container rounded-lg scale-[0.98] transition-transform duration-150"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1"
+            >account_balance</span
+          >
+          <span class="text-label-md font-label-md">Accounts</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">receipt_long</span>
+          <span class="text-label-md font-label-md">Transactions</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">description</span>
+          <span class="text-label-md font-label-md">Statements</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">query_stats</span>
+          <span class="text-label-md font-label-md">Analytics</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">storefront</span>
+          <span class="text-label-md font-label-md">Merchant Center</span>
+        </a>
+      </nav>
+      <div class="px-3 mt-auto"></div>
+    </aside>
+    <!-- Main Content Area -->
+    <main class="ml-64 flex-1 flex flex-col min-h-screen relative">
+      <!-- TopNavBar Anchor -->
+      <header
+        class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface border-b border-outline-variant z-40 flex justify-between items-center px-8"
+      >
+        <div class="flex items-center gap-4">
+          <span class="text-label-md text-on-surface-variant font-label-md"
+            >Breadcrumbs / Accounts / Client Management</span
+          >
+        </div>
+        <div class="flex items-center gap-6">
+          <button
+            class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-lg text-label-md font-bold hover:opacity-90 transition-opacity"
+          >
+            AI Assistant
+          </button>
+          <div class="flex items-center gap-4 text-on-surface-variant">
+            <span
+              class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors"
+              >notifications</span
+            >
+            <span
+              class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors"
+              >search</span
+            >
+            <div
+              class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant"
+            >
+              <img
+                class="w-full h-full object-cover"
+                data-alt="A professional headshot of a senior financial executive in a dark tailored suit, captured with high-end cinematic lighting against a blurred corporate office background. The aesthetic is clean and authoritative, fitting a premium fintech platform's user profile image."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMmJ-t454-9z3KqzqQAmjktp2qkKDJfgQpp7Rde8GujbBnoFKj4OXPJoh5mJT6m9in4vNu5x9SWJpidrjBB3YI1GMJnPp1-E64-AvszAQCZU605NxqUwLUp9IsJ1jUvtVKz4t6gZ-ZYfuJUkjUyTKDyjdQOyMAJUwJupb2O91W4MP3tIU-PobtB-kxU4Bx5aJ3Hgj-_KER4r1PDf64MGpI4Lh7M7fOGxXoR2ZiA03WS5GvfaERhvKf"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+      <!-- Canvas -->
+      <section class="mt-16 p-8 flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Page Header -->
+        <div class="flex justify-between items-end mb-8">
+          <div>
+            <h2 class="text-headline-lg font-headline-lg text-on-surface mb-1">
+              Client Management
+            </h2>
+            <p class="text-body-md text-on-surface-variant">
+              Overview of your enterprise financial accounts and stakeholder relations.
+            </p>
+          </div>
+          <div class="flex gap-3">
+            <div class="text-right">
+              <p class="text-label-caps text-on-surface-variant mb-1">FISCAL YEAR</p>
+              <p class="text-body-sm font-bold font-table-mono">FY 2024-25</p>
+            </div>
+            <button
+              class="bg-primary text-on-primary px-6 py-2 rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-primary-fixed-dim transition-colors"
+              onclick="toggleModal(true)"
+            >
+              <span class="material-symbols-outlined text-[20px]">person_add</span>
+              Add Client
+            </button>
+          </div>
+        </div>
+        <!-- Dashboard Stats (Tonal Layered Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div
+            class="bg-surface-container p-6 rounded-xl border border-outline-variant"
+            style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+          >
+            <p class="text-label-caps text-on-surface-variant mb-2">TOTAL CLIENTS</p>
+            <p class="text-display-kpi font-display-kpi">1,284</p>
+            <div class="mt-4 flex items-center text-emerald-400 text-xs font-bold">
+              <span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+              +12.5% vs Last Quarter
+            </div>
+          </div>
+          <div
+            class="bg-surface-container p-6 rounded-xl border border-outline-variant"
+            style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+          >
+            <p class="text-label-caps text-on-surface-variant mb-2">ACTIVE REVENUE</p>
+            <p class="text-display-kpi font-display-kpi font-table-mono">₹4.2M</p>
+            <div class="mt-4 flex items-center text-emerald-400 text-xs font-bold">
+              <span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+              +4.2% Growth
+            </div>
+          </div>
+          <div
+            class="bg-surface-container p-6 rounded-xl border border-outline-variant"
+            style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+          >
+            <p class="text-label-caps text-on-surface-variant mb-2">PENDING AUDITS</p>
+            <p class="text-display-kpi font-display-kpi">24</p>
+            <div class="mt-4 flex items-center text-tertiary text-xs font-bold">
+              <span class="material-symbols-outlined text-[14px] mr-1">warning</span>
+              High Priority
+            </div>
+          </div>
+          <div
+            class="bg-surface-container p-6 rounded-xl border border-outline-variant relative overflow-hidden"
+            style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+          >
+            <p class="text-label-caps text-on-surface-variant mb-2">SYSTEM HEALTH</p>
+            <p class="text-display-kpi font-display-kpi">99.9%</p>
+            <div class="mt-4 flex items-center text-primary text-xs font-bold">
+              <span class="material-symbols-outlined text-[14px] mr-1">check_circle</span>
+              All nodes operational
+            </div>
+          </div>
+        </div>
+        <!-- Table Section -->
+        <div
+          class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden shadow-2xl"
+        >
+          <!-- Search & Filters -->
+          <div
+            class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest"
+          >
+            <div class="relative w-96">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                >search</span
+              >
+              <input
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg pl-10 pr-4 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-on-surface-variant/50"
+                placeholder="Filter by name, company, or email..."
+                type="text"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              />
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="px-4 py-2 text-label-md font-bold text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors border border-outline-variant flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                Advanced Filters
+              </button>
+              <button
+                class="px-4 py-2 text-label-md font-bold text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors border border-outline-variant flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                Export
+              </button>
+            </div>
+          </div>
+          <!-- High-Density Data Table -->
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container-high">
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    CLIENT NAME
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    EMAIL
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    COMPANY
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    PHONE
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    STATUS
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap"
+                  >
+                    CREATED DATE
+                  </th>
+                  <th
+                    class="px-4 py-3 text-label-caps text-on-surface-variant border-b border-outline-variant whitespace-nowrap text-right"
+                  >
+                    ACTIONS
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant">
+                <!-- Row 1 -->
+                <tr class="hover:bg-surface-container-highest/30 transition-colors group">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs"
+                      >
+                        AA
+                      </div>
+                      <span class="text-body-md font-bold text-on-surface">Arjun Agrawal</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    arjun.a@nexus-tech.in
+                  </td>
+                  <td class="px-4 py-3 text-body-sm">Nexus Technology Corp</td>
+                  <td class="px-4 py-3 text-body-sm font-table-mono text-on-surface-variant">
+                    +91 98765 43210
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-tighter"
+                      >ACTIVE</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    12 Oct 2023
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      class="text-on-surface-variant hover:text-primary p-1 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+                <!-- Row 2 -->
+                <tr class="hover:bg-surface-container-highest/30 transition-colors group">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold text-xs"
+                      >
+                        PS
+                      </div>
+                      <span class="text-body-md font-bold text-on-surface">Priya Sharma</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    p.sharma@finstrat.com
+                  </td>
+                  <td class="px-4 py-3 text-body-sm">FinStrat Solutions</td>
+                  <td class="px-4 py-3 text-body-sm font-table-mono text-on-surface-variant">
+                    +91 99123 00456
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-tighter"
+                      >PENDING</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    05 Jan 2024
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      class="text-on-surface-variant hover:text-primary p-1 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+                <!-- Row 3 -->
+                <tr class="hover:bg-surface-container-highest/30 transition-colors group">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-xs"
+                      >
+                        RM
+                      </div>
+                      <span class="text-body-md font-bold text-on-surface">Rohan Mehta</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    rohan.mehta@solargrid.in
+                  </td>
+                  <td class="px-4 py-3 text-body-sm">SolarGrid Energy</td>
+                  <td class="px-4 py-3 text-body-sm font-table-mono text-on-surface-variant">
+                    +91 88002 11990
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-tighter"
+                      >ACTIVE</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    18 Feb 2024
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      class="text-on-surface-variant hover:text-primary p-1 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+                <!-- Row 4 -->
+                <tr class="hover:bg-surface-container-highest/30 transition-colors group">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error font-bold text-xs"
+                      >
+                        KC
+                      </div>
+                      <span class="text-body-md font-bold text-on-surface">Kavita Chaudhary</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    kavita.c@indologistics.com
+                  </td>
+                  <td class="px-4 py-3 text-body-sm">Indo Logistics</td>
+                  <td class="px-4 py-3 text-body-sm font-table-mono text-on-surface-variant">
+                    +91 97771 88822
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-tighter"
+                      >SUSPENDED</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-body-sm text-on-surface-variant font-table-mono">
+                    30 Nov 2023
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      class="text-on-surface-variant hover:text-primary p-1 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div
+            class="p-4 bg-surface-container border-t border-outline-variant flex justify-between items-center"
+            style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+          >
+            <span class="text-body-sm text-on-surface-variant">Showing 1-10 of 1,284 clients</span>
+            <div class="flex gap-1">
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest border border-outline-variant text-on-surface-variant disabled:opacity-30"
+                disabled=""
+              >
+                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary text-body-sm font-bold"
+              >
+                1
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest text-on-surface text-body-sm"
+              >
+                2
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest text-on-surface text-body-sm"
+              >
+                3
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest border border-outline-variant text-on-surface-variant"
+              >
+                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Add Client Modal -->
+    <div
+      class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4"
+      id="addClientModal"
+    >
+      <div class="modal-overlay absolute inset-0" onclick="toggleModal(false)"></div>
+      <div
+        class="bg-surface-container-low w-full max-w-2xl rounded-2xl border border-outline shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
+        <!-- Modal Header -->
+        <div
+          class="px-8 py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container"
+          style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+        >
+          <div>
+            <h3 class="text-headline-sm font-bold text-on-surface">Register New Client</h3>
+            <p class="text-body-sm text-on-surface-variant">
+              Initialize a new enterprise account node.
+            </p>
+          </div>
+          <button
+            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+            onclick="toggleModal(false)"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <!-- Modal Form -->
+        <form class="p-8 space-y-6">
+          <div class="grid grid-cols-2 gap-6">
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">CLIENT NAME</label>
+              <input
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="John Doe"
+                type="text"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">COMPANY NAME</label>
+              <input
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="Acme Inc."
+                type="text"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">EMAIL ADDRESS</label>
+              <input
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="john@acme.com"
+                type="email"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">PHONE NUMBER</label>
+              <input
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="+91 00000 00000"
+                type="tel"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              />
+            </div>
+            <div class="col-span-2 space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">ADDRESS</label>
+              <textarea
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="Principal business address..."
+                rows="2"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              ></textarea>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">INITIAL STATUS</label>
+              <select
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              >
+                <option value="active">Active</option>
+                <option value="pending">Pending Review</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">PRIORITY TAG</label>
+              <div class="flex gap-2">
+                <button
+                  class="px-3 py-2 bg-surface-container-highest border border-primary rounded-lg text-xs font-bold text-primary"
+                  type="button"
+                >
+                  Standard
+                </button>
+                <button
+                  class="px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant"
+                  type="button"
+                  style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+                >
+                  High-Net
+                </button>
+                <button
+                  class="px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant"
+                  type="button"
+                  style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+                >
+                  Strategic
+                </button>
+              </div>
+            </div>
+            <div class="col-span-2 space-y-1.5">
+              <label class="text-label-caps text-on-surface-variant">PRIVATE NOTES</label>
+              <textarea
+                class="w-full bg-surface-container text-body-md border border-outline-variant rounded-lg px-4 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="Add any confidential auditor notes here..."
+                rows="3"
+                style="opacity: 1; transform: translateY(0px); transition: 0.4s ease-out"
+              ></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end gap-4 pt-4 border-t border-outline-variant">
+            <button
+              class="px-6 py-2.5 text-label-md font-bold text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all"
+              onclick="toggleModal(false)"
+              type="button"
+            >
+              Discard
+            </button>
+            <button
+              class="px-8 py-2.5 bg-primary text-on-primary text-label-md font-bold rounded-lg shadow-lg hover:shadow-primary/20 active:scale-95 transition-all"
+              type="submit"
+            >
+              Create Account Node
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      function toggleModal(show) {
+        const modal = document.getElementById('addClientModal')
+        if (show) {
+          modal.classList.remove('hidden')
+          document.body.style.overflow = 'hidden'
+        } else {
+          modal.classList.add('hidden')
+          document.body.style.overflow = 'auto'
+        }
+      }
+
+      // Add subtle animation to stats cards on load
+      document.addEventListener('DOMContentLoaded', () => {
+        const cards = document.querySelectorAll('.bg-surface-container')
+        cards.forEach((card, index) => {
+          card.style.opacity = '0'
+          card.style.transform = 'translateY(10px)'
+          setTimeout(() => {
+            card.style.transition = 'all 0.4s ease-out'
+            card.style.opacity = '1'
+            card.style.transform = 'translateY(0)'
+          }, index * 100)
+        })
+      })
+    </script>
+
+    <div
+      id="snapdom-sandbox"
+      data-snapdom-sandbox="true"
+      aria-hidden="true"
+      style="
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        width: 0px;
+        height: 0px;
+        overflow: hidden;
+      "
+    ></div>
+  </body>
+</html>

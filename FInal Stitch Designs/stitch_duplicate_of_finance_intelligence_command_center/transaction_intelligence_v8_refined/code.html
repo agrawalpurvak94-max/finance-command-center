@@ -1,0 +1,807 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Finance Command Center | Transaction Ledger</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 20;
+        font-size: 20px;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #131315;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #434655;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #8d90a0;
+      }
+      .data-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'secondary-fixed': '#d3e4fe',
+              'on-tertiary-container': '#ffede6',
+              'on-secondary': '#213145',
+              'secondary-container': '#3a4a5f',
+              'on-tertiary-fixed': '#360f00',
+              'on-secondary-container': '#a9bad3',
+              'inverse-surface': '#e5e1e4',
+              'error-container': '#93000a',
+              'primary-container': '#2563eb',
+              'on-tertiary': '#581e00',
+              'on-primary-container': '#eeefff',
+              'surface-dim': '#131315',
+              'tertiary-container': '#bc4800',
+              'surface-container-lowest': '#0e0e10',
+              'surface-container': '#201f22',
+              'inverse-primary': '#0053db',
+              primary: '#b4c5ff',
+              tertiary: '#ffb596',
+              'surface-container-high': '#2a2a2c',
+              'surface-bright': '#39393b',
+              'outline-variant': '#434655',
+              'on-error-container': '#ffdad6',
+              error: '#ffb4ab',
+              outline: '#8d90a0',
+              'on-primary-fixed': '#00174b',
+              'secondary-fixed-dim': '#b7c8e1',
+              'on-primary': '#002a78',
+              'on-secondary-fixed': '#0b1c30',
+              'on-tertiary-fixed-variant': '#7d2d00',
+              'on-surface-variant': '#c3c6d7',
+              background: '#131315',
+              'surface-container-highest': '#353437',
+              'primary-fixed-dim': '#b4c5ff',
+              'surface-tint': '#b4c5ff',
+              'primary-fixed': '#dbe1ff',
+              'on-secondary-fixed-variant': '#38485d',
+              'tertiary-fixed-dim': '#ffb596',
+              'surface-variant': '#353437',
+              'surface-container-low': '#1c1b1d',
+              'on-surface': '#e5e1e4',
+              'on-primary-fixed-variant': '#003ea8',
+              'on-background': '#e5e1e4',
+              'tertiary-fixed': '#ffdbcd',
+              'on-error': '#690005',
+              secondary: '#b7c8e1',
+              'inverse-on-surface': '#313032',
+              surface: '#131315',
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px',
+            },
+            spacing: {
+              xs: '4px',
+              sm: '8px',
+              md: '16px',
+              lg: '24px',
+              'margin-mobile': '16px',
+              gutter: '16px',
+              xl: '32px',
+              'margin-desktop': '32px',
+            },
+            fontFamily: {
+              'headline-sm': ['Geist'],
+              'body-md': ['Geist'],
+              'label-caps': ['Geist'],
+              'display-kpi': ['Geist'],
+              'headline-lg': ['Geist'],
+              'body-sm': ['Geist'],
+              'table-mono': ['Geist'],
+            },
+            fontSize: {
+              'headline-sm': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+              'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+              'label-caps': [
+                '11px',
+                { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' },
+              ],
+              'display-kpi': [
+                '36px',
+                { lineHeight: '44px', letterSpacing: '-0.04em', fontWeight: '600' },
+              ],
+              'headline-lg': [
+                '24px',
+                { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '600' },
+              ],
+              'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'table-mono': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body class="bg-background text-on-surface font-body-md overflow-hidden">
+    <!-- SIDE NAV BAR -->
+    <aside
+      class="w-[240px] h-screen fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col gap-sm p-md z-50"
+    >
+      <div class="mb-lg">
+        <div class="font-headline-sm text-headline-sm font-bold text-on-surface">
+          Finance Command Center
+        </div>
+        <div class="font-body-sm text-body-sm text-on-surface-variant">FY 2024-25</div>
+      </div>
+      <nav class="flex-1 flex flex-col gap-xs">
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">groups</span>
+          <span>Clients</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">account_balance</span>
+          <span>Financial Accounts</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-primary bg-secondary-container rounded-lg font-bold font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Transactions</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">description</span>
+          <span>Statements</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">category</span>
+          <span>Categories</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">storefront</span>
+          <span>Merchants</span>
+        </a>
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">analytics</span>
+          <span>Analytics</span>
+        </a>
+      </nav>
+      <div class="mt-auto border-t border-outline-variant pt-md">
+        <a
+          class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined">settings</span>
+          <span>Settings</span>
+        </a>
+      </div>
+    </aside>
+    <!-- TOP BAR -->
+    <header
+      class="fixed top-0 right-0 left-[240px] h-14 bg-surface-dim border-b border-outline-variant flex justify-between items-center px-lg z-40"
+    >
+      <div class="flex items-center gap-xl">
+        <div class="relative w-64">
+          <span
+            class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-body-sm"
+            >search</span
+          >
+          <input
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-lg pr-sm py-xs text-body-sm focus:outline-none focus:border-primary-container transition-all"
+            placeholder="Search transactions..."
+            type="text"
+          />
+        </div>
+        <nav class="flex gap-lg">
+          <a
+            class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-opacity cursor-pointer"
+            href="#"
+            >Workspaces</a
+          >
+          <a
+            class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-opacity cursor-pointer"
+            href="#"
+            >Clients</a
+          >
+        </nav>
+      </div>
+      <div class="flex items-center gap-md">
+        <button
+          class="text-on-surface-variant hover:text-on-surface transition-opacity cursor-pointer"
+        >
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button
+          class="text-on-surface-variant hover:text-on-surface transition-opacity cursor-pointer"
+        >
+          <span class="material-symbols-outlined">help_outline</span>
+        </button>
+        <div
+          class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-outline-variant"
+        >
+          <img
+            class="w-full h-full object-cover"
+            data-alt="A professional headshot of a financial officer in a crisp dark suit, positioned against a minimalist, high-end fintech office background. The lighting is dramatic and cool-toned, reflecting a sophisticated dark-mode aesthetic. The individual has a confident yet neutral expression suitable for a high-stakes banking dashboard."
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBq3r4Za8YryKdqboX-W5AfWlk08khYGNw_U4j4O9EFaR_46VgWhsaRwybLg4Q7hwQvZJemhIaLm68VXLr3kHsGRgVow88fuXaB3ZFKn6kQicOF_W_X9py5uKMOYSZRVdxwfjExOjjGaMo-MOThQdHsfqV2WdlScRaofniM4a07rL2G0bhBsIrZc_skgiCvM-6LguGrY_WvyQiwFqk0rhNwfG0BtjqLsn1J5DVxR5KHG3iGGOnwrkLF"
+          />
+        </div>
+      </div>
+    </header>
+    <!-- MAIN CONTENT -->
+    <main class="ml-[240px] mt-14 p-lg h-[calc(100vh-56px)] flex flex-col gap-md">
+      <!-- HEADER & ACTIONS -->
+      <div class="flex justify-between items-end">
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-on-surface">Transaction Ledger</h1>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            Manage and audit institutional fiscal movements.
+          </p>
+        </div>
+        <div class="flex gap-sm">
+          <button
+            class="px-md py-sm bg-surface-container-high border border-outline-variant rounded-lg flex items-center gap-xs font-label-caps text-label-caps text-on-surface hover:bg-surface-bright transition-colors"
+          >
+            <span class="material-symbols-outlined text-[16px]">download</span>
+            CSV EXPORT
+          </button>
+          <button
+            class="px-md py-sm bg-primary-container text-on-primary-container rounded-lg flex items-center gap-xs font-label-caps text-label-caps font-bold hover:opacity-90 transition-opacity"
+          >
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            NEW TRANSACTION
+          </button>
+        </div>
+      </div>
+      <!-- GLOBAL FILTERS BAR -->
+      <div
+        class="p-sm bg-surface-container-low border border-outline-variant rounded-xl flex items-center gap-md"
+      >
+        <div
+          class="flex items-center gap-xs px-sm py-xs bg-surface-container-high rounded border border-outline-variant"
+        >
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant"
+            >calendar_today</span
+          >
+          <span class="text-body-sm font-medium">Date Range</span>
+          <span class="material-symbols-outlined text-[14px]">expand_more</span>
+        </div>
+        <div
+          class="flex items-center gap-xs px-sm py-xs bg-surface-container-high rounded border border-outline-variant"
+        >
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant"
+            >category</span
+          >
+          <span class="text-body-sm font-medium">Category</span>
+          <span class="material-symbols-outlined text-[14px]">expand_more</span>
+        </div>
+        <div
+          class="flex items-center gap-xs px-sm py-xs bg-surface-container-high rounded border border-outline-variant"
+        >
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant">person</span>
+          <span class="text-body-sm font-medium">Client</span>
+          <span class="material-symbols-outlined text-[14px]">expand_more</span>
+        </div>
+        <div
+          class="flex items-center gap-xs px-sm py-xs bg-surface-container-high rounded border border-outline-variant"
+        >
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant">rule</span>
+          <span class="text-body-sm font-medium">Status</span>
+          <span class="material-symbols-outlined text-[14px]">expand_more</span>
+        </div>
+        <div class="h-6 w-px bg-outline-variant mx-sm"></div>
+        <div class="flex gap-xs">
+          <button
+            class="px-sm py-xs text-primary font-label-caps text-label-caps hover:bg-primary/10 rounded"
+          >
+            APPLY FILTERS
+          </button>
+          <button
+            class="px-sm py-xs text-on-surface-variant font-label-caps text-label-caps hover:bg-surface-container-highest rounded"
+          >
+            CLEAR ALL
+          </button>
+        </div>
+      </div>
+      <!-- BULK ACTIONS & PAGINATION HEADER -->
+      <div class="flex justify-between items-center px-sm">
+        <div class="flex items-center gap-md">
+          <div class="flex items-center gap-xs">
+            <input
+              class="rounded border-outline bg-surface-container-low text-primary-container focus:ring-0 w-4 h-4"
+              type="checkbox"
+            />
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Select All</span>
+          </div>
+          <div class="h-4 w-px bg-outline-variant"></div>
+          <div class="flex gap-sm">
+            <button
+              class="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors font-body-sm text-body-sm"
+            >
+              <span class="material-symbols-outlined text-[18px]">check_circle</span> Approve
+            </button>
+            <button
+              class="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors font-body-sm text-body-sm"
+            >
+              <span class="material-symbols-outlined text-[18px]">cancel</span> Reject
+            </button>
+            <button
+              class="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors font-body-sm text-body-sm"
+            >
+              <span class="material-symbols-outlined text-[18px]">label</span> Categorize
+            </button>
+          </div>
+        </div>
+        <div class="text-body-sm font-table-mono text-on-surface-variant">
+          Showing <span class="text-on-surface font-bold">1 to 10</span> of 1,248 transactions
+        </div>
+      </div>
+      <!-- DATA TABLE -->
+      <div
+        class="flex-1 overflow-auto border border-outline-variant rounded-xl bg-surface-container-lowest"
+      >
+        <table class="w-full text-left border-collapse">
+          <thead class="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant">
+            <tr>
+              <th class="p-md w-12">
+                <input
+                  class="rounded border-outline bg-transparent text-primary-container w-4 h-4 focus:ring-0"
+                  type="checkbox"
+                />
+              </th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">DATE</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">MERCHANT</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">CATEGORY</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">CLIENT</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">
+                BANK / CARD
+              </th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">BIZ/PERS</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant text-right">
+                AMOUNT (₹)
+              </th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">STATUS</th>
+              <th class="p-md font-label-caps text-label-caps text-on-surface-variant">NOTES</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant">
+            <!-- ROW 1: AWS -->
+            <tr class="data-table-row group transition-colors">
+              <td class="p-md">
+                <input
+                  class="rounded border-outline bg-transparent text-primary-container w-4 h-4 focus:ring-0"
+                  type="checkbox"
+                />
+              </td>
+              <td class="p-md font-table-mono text-body-sm whitespace-nowrap">24 OCT 2024</td>
+              <td class="p-md">
+                <div class="flex items-center gap-sm">
+                  <div
+                    class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center p-1"
+                  >
+                    <img
+                      class="w-full h-full object-contain"
+                      data-alt="The Amazon Web Services AWS logo rendered in a minimalist, monochrome aesthetic. High-contrast white glyph on a deep charcoal background, styled for a premium dark-mode financial interface. Clean lines and professional tech branding."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf-OSj-djCKoNAxZNNGHdWVKKFuRZaOiXkM--6CeLgel5EAHsyE7opSwPx7ru3OY_CIvbOuF9MYRdCHm0e8TSnH1zIgcwHoRDwyZ07BIKQ-fEKdEnrAmrepoLpoD1TNeEmIVTZh86bg6eew2p45U6pZFy-rY5QJrtNcIQwjqW8W9pPhD1-vVs2vc7Gz3II3v5BGUT7oRxMCeo_EDXAaEoLC9_igqjdrNHjFRxm-wY1dfSlXgsIEieQ"
+                    />
+                  </div>
+                  <span class="font-body-sm font-semibold">Amazon Web Services</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-32 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Cloud Infrastructure</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-28 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Acme Corp</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div class="flex flex-col">
+                  <span class="text-body-sm font-medium">HDFC Bank</span>
+                  <span class="text-[11px] text-on-surface-variant font-table-mono"
+                    >VISA •••• 4292</span
+                  >
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="w-12 h-6 bg-surface-container-highest rounded-full p-0.5 relative cursor-pointer border border-outline-variant"
+                >
+                  <div
+                    class="w-5 h-5 bg-primary-container rounded-full shadow-sm translate-x-0 transition-transform flex items-center justify-center"
+                  >
+                    <span class="text-[10px] text-on-primary-container font-bold">B</span>
+                  </div>
+                </div>
+              </td>
+              <td class="p-md text-right font-table-mono text-body-sm font-bold">14,299.00</td>
+              <td class="p-md">
+                <span
+                  class="px-sm py-xs bg-emerald-500/10 text-emerald-400 font-label-caps text-[10px] rounded border border-emerald-500/20"
+                  >PROCESSED</span
+                >
+              </td>
+              <td class="p-md">
+                <span
+                  class="text-body-sm text-on-surface-variant italic truncate max-w-[120px] inline-block"
+                  >Monthly server scaling...</span
+                >
+              </td>
+            </tr>
+            <!-- ROW 2: Blue Tokai -->
+            <tr class="data-table-row group transition-colors">
+              <td class="p-md">
+                <input
+                  class="rounded border-outline bg-transparent text-primary-container w-4 h-4 focus:ring-0"
+                  type="checkbox"
+                />
+              </td>
+              <td class="p-md font-table-mono text-body-sm whitespace-nowrap">23 OCT 2024</td>
+              <td class="p-md">
+                <div class="flex items-center gap-sm">
+                  <div
+                    class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center p-1"
+                  >
+                    <img
+                      class="w-full h-full object-contain"
+                      data-alt="A minimalist interpretation of the Blue Tokai Coffee Roasters logo. A sleek, stylized blue bird icon on a dark surface, captured in a modern vector style suitable for a corporate expense management dashboard."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUAh-w5GDDpAaEXTW940Mr5G7X7HB9kybEd8t5d3US_4HOk9FBO3SEZylpSy-xwB_c8foumtAgOnv0HL7rcPajE5-8J8POtJ-5574_66b36Vlbh0A0qYj2QgGZj5rLTL06NJi8MrGo4klb2HdoH-NQ-M1zy_zSiDtuianRl6N4K-nIcld3iRLlsrBDDYIaj-bVAqZ_ydPUS8cBkTmYlqOC9CpYIbwbtNDIeL3m65QLUcdVAZ5eaqUa"
+                    />
+                  </div>
+                  <span class="font-body-sm font-semibold">Blue Tokai Coffee</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-32 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Meals &amp; Ent.</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-28 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Internal</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div class="flex flex-col">
+                  <span class="text-body-sm font-medium">ICICI Bank</span>
+                  <span class="text-[11px] text-on-surface-variant font-table-mono"
+                    >AMEX •••• 1005</span
+                  >
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="w-12 h-6 bg-surface-container-highest rounded-full p-0.5 relative cursor-pointer border border-outline-variant"
+                >
+                  <div
+                    class="w-5 h-5 bg-surface-variant border border-outline-variant rounded-full shadow-sm translate-x-6 transition-transform flex items-center justify-center"
+                  >
+                    <span class="text-[10px] text-on-surface-variant font-bold">P</span>
+                  </div>
+                </div>
+              </td>
+              <td class="p-md text-right font-table-mono text-body-sm font-bold">450.00</td>
+              <td class="p-md">
+                <span
+                  class="px-sm py-xs bg-emerald-500/10 text-emerald-400 font-label-caps text-[10px] rounded border border-emerald-500/20"
+                  >PROCESSED</span
+                >
+              </td>
+              <td class="p-md">
+                <span
+                  class="text-body-sm text-on-surface-variant italic truncate max-w-[120px] inline-block"
+                  >Team meeting coffee</span
+                >
+              </td>
+            </tr>
+            <!-- ROW 3: Uber -->
+            <tr class="data-table-row group transition-colors">
+              <td class="p-md">
+                <input
+                  class="rounded border-outline bg-transparent text-primary-container w-4 h-4 focus:ring-0"
+                  type="checkbox"
+                />
+              </td>
+              <td class="p-md font-table-mono text-body-sm whitespace-nowrap">22 OCT 2024</td>
+              <td class="p-md">
+                <div class="flex items-center gap-sm">
+                  <div
+                    class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center p-1"
+                  >
+                    <img
+                      class="w-full h-full object-contain"
+                      data-alt="Uber corporate logo, simple wordmark in white against a deep black background. High-fidelity rendering focused on clean lines and modern tech aesthetic, presented as a square icon for a digital fintech ledger."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkM8SZFW4DtU-S95QM2bUoWwRqTDUUw0xW1S4nfbJ6rHF4m3lfez7y5cAwU_qS_UtKotOZkMxK7o-DMonxMvUWWSbRe03QK9aXL5Dxy3gblUE62KhiXsVgJkqopGqauK2lHv2uhk3j9cO-5-x6uMic4qQbzIyKc2_8fECfXEdDDKkKp3vEgUYawwfOnNsj76HotMsEujlArrRXFheuGtjGNmBqJCNuysr9KLsp6fHBhHIUx5Ezjiyq"
+                    />
+                  </div>
+                  <span class="font-body-sm font-semibold">Uber India</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-32 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Travel</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-28 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Stellar Ltd</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div class="flex flex-col">
+                  <span class="text-body-sm font-medium">Axis Bank</span>
+                  <span class="text-[11px] text-on-surface-variant font-table-mono"
+                    >VISA •••• 8812</span
+                  >
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="w-12 h-6 bg-surface-container-highest rounded-full p-0.5 relative cursor-pointer border border-outline-variant"
+                >
+                  <div
+                    class="w-5 h-5 bg-primary-container rounded-full shadow-sm translate-x-0 transition-transform flex items-center justify-center"
+                  >
+                    <span class="text-[10px] text-on-primary-container font-bold">B</span>
+                  </div>
+                </div>
+              </td>
+              <td class="p-md text-right font-table-mono text-body-sm font-bold">842.00</td>
+              <td class="p-md">
+                <span
+                  class="px-sm py-xs bg-emerald-500/10 text-emerald-400 font-label-caps text-[10px] rounded border border-emerald-500/20"
+                  >PROCESSED</span
+                >
+              </td>
+              <td class="p-md">
+                <span
+                  class="text-body-sm text-on-surface-variant italic truncate max-w-[120px] inline-block"
+                  >Airport commute</span
+                >
+              </td>
+            </tr>
+            <!-- ROW 4: DigitalOcean -->
+            <tr class="data-table-row group transition-colors">
+              <td class="p-md">
+                <input
+                  class="rounded border-outline bg-transparent text-primary-container w-4 h-4 focus:ring-0"
+                  type="checkbox"
+                />
+              </td>
+              <td class="p-md font-table-mono text-body-sm whitespace-nowrap">22 OCT 2024</td>
+              <td class="p-md">
+                <div class="flex items-center gap-sm">
+                  <div
+                    class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center p-1"
+                  >
+                    <img
+                      class="w-full h-full object-contain"
+                      data-alt="DigitalOcean logo featuring the iconic blue shark fin icon on a minimalist white and blue background. This representation is refined for a professional dark-themed business banking environment, focusing on tech precision and reliability."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkEBm3FGLnn9Eiv3ah5AgktpWhmra6FwWjPPbqYhguGIUFRDafCBk4AwL65mj9GRAU0XIUzK1DtJdCe4BeTpQjfqwvnd3YTryzb9ORM6GJ7BRSdNBsjYq0lp449qEPkhOplhOEaShNfVexcqv5apX50zVOXyzkJZd1wJqQAmgvYGAF8lZPrjsvHIXUY0dBi1uxqLQSFDE2-dEr4cy64IefGeEJu7iJLsc7faCfiXuxE1NSPHemiazV"
+                    />
+                  </div>
+                  <span class="font-body-sm font-semibold">DigitalOcean</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-32 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Cloud Infrastructure</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="px-xs py-0.5 border border-outline-variant rounded flex items-center justify-between w-28 cursor-pointer bg-surface-container-low"
+                >
+                  <span class="text-body-sm truncate">Vortex AI</span>
+                  <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                </div>
+              </td>
+              <td class="p-md">
+                <div class="flex flex-col">
+                  <span class="text-body-sm font-medium">HDFC Bank</span>
+                  <span class="text-[11px] text-on-surface-variant font-table-mono"
+                    >VISA •••• 4292</span
+                  >
+                </div>
+              </td>
+              <td class="p-md">
+                <div
+                  class="w-12 h-6 bg-surface-container-highest rounded-full p-0.5 relative cursor-pointer border border-outline-variant"
+                >
+                  <div
+                    class="w-5 h-5 bg-primary-container rounded-full shadow-sm translate-x-0 transition-transform flex items-center justify-center"
+                  >
+                    <span class="text-[10px] text-on-primary-container font-bold">B</span>
+                  </div>
+                </div>
+              </td>
+              <td class="p-md text-right font-table-mono text-body-sm font-bold">2,100.00</td>
+              <td class="p-md">
+                <span
+                  class="px-sm py-xs bg-emerald-500/10 text-emerald-400 font-label-caps text-[10px] rounded border border-emerald-500/20"
+                  >PROCESSED</span
+                >
+              </td>
+              <td class="p-md">
+                <span
+                  class="text-body-sm text-on-surface-variant italic truncate max-w-[120px] inline-block"
+                  >Database backup nodes</span
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- PAGINATION CONTROLS -->
+      <div
+        class="flex justify-between items-center bg-surface-container-low p-sm rounded-lg border border-outline-variant"
+      >
+        <div class="flex items-center gap-sm">
+          <span class="text-body-sm text-on-surface-variant">Rows per page:</span>
+          <select
+            class="bg-surface-container-high border-outline-variant rounded text-body-sm py-xs focus:ring-0"
+          >
+            <option>10</option>
+            <option>25</option>
+            <option>50</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-md">
+          <button
+            class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-highest transition-colors disabled:opacity-30"
+            disabled=""
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <div class="flex gap-xs">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded bg-primary-container text-on-primary-container font-bold text-body-sm"
+            >
+              1
+            </button>
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-highest text-body-sm"
+            >
+              2
+            </button>
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-highest text-body-sm"
+            >
+              3
+            </button>
+            <span class="px-xs flex items-center">...</span>
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-highest text-body-sm"
+            >
+              125
+            </button>
+          </div>
+          <button
+            class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-highest transition-colors"
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </main>
+    <!-- FLOATING ACTION BUTTON (CONTEXTUAL) -->
+    <button
+      class="fixed bottom-lg right-lg w-14 h-14 bg-primary-container text-on-primary-container rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform z-50"
+    >
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">bolt</span>
+    </button>
+    <script>
+      // Micro-interactions for toggles and selection
+      document.querySelectorAll('.data-table-row').forEach((row) => {
+        row.addEventListener('click', (e) => {
+          if (e.target.type !== 'checkbox') {
+            // Selection logic could go here
+          }
+        })
+      })
+
+      // Toggle Biz/Pers mock functionality
+      document.querySelectorAll('.w-12.h-6').forEach((toggle) => {
+        toggle.addEventListener('click', function () {
+          const dot = this.querySelector('div')
+          const label = dot.querySelector('span')
+          if (dot.classList.contains('translate-x-0')) {
+            dot.classList.remove('translate-x-0', 'bg-primary-container')
+            dot.classList.add(
+              'translate-x-6',
+              'bg-surface-variant',
+              'border',
+              'border-outline-variant',
+            )
+            label.textContent = 'P'
+            label.classList.remove('text-on-primary-container')
+            label.classList.add('text-on-surface-variant')
+          } else {
+            dot.classList.add('translate-x-0', 'bg-primary-container')
+            dot.classList.remove(
+              'translate-x-6',
+              'bg-surface-variant',
+              'border',
+              'border-outline-variant',
+            )
+            label.textContent = 'B'
+            label.classList.add('text-on-primary-container')
+            label.classList.remove('text-on-surface-variant')
+          }
+        })
+      })
+    </script>
+  </body>
+</html>

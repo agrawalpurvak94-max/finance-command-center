@@ -1,0 +1,1086 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Finance Command Center | Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Geist', sans-serif;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+      }
+      /* Custom scrollbar for high-density UI */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #434655;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #8d90a0;
+      }
+
+      .chart-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .heatmap-cell {
+        transition: all 0.2s ease;
+      }
+      .heatmap-cell:hover {
+        transform: scale(1.1);
+        z-index: 10;
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'secondary-fixed': '#d3e4fe',
+              'on-tertiary-container': '#ffede6',
+              'on-secondary': '#213145',
+              'secondary-container': '#3a4a5f',
+              'on-tertiary-fixed': '#360f00',
+              'on-secondary-container': '#a9bad3',
+              'inverse-surface': '#e5e1e4',
+              'error-container': '#93000a',
+              'primary-container': '#2563eb',
+              'on-tertiary': '#581e00',
+              'on-primary-container': '#eeefff',
+              'surface-dim': '#131315',
+              'tertiary-container': '#bc4800',
+              'surface-container-lowest': '#0e0e10',
+              'surface-container': '#201f22',
+              'inverse-primary': '#0053db',
+              primary: '#b4c5ff',
+              tertiary: '#ffb596',
+              'surface-container-high': '#2a2a2c',
+              'surface-bright': '#39393b',
+              'outline-variant': '#434655',
+              'on-error-container': '#ffdad6',
+              error: '#ffb4ab',
+              outline: '#8d90a0',
+              'on-primary-fixed': '#00174b',
+              'secondary-fixed-dim': '#b7c8e1',
+              'on-primary': '#002a78',
+              'on-secondary-fixed': '#0b1c30',
+              'on-tertiary-fixed-variant': '#7d2d00',
+              'on-surface-variant': '#c3c6d7',
+              background: '#131315',
+              'surface-container-highest': '#353437',
+              'primary-fixed-dim': '#b4c5ff',
+              'surface-tint': '#b4c5ff',
+              'primary-fixed': '#dbe1ff',
+              'on-secondary-fixed-variant': '#38485d',
+              'tertiary-fixed-dim': '#ffb596',
+              'surface-variant': '#353437',
+              'surface-container-low': '#1c1b1d',
+              'on-surface': '#e5e1e4',
+              'on-primary-fixed-variant': '#003ea8',
+              'on-background': '#e5e1e4',
+              'tertiary-fixed': '#ffdbcd',
+              'on-error': '#690005',
+              secondary: '#b7c8e1',
+              'inverse-on-surface': '#313032',
+              surface: '#131315',
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px',
+            },
+            spacing: {
+              xs: '4px',
+              sm: '8px',
+              md: '16px',
+              lg: '24px',
+              'margin-mobile': '16px',
+              gutter: '16px',
+              xl: '32px',
+              'margin-desktop': '32px',
+            },
+            fontFamily: {
+              'headline-sm': ['Geist'],
+              'body-md': ['Geist'],
+              'label-caps': ['Geist'],
+              'display-kpi': ['Geist'],
+              'headline-lg': ['Geist'],
+              'body-sm': ['Geist'],
+              'table-mono': ['Geist'],
+            },
+            fontSize: {
+              'headline-sm': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+              'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+              'label-caps': [
+                '11px',
+                { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' },
+              ],
+              'display-kpi': [
+                '36px',
+                { lineHeight: '44px', letterSpacing: '-0.04em', fontWeight: '600' },
+              ],
+              'headline-lg': [
+                '24px',
+                { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '600' },
+              ],
+              'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'table-mono': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body class="bg-background text-on-surface">
+    <!-- Sidebar Navigation -->
+    <aside
+      class="w-[240px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface-container-lowest flex flex-col gap-sm p-md z-50"
+    >
+      <div class="flex items-center gap-sm mb-lg px-xs">
+        <span
+          class="material-symbols-outlined text-primary"
+          style="font-variation-settings: 'FILL' 1"
+          >account_balance</span
+        >
+        <div class="flex flex-col">
+          <h1 class="font-headline-sm text-headline-sm font-bold text-on-surface leading-none">
+            Finance Command
+          </h1>
+          <span class="text-[10px] text-outline font-label-caps uppercase tracking-widest mt-1"
+            >FY 2024-25</span
+          >
+        </div>
+      </div>
+      <nav class="flex-1 space-y-1">
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-primary bg-secondary-container rounded-lg font-bold transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+          <span class="font-body-md text-body-md">Dashboard</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="groups">groups</span>
+          <span class="font-body-md text-body-md">Clients</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+          <span class="font-body-md text-body-md">Financial Accounts</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+          <span class="font-body-md text-body-md">Transactions</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="description">description</span>
+          <span class="font-body-md text-body-md">Statements</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="category">category</span>
+          <span class="font-body-md text-body-md">Categories</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+          <span class="font-body-md text-body-md">Merchant Center</span>
+        </a>
+        <a
+          class="flex items-center gap-sm px-sm py-2 text-primary font-bold transition-all duration-200"
+          href="#"
+        >
+          <span
+            class="material-symbols-outlined"
+            data-icon="analytics"
+            style="font-variation-settings: 'FILL' 1"
+            >analytics</span
+          >
+          <span class="font-body-md text-body-md">Analytics</span>
+        </a>
+      </nav>
+    </aside>
+    <!-- Top Navigation Bar -->
+    <header
+      class="fixed top-0 right-0 left-[240px] h-14 border-b border-outline-variant bg-surface-dim z-40 flex justify-between items-center px-lg"
+    >
+      <div class="flex items-center gap-lg">
+        <div class="relative w-96">
+          <span
+            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg"
+            >search</span
+          >
+          <input
+            class="w-full bg-surface-container-low border border-outline-variant rounded-full py-1.5 pl-10 pr-4 text-body-sm font-body-sm focus:outline-none focus:border-primary-container"
+            placeholder="Search analytics, merchants, or clients..."
+            type="text"
+          />
+        </div>
+        <div class="flex gap-md">
+          <span
+            class="font-body-sm text-body-sm text-primary border-b-2 border-primary pb-1 cursor-pointer"
+            >Global View</span
+          >
+          <span
+            class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-opacity duration-150"
+            >Workspaces</span
+          >
+          <span
+            class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-opacity duration-150"
+            >Clients</span
+          >
+        </div>
+      </div>
+      <div class="flex items-center gap-md">
+        <div
+          class="flex items-center gap-xs bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant"
+        >
+          <span class="text-[11px] font-label-caps text-on-surface-variant uppercase">Period:</span>
+          <span class="text-[11px] font-label-caps text-primary font-bold">FY 2024-25</span>
+          <span class="material-symbols-outlined text-[14px]">expand_more</span>
+        </div>
+        <span
+          class="material-symbols-outlined text-on-surface-variant hover:text-on-surface cursor-pointer"
+          >notifications</span
+        >
+        <span
+          class="material-symbols-outlined text-on-surface-variant hover:text-on-surface cursor-pointer"
+          >help_outline</span
+        >
+        <img
+          class="w-8 h-8 rounded-full border border-outline-variant"
+          data-alt="A professional headshot of a high-ranking financial officer, mid-40s, looking confidently at the camera. The setting is a blurred, high-tech command center with glowing blue screens and financial data in the background. The lighting is dramatic, high-contrast, emphasizing a serious and authoritative atmosphere consistent with a global fintech platform."
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDy1F8GonMBKJgr8EY4VK-NxtbeLvg5BBxvjcNJwPFG7TdHb7VMovsQt_50beoH3A1MMqjQ3-I3U1f1hms3dPbC27rVuomGQNTTsK7XcrfwQn5PYyl08AkXmlOvxV1ZTa3U6xgqNKbXzO5eRTcjM-06O72521Qj0_4ieXMxwOykIQ64eZ6mf22-EmE4oTXK37grcZKiIt9Larf1ZBSehaOTBlJaWvYGjs4sD1SuXP_vmZcj3hrKVvL"
+        />
+      </div>
+    </header>
+    <!-- Main Content -->
+    <main class="ml-[240px] mt-14 p-lg min-h-screen bg-surface-container-lowest">
+      <!-- Dashboard Header -->
+      <div class="flex justify-between items-end mb-lg">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-on-surface">Analytics Dashboard</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">
+            Comprehensive financial performance overview for the current fiscal cycle.
+          </p>
+        </div>
+        <div class="flex gap-sm">
+          <button
+            class="bg-surface-container-high text-on-surface px-md py-sm rounded-lg border border-outline-variant flex items-center gap-xs font-body-sm text-body-sm hover:bg-surface-bright transition-colors"
+          >
+            <span class="material-symbols-outlined text-lg">download</span> Export PDF
+          </button>
+          <button
+            class="bg-primary-container text-on-primary-container px-md py-sm rounded-lg flex items-center gap-xs font-body-sm text-body-sm hover:opacity-90 transition-opacity"
+          >
+            <span class="material-symbols-outlined text-lg">share</span> Share Report
+          </button>
+        </div>
+      </div>
+      <!-- Bento Grid Dashboard -->
+      <div class="grid grid-cols-12 gap-gutter">
+        <!-- KPI Cards -->
+        <div
+          class="col-span-12 md:col-span-3 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-start mb-xs">
+            <span class="font-label-caps text-label-caps text-outline uppercase">Total Spend</span>
+            <span class="material-symbols-outlined text-primary text-lg">payments</span>
+          </div>
+          <div class="font-display-kpi text-display-kpi text-on-surface">₹ 4.28 Cr</div>
+          <div class="flex items-center gap-xs mt-sm">
+            <span class="text-emerald-400 font-body-sm text-body-sm flex items-center">
+              <span class="material-symbols-outlined text-sm">arrow_upward</span> 12.4%
+            </span>
+            <span class="text-outline font-body-sm text-body-sm">vs Last FY</span>
+          </div>
+        </div>
+        <div
+          class="col-span-12 md:col-span-3 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-start mb-xs">
+            <span class="font-label-caps text-label-caps text-outline uppercase"
+              >Pending Reviews</span
+            >
+            <span class="material-symbols-outlined text-tertiary text-lg">assignment_late</span>
+          </div>
+          <div class="font-display-kpi text-display-kpi text-on-surface">142</div>
+          <div class="flex items-center gap-xs mt-sm">
+            <span class="text-error font-body-sm text-body-sm flex items-center">
+              <span class="material-symbols-outlined text-sm">priority_high</span> Critical
+            </span>
+            <span class="text-outline font-body-sm text-body-sm">Requires attention</span>
+          </div>
+        </div>
+        <div
+          class="col-span-12 md:col-span-3 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-start mb-xs">
+            <span class="font-label-caps text-label-caps text-outline uppercase"
+              >Avg. Monthly Run</span
+            >
+            <span class="material-symbols-outlined text-secondary text-lg">trending_up</span>
+          </div>
+          <div class="font-display-kpi text-display-kpi text-on-surface">₹ 35.6 L</div>
+          <div class="flex items-center gap-xs mt-sm">
+            <span class="text-primary font-body-sm text-body-sm flex items-center"> Stable </span>
+            <span class="text-outline font-body-sm text-body-sm">Within budget (₹ 40L)</span>
+          </div>
+        </div>
+        <div
+          class="col-span-12 md:col-span-3 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-start mb-xs">
+            <span class="font-label-caps text-label-caps text-outline uppercase">Audit Score</span>
+            <span class="material-symbols-outlined text-emerald-400 text-lg">verified</span>
+          </div>
+          <div class="font-display-kpi text-display-kpi text-on-surface">
+            98.2<span class="text-lg ml-xs">%</span>
+          </div>
+          <div class="flex items-center gap-xs mt-sm">
+            <span class="text-emerald-400 font-body-sm text-body-sm flex items-center">
+              Excellent
+            </span>
+            <span class="text-outline font-body-sm text-body-sm">+0.4% from last month</span>
+          </div>
+        </div>
+        <!-- Monthly Spend Trend (Line Chart Area) -->
+        <div
+          class="col-span-12 md:col-span-8 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-center mb-md">
+            <h3 class="font-headline-sm text-headline-sm">Monthly Spend Trend</h3>
+            <div class="flex gap-sm">
+              <div class="flex items-center gap-xs">
+                <div class="w-3 h-3 rounded-full bg-primary"></div>
+                <span class="text-[11px] font-label-caps text-outline">FY 2024-25</span>
+              </div>
+              <div class="flex items-center gap-xs">
+                <div class="w-3 h-3 rounded-full bg-outline-variant"></div>
+                <span class="text-[11px] font-label-caps text-outline">TARGET</span>
+              </div>
+            </div>
+          </div>
+          <div class="h-[280px] w-full flex items-end gap-xs relative">
+            <!-- Chart Simulation -->
+            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+              <div class="border-t border-outline-variant w-full h-px opacity-20"></div>
+              <div class="border-t border-outline-variant w-full h-px opacity-20"></div>
+              <div class="border-t border-outline-variant w-full h-px opacity-20"></div>
+              <div class="border-t border-outline-variant w-full h-px opacity-20"></div>
+              <div class="border-t border-outline-variant w-full h-px opacity-20"></div>
+            </div>
+            <!-- Bars/Lines simulation -->
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[40%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">APR</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[55%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">MAY</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[48%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">JUN</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[70%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">JUL</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[62%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">AUG</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[85%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">SEP</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[78%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">OCT</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div
+                class="w-full bg-primary h-[92%] rounded-t-sm hover:bg-primary-container transition-all"
+              ></div>
+              <span class="text-[10px] text-center mt-2 text-outline">NOV</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group">
+              <div class="w-full bg-primary-container h-[95%] rounded-t-sm animate-pulse"></div>
+              <span class="text-[10px] text-center mt-2 text-primary font-bold">DEC</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group opacity-30">
+              <div class="w-full bg-outline-variant h-[30%] rounded-t-sm"></div>
+              <span class="text-[10px] text-center mt-2 text-outline">JAN</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group opacity-30">
+              <div class="w-full bg-outline-variant h-[30%] rounded-t-sm"></div>
+              <span class="text-[10px] text-center mt-2 text-outline">FEB</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-end group opacity-30">
+              <div class="w-full bg-outline-variant h-[30%] rounded-t-sm"></div>
+              <span class="text-[10px] text-center mt-2 text-outline">MAR</span>
+            </div>
+          </div>
+        </div>
+        <!-- Category Spend Distribution (Donut) -->
+        <div
+          class="col-span-12 md:col-span-4 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <h3 class="font-headline-sm text-headline-sm mb-lg">Category Distribution</h3>
+          <div class="relative w-48 h-48 mx-auto flex items-center justify-center">
+            <!-- SVG Donut -->
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <circle
+                cx="18"
+                cy="18"
+                fill="transparent"
+                r="15.915"
+                stroke="#2a2a2c"
+                stroke-width="3"
+              ></circle>
+              <circle
+                cx="18"
+                cy="18"
+                fill="transparent"
+                r="15.915"
+                stroke="#b4c5ff"
+                stroke-dasharray="45 55"
+                stroke-dashoffset="0"
+                stroke-width="3"
+              ></circle>
+              <circle
+                cx="18"
+                cy="18"
+                fill="transparent"
+                r="15.915"
+                stroke="#bc4800"
+                stroke-dasharray="25 75"
+                stroke-dashoffset="-45"
+                stroke-width="3"
+              ></circle>
+              <circle
+                cx="18"
+                cy="18"
+                fill="transparent"
+                r="15.915"
+                stroke="#d3e4fe"
+                stroke-dasharray="15 85"
+                stroke-dashoffset="-70"
+                stroke-width="3"
+              ></circle>
+              <circle
+                cx="18"
+                cy="18"
+                fill="transparent"
+                r="15.915"
+                stroke="#353437"
+                stroke-dasharray="15 85"
+                stroke-dashoffset="-85"
+                stroke-width="3"
+              ></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-headline-sm font-bold">Total</span>
+              <span class="text-[10px] font-label-caps text-outline uppercase">Breakdown</span>
+            </div>
+          </div>
+          <div class="mt-lg space-y-2">
+            <div class="flex justify-between items-center text-body-sm font-body-sm">
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-primary"></div>
+                Operations
+              </div>
+              <span class="">45%</span>
+            </div>
+            <div class="flex justify-between items-center text-body-sm font-body-sm">
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-tertiary"></div>
+                Marketing
+              </div>
+              <span class="">25%</span>
+            </div>
+            <div class="flex justify-between items-center text-body-sm font-body-sm">
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-secondary-fixed"></div>
+                R&amp;D
+              </div>
+              <span class="">15%</span>
+            </div>
+            <div class="flex justify-between items-center text-body-sm font-body-sm">
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-surface-container-highest"></div>
+                Others
+              </div>
+              <span class="">15%</span>
+            </div>
+          </div>
+        </div>
+        <!-- Top 10 Merchants (Horizontal Bar) -->
+        <div
+          class="col-span-12 md:col-span-4 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <h3 class="font-headline-sm text-headline-sm mb-md">Top 10 Merchants</h3>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Amazon Web Services</span>
+                <span class="font-table-mono">₹ 14.2 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[90%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Google Cloud India</span>
+                <span class="font-table-mono">₹ 9.8 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[65%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Razorpay Solutions</span>
+                <span class="font-table-mono">₹ 7.1 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[48%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Slack Technologies</span>
+                <span class="font-table-mono">₹ 5.4 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[35%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Adobe Creative Cloud</span>
+                <span class="font-table-mono">₹ 4.8 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[32%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1 opacity-60">
+              <div class="flex justify-between text-body-sm font-body-sm mb-1">
+                <span class="">Microsoft Azure</span>
+                <span class="font-table-mono">₹ 3.9 L</span>
+              </div>
+              <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                <div class="bg-primary h-full w-[26%]"></div>
+              </div>
+            </div>
+          </div>
+          <button class="w-full mt-lg text-body-sm text-primary hover:underline text-center">
+            View Full Merchant List
+          </button>
+        </div>
+        <!-- Client Allocation -->
+        <div
+          class="col-span-12 md:col-span-4 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <h3 class="font-headline-sm text-headline-sm mb-md">Client Allocation</h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-md">
+              <div
+                class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0"
+              >
+                <span class="material-symbols-outlined text-outline">apartment</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-body-sm font-body-sm">
+                  <span class="">Global Retail Corp</span>
+                  <span class="font-table-mono">32%</span>
+                </div>
+                <div class="flex gap-1 mt-1">
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-md">
+              <div
+                class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0"
+              >
+                <span class="material-symbols-outlined text-outline">health_and_safety</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-body-sm font-body-sm">
+                  <span class="">PharmaSync Ltd</span>
+                  <span class="font-table-mono">24%</span>
+                </div>
+                <div class="flex gap-1 mt-1">
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-md">
+              <div
+                class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0"
+              >
+                <span class="material-symbols-outlined text-outline">precision_manufacturing</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-body-sm font-body-sm">
+                  <span class="">AutoTech Ventures</span>
+                  <span class="font-table-mono">18%</span>
+                </div>
+                <div class="flex gap-1 mt-1">
+                  <div class="h-1.5 flex-1 bg-secondary rounded-full"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                  <div class="h-1.5 flex-1 bg-outline-variant rounded-full opacity-20"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- AI Processing Outcomes -->
+        <div
+          class="col-span-12 md:col-span-4 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <h3 class="font-headline-sm text-headline-sm mb-lg">AI Processing Health</h3>
+          <div class="flex items-center justify-around">
+            <div class="relative w-32 h-32">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  fill="transparent"
+                  r="15.915"
+                  stroke="#10b981"
+                  stroke-dasharray="70 30"
+                  stroke-dashoffset="0"
+                  stroke-width="4"
+                ></circle>
+                <circle
+                  cx="18"
+                  cy="18"
+                  fill="transparent"
+                  r="15.915"
+                  stroke="#f59e0b"
+                  stroke-dasharray="15 85"
+                  stroke-dashoffset="-70"
+                  stroke-width="4"
+                ></circle>
+                <circle
+                  cx="18"
+                  cy="18"
+                  fill="transparent"
+                  r="15.915"
+                  stroke="#6366f1"
+                  stroke-dasharray="10 90"
+                  stroke-dashoffset="-85"
+                  stroke-width="4"
+                ></circle>
+                <circle
+                  cx="18"
+                  cy="18"
+                  fill="transparent"
+                  r="15.915"
+                  stroke="#ef4444"
+                  stroke-dasharray="5 95"
+                  stroke-dashoffset="-95"
+                  stroke-width="4"
+                ></circle>
+              </svg>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-xs text-[12px] font-body-sm">
+                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                70% Rules Applied
+              </div>
+              <div class="flex items-center gap-xs text-[12px] font-body-sm">
+                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                15% Needs Review
+              </div>
+              <div class="flex items-center gap-xs text-[12px] font-body-sm">
+                <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                10% Manual
+              </div>
+              <div class="flex items-center gap-xs text-[12px] font-body-sm">
+                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                5% Failed
+              </div>
+            </div>
+          </div>
+          <div class="mt-lg p-sm bg-surface-container-low rounded-lg border border-outline-variant">
+            <div class="flex items-center gap-xs">
+              <span class="material-symbols-outlined text-primary text-sm">psychology</span>
+              <span class="text-[11px] font-label-caps text-outline uppercase tracking-wider"
+                >AI Insight</span
+              >
+            </div>
+            <p class="text-[12px] font-body-sm mt-1">
+              Classification accuracy improved by 4.2% since November update.
+            </p>
+          </div>
+        </div>
+        <!-- Transaction Volume Heatmap (Calendar) -->
+        <div
+          class="col-span-12 md:col-span-8 bg-surface-container p-md rounded-xl border border-outline-variant"
+        >
+          <div class="flex justify-between items-center mb-md">
+            <h3 class="font-headline-sm text-headline-sm">Activity Intensity (Last 90 Days)</h3>
+            <div class="flex items-center gap-xs">
+              <span class="text-[10px] text-outline">Less</span>
+              <div class="flex gap-[2px]">
+                <div class="w-2.5 h-2.5 rounded-sm bg-surface-container-high"></div>
+                <div class="w-2.5 h-2.5 rounded-sm bg-primary/30"></div>
+                <div class="w-2.5 h-2.5 rounded-sm bg-primary/60"></div>
+                <div class="w-2.5 h-2.5 rounded-sm bg-primary"></div>
+              </div>
+              <span class="text-[10px] text-outline">More</span>
+            </div>
+          </div>
+          <!-- Heatmap Grid -->
+          <div class="grid grid-cols-13 gap-1 h-[140px]">
+            <!-- Simulated weeks -->
+            <script>
+              const heatmap = document.currentScript.parentElement
+              const levels = [
+                'bg-surface-container-high',
+                'bg-primary/20',
+                'bg-primary/40',
+                'bg-primary/60',
+                'bg-primary/80',
+                'bg-primary',
+              ]
+              for (let i = 0; i < 91; i++) {
+                const level = levels[Math.floor(Math.random() * levels.length)]
+                const cell = document.createElement('div')
+                cell.className = `w-full h-full rounded-[2px] ${level} heatmap-cell cursor-help`
+                heatmap.appendChild(cell)
+              }
+            </script>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div
+              class="w-full h-full rounded-[2px] bg-surface-container-high heatmap-cell cursor-help"
+            ></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/60 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/80 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/40 heatmap-cell cursor-help"></div>
+            <div class="w-full h-full rounded-[2px] bg-primary/20 heatmap-cell cursor-help"></div>
+          </div>
+          <div class="flex justify-between mt-sm text-[10px] text-outline font-label-caps">
+            <span class="">SEPTEMBER</span>
+            <span class="">OCTOBER</span>
+            <span class="">NOVEMBER</span>
+          </div>
+        </div>
+        <!-- YoY Comparison & Insights -->
+        <div
+          class="col-span-12 md:col-span-4 bg-surface-container p-md rounded-xl border border-outline-variant flex flex-col"
+        >
+          <h3 class="font-headline-sm text-headline-sm mb-md">Top Insights</h3>
+          <div class="space-y-md flex-1">
+            <div
+              class="p-sm bg-secondary-container/20 border border-secondary-container/40 rounded-lg"
+            >
+              <div class="flex items-center gap-sm mb-xs">
+                <span class="material-symbols-outlined text-secondary text-lg">bolt</span>
+                <span class="text-body-sm font-bold text-on-surface">Budget Alert</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant">
+                AWS costs are projected to exceed FY25 budget by 12% if current scaling continues.
+              </p>
+            </div>
+            <div
+              class="p-sm bg-tertiary-container/10 border border-tertiary-container/30 rounded-lg"
+            >
+              <div class="flex items-center gap-sm mb-xs">
+                <span class="material-symbols-outlined text-tertiary text-lg">lightbulb</span>
+                <span class="text-body-sm font-bold text-on-surface">Optimization Chance</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant">
+                Consolidating SaaS licenses for Marketing could save ₹ 1.4 L annually.
+              </p>
+            </div>
+            <div class="p-sm bg-surface-container-high border border-outline-variant rounded-lg">
+              <div class="flex items-center gap-sm mb-xs">
+                <span class="material-symbols-outlined text-primary text-lg">trending_up</span>
+                <span class="text-body-sm font-bold text-on-surface">Trend Anomaly</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant">
+                Unusual spike in 'Office Supplies' detected on Nov 24. AI flagged for manual review.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Bank Account Utilization (Stacked) -->
+        <div class="col-span-12 bg-surface-container p-md rounded-xl border border-outline-variant">
+          <div class="flex justify-between items-center mb-md">
+            <h3 class="font-headline-sm text-headline-sm">Bank Account Utilization</h3>
+            <div class="flex gap-md">
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-primary"></div>
+                HDFC Main
+              </div>
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-tertiary"></div>
+                ICICI Corp
+              </div>
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-secondary"></div>
+                SBI Escrow
+              </div>
+              <div class="flex items-center gap-xs">
+                <div class="w-2 h-2 rounded-full bg-surface-container-highest"></div>
+                Reserve
+              </div>
+            </div>
+          </div>
+          <div class="space-y-md">
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm text-outline font-label-caps">
+                <span class="">Q1 FY25</span>
+                <span class="">TOTAL ₹ 1.2 Cr</span>
+              </div>
+              <div class="h-6 w-full flex rounded-sm overflow-hidden">
+                <div class="h-full bg-primary w-[40%] border-r border-background/20"></div>
+                <div class="h-full bg-tertiary w-[30%] border-r border-background/20"></div>
+                <div class="h-full bg-secondary w-[20%] border-r border-background/20"></div>
+                <div class="h-full bg-surface-container-highest w-[10%]"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-body-sm text-outline font-label-caps">
+                <span class="">Q2 FY25</span>
+                <span class="">TOTAL ₹ 1.8 Cr</span>
+              </div>
+              <div class="h-6 w-full flex rounded-sm overflow-hidden">
+                <div class="h-full bg-primary w-[55%] border-r border-background/20"></div>
+                <div class="h-full bg-tertiary w-[20%] border-r border-background/20"></div>
+                <div class="h-full bg-secondary w-[15%] border-r border-background/20"></div>
+                <div class="h-full bg-surface-container-highest w-[10%]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Footer Audit Log -->
+      <footer class="mt-xl border-t border-outline-variant pt-lg pb-xl">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="text-body-sm font-bold text-on-surface mb-md">System Audit Log</h4>
+            <div class="space-y-2">
+              <div class="flex gap-md font-table-mono text-[12px] text-outline">
+                <span class="w-32">14:22:10 UTC</span>
+                <span class="w-40 text-primary">USER_ADMIN_01</span>
+                <span class="">Manual override: TXN_#8842 classified as 'Operational Expense'</span>
+              </div>
+              <div class="flex gap-md font-table-mono text-[12px] text-outline">
+                <span class="w-32">13:45:04 UTC</span>
+                <span class="w-40 text-emerald-400">AI_ENGINE_V2</span>
+                <span class="">Bulk processing complete: 4,204 transactions mapped.</span>
+              </div>
+              <div class="flex gap-md font-table-mono text-[12px] text-outline">
+                <span class="w-32">11:12:33 UTC</span>
+                <span class="w-40 text-tertiary">SYSTEM_CORE</span>
+                <span class="">Scheduled reconciliation for HDFC Account_Main successful.</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-body-sm font-body-sm text-outline">
+              Finance Command Center v4.2.0-stable
+            </p>
+            <p class="text-[11px] font-label-caps text-outline uppercase mt-xs">
+              Data Latency: 42ms
+            </p>
+          </div>
+        </div>
+      </footer>
+    </main>
+    <!-- Contextual FAB (Suppressed based on logic, but defined if needed) -->
+    <!-- Not rendered on Analytics according to relevance rule -->
+    <script>
+      // Micro-interactions
+      document.querySelectorAll('.heatmap-cell').forEach((cell) => {
+        cell.addEventListener('mouseenter', (e) => {
+          // Potential tooltip logic
+        })
+      })
+    </script>
+  </body>
+</html>

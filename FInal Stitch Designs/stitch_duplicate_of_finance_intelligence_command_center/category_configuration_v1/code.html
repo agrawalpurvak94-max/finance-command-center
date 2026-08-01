@@ -1,0 +1,618 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Category Management | Finance Command Center</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-container-low': '#1c1b1d',
+              'tertiary-container': '#bc4800',
+              'on-secondary-fixed-variant': '#38485d',
+              'on-tertiary-fixed-variant': '#7d2d00',
+              error: '#ffb4ab',
+              'on-secondary-fixed': '#0b1c30',
+              'surface-container': '#201f22',
+              'on-tertiary-fixed': '#360f00',
+              'inverse-on-surface': '#313032',
+              'error-container': '#93000a',
+              'tertiary-fixed-dim': '#ffb596',
+              secondary: '#b7c8e1',
+              'surface-container-highest': '#353437',
+              surface: '#131315',
+              'secondary-fixed': '#d3e4fe',
+              'primary-fixed-dim': '#b4c5ff',
+              'outline-variant': '#434655',
+              'on-surface': '#e5e1e4',
+              'surface-bright': '#39393b',
+              'primary-fixed': '#dbe1ff',
+              'secondary-fixed-dim': '#b7c8e1',
+              'surface-tint': '#b4c5ff',
+              tertiary: '#ffb596',
+              primary: '#b4c5ff',
+              'on-primary-fixed-variant': '#003ea8',
+              'on-background': '#e5e1e4',
+              'surface-dim': '#131315',
+              'on-error': '#690005',
+              'inverse-primary': '#0053db',
+              outline: '#8d90a0',
+              'on-surface-variant': '#c3c6d7',
+              'on-secondary': '#213145',
+              'on-primary-fixed': '#00174b',
+              background: '#131315',
+              'on-secondary-container': '#a9bad3',
+              'on-primary-container': '#eeefff',
+              'on-error-container': '#ffdad6',
+              'on-tertiary': '#581e00',
+              'surface-variant': '#353437',
+              'primary-container': '#2563eb',
+              'surface-container-lowest': '#0e0e10',
+              'tertiary-fixed': '#ffdbcd',
+              'secondary-container': '#3a4a5f',
+              'surface-container-high': '#2a2a2c',
+              'on-primary': '#002a78',
+              'on-tertiary-container': '#ffede6',
+              'inverse-surface': '#e5e1e4',
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px',
+            },
+            spacing: {
+              sm: '8px',
+              'margin-mobile': '16px',
+              gutter: '16px',
+              xl: '32px',
+              lg: '24px',
+              md: '16px',
+              'margin-desktop': '32px',
+              xs: '4px',
+            },
+            fontFamily: {
+              'body-md': ['Geist'],
+              'headline-lg': ['Geist'],
+              'body-sm': ['Geist'],
+              'table-mono': ['Geist'],
+              'label-caps': ['Geist'],
+              'headline-sm': ['Geist'],
+              'display-kpi': ['Geist'],
+            },
+            fontSize: {
+              'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+              'headline-lg': [
+                '24px',
+                { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '600' },
+              ],
+              'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'table-mono': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+              'label-caps': [
+                '11px',
+                { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' },
+              ],
+              'headline-sm': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+              'display-kpi': [
+                '36px',
+                { lineHeight: '44px', letterSpacing: '-0.04em', fontWeight: '600' },
+              ],
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      body {
+        font-family: 'Geist', sans-serif;
+        background-color: #131315;
+        color: #e5e1e4;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1c1b1d;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #434655;
+        border-radius: 2px;
+      }
+      .modal-overlay {
+        backdrop-filter: blur(4px);
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+    </style>
+  </head>
+  <body class="flex overflow-hidden">
+    <!-- SideNavBar Shell -->
+    <aside
+      class="h-screen w-64 fixed left-0 top-0 flex flex-col py-spacing-container-padding bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant dark:border-outline-variant z-50"
+    >
+      <div class="px-6 py-8 flex flex-col gap-1">
+        <h1
+          class="text-headline-md font-headline-md font-bold text-on-surface dark:text-on-surface"
+        >
+          Finance Command Center
+        </h1>
+        <p class="text-label-caps text-outline">Enterprise Intelligence</p>
+      </div>
+      <nav class="flex-1 px-4 space-y-1 custom-scrollbar overflow-y-auto">
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">dashboard</span>
+          <span class="text-body-md font-body-md">Dashboard</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">account_balance</span>
+          <span class="text-body-md font-body-md">Accounts</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">receipt_long</span>
+          <span class="text-body-md font-body-md">Transactions</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">description</span>
+          <span class="text-body-md font-body-md">Statements</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg group"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">query_stats</span>
+          <span class="text-body-md font-body-md">Analytics</span>
+        </a>
+        <a
+          class="flex items-center px-3 py-2 text-primary dark:text-primary font-bold bg-secondary-container dark:bg-secondary-container rounded-lg group scale-[0.98] transition-transform duration-150"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">storefront</span>
+          <span class="text-body-md font-body-md">Merchant Center</span>
+        </a>
+      </nav>
+      <div class="px-4 py-4 border-t border-outline-variant">
+        <a
+          class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-lg"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3">settings</span>
+          <span class="text-body-md font-body-md">Settings</span>
+        </a>
+      </div>
+    </aside>
+    <!-- Main Workspace -->
+    <main class="flex-1 ml-64 flex flex-col min-h-screen">
+      <!-- TopNavBar Shell -->
+      <header
+        class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant"
+      >
+        <div class="flex justify-between items-center px-gutter h-full">
+          <div class="flex items-center gap-4">
+            <nav class="flex items-center text-label-caps text-outline gap-2">
+              <span class="">Merchant Center</span>
+              <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+              <span class="text-on-surface">Categories</span>
+            </nav>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="text-label-caps text-outline">FY 2024-25</span>
+            <div
+              class="flex items-center gap-2 px-3 py-1.5 bg-surface-container rounded-full border border-outline-variant"
+            >
+              <span class="material-symbols-outlined text-[18px]">search</span>
+              <input
+                class="bg-transparent border-none focus:ring-0 text-body-sm w-48 text-on-surface"
+                placeholder="Global search..."
+                type="text"
+              />
+            </div>
+            <div class="flex items-center gap-3">
+              <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+              >
+                notifications
+              </button>
+              <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+              >
+                psychology
+              </button>
+              <div
+                class="w-8 h-8 rounded-full bg-secondary-container border border-outline-variant flex items-center justify-center overflow-hidden"
+              >
+                <img
+                  class="w-full h-full object-cover"
+                  data-alt="A professional headshot of a senior financial executive, wearing a charcoal suit, with soft studio lighting and a clean dark minimalist background, emphasizing authority and professional precision."
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcm6i4GIDIt0vo0gi2-3-VjZZk6YjBJLfg_MHwgUshT2l8PQobxj5SQDVQ_yOvNDILozC0mpMZNHjG-xaGhXPq0iHXiHN29lHV4RCyCFAcnRP1L3lqDX_zSBsdUL9ZmavsRXwNNaJYIphB_ZfWMFiwe-QqakQyJgpMyfbD9O-aZOzz0_8oOQ_nXLKiJEpjSVRYHl2OefRg5c11qrE_SLHAEdYeHHt_wp6VwprfWp-PqiXUusf4SYWm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+      <!-- Page Content -->
+      <div class="pt-16 p-8 flex flex-col gap-6 custom-scrollbar overflow-y-auto">
+        <!-- Header Section -->
+        <section class="flex justify-between items-end">
+          <div class="space-y-1">
+            <h2 class="text-headline-lg font-headline-lg text-on-surface">Category Management</h2>
+            <p class="text-body-md text-on-surface-variant">
+              Configure and audit merchant transaction classifications.
+            </p>
+          </div>
+          <button
+            class="bg-primary-container hover:bg-blue-700 text-on-primary-container px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-primary-container/20"
+            onclick="document.getElementById('add-modal').classList.remove('hidden')"
+          >
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            <span class="text-label-caps uppercase tracking-widest font-bold">Add Category</span>
+          </button>
+        </section>
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-surface-container border border-outline-variant p-4 rounded-xl">
+            <p class="text-label-caps text-outline mb-1">TOTAL CATEGORIES</p>
+            <p class="text-display-kpi font-display-kpi text-on-surface">42</p>
+          </div>
+          <div class="bg-surface-container border border-outline-variant p-4 rounded-xl">
+            <p class="text-label-caps text-outline mb-1">ACTIVE MERCHANTS</p>
+            <p class="text-display-kpi font-display-kpi text-on-surface">1,284</p>
+          </div>
+          <div class="bg-surface-container border border-outline-variant p-4 rounded-xl">
+            <p class="text-label-caps text-outline mb-1">PENDING REVIEW</p>
+            <p class="text-display-kpi font-display-kpi text-on-surface">03</p>
+          </div>
+          <div
+            class="bg-surface-container border border-outline-variant p-4 rounded-xl overflow-hidden relative"
+          >
+            <div class="relative z-10">
+              <p class="text-label-caps text-outline mb-1">SYSTEM HEALTH</p>
+              <p class="text-display-kpi font-display-kpi text-primary">99.8%</p>
+            </div>
+          </div>
+        </div>
+        <!-- Table Container -->
+        <div
+          class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden flex flex-col"
+        >
+          <!-- Search & Filters -->
+          <div
+            class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container"
+          >
+            <div class="flex items-center gap-4">
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors"
+                  >search</span
+                >
+                <input
+                  class="bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-body-sm w-80 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface"
+                  placeholder="Filter categories..."
+                  type="text"
+                />
+              </div>
+              <button
+                class="px-4 py-2 rounded-lg border border-outline-variant text-label-caps text-on-surface-variant flex items-center gap-2 hover:bg-surface-container-highest transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                FILTERS
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="material-symbols-outlined p-2 text-on-surface-variant hover:text-on-surface"
+              >
+                download
+              </button>
+              <button
+                class="material-symbols-outlined p-2 text-on-surface-variant hover:text-on-surface"
+              >
+                refresh
+              </button>
+            </div>
+          </div>
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container-high border-b border-outline-variant">
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold">
+                    CATEGORY NAME
+                  </th>
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold">DESCRIPTION</th>
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold text-right">
+                    MERCHANTS
+                  </th>
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold">CREATED DATE</th>
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold">STATUS</th>
+                  <th class="px-6 py-3 text-label-caps text-outline font-semibold text-center">
+                    ACTIONS
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant">
+                <tr class="hover:bg-surface-container transition-colors group">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center text-primary"
+                      >
+                        <span class="material-symbols-outlined">shopping_cart</span>
+                      </div>
+                      <span class="text-body-md font-semibold text-on-surface">Retail Goods</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-body-sm text-on-surface-variant max-w-xs truncate">
+                    Standard consumer retail items and physical merchandise.
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-right text-on-surface">
+                    412
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-on-surface-variant">
+                    Oct 24, 2023
+                  </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      >Active</span
+                    >
+                  </td>
+                  <td class="px-6 py-4">
+                    <div
+                      class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary"
+                      >
+                        edit
+                      </button>
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error"
+                      >
+                        delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-container transition-colors group">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded bg-tertiary-container/10 flex items-center justify-center text-tertiary"
+                      >
+                        <span class="material-symbols-outlined">restaurant</span>
+                      </div>
+                      <span class="text-body-md font-semibold text-on-surface"
+                        >Food &amp; Beverage</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-body-sm text-on-surface-variant max-w-xs truncate">
+                    Restaurants, bars, and catering services.
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-right text-on-surface">
+                    287
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-on-surface-variant">
+                    Nov 12, 2023
+                  </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      >Active</span
+                    >
+                  </td>
+                  <td class="px-6 py-4">
+                    <div
+                      class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary"
+                      >
+                        edit
+                      </button>
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error"
+                      >
+                        delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-container transition-colors group">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded bg-outline-variant/10 flex items-center justify-center text-outline"
+                      >
+                        <span class="material-symbols-outlined">build</span>
+                      </div>
+                      <span class="text-body-md font-semibold text-on-surface">Maintenance</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-body-sm text-on-surface-variant max-w-xs truncate">
+                    Facility repairs, janitorial, and landscaping.
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-right text-on-surface">
+                    54
+                  </td>
+                  <td class="px-6 py-4 text-table-mono font-table-mono text-on-surface-variant">
+                    Dec 01, 2023
+                  </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                      >Archived</span
+                    >
+                  </td>
+                  <td class="px-6 py-4">
+                    <div
+                      class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary"
+                      >
+                        edit
+                      </button>
+                      <button
+                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error"
+                      >
+                        delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div
+            class="p-4 border-t border-outline-variant flex justify-between items-center bg-surface-container-low text-label-caps"
+          >
+            <span class="text-outline">Showing 1-10 of 42 categories</span>
+            <div class="flex gap-2">
+              <button
+                class="p-2 border border-outline-variant rounded hover:bg-surface-container-highest disabled:opacity-50"
+                disabled=""
+              >
+                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              <button
+                class="p-2 border border-outline-variant rounded hover:bg-surface-container-highest"
+              >
+                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- Add Category Modal -->
+    <div
+      class="hidden fixed inset-0 z-[100] flex items-center justify-center modal-overlay"
+      id="add-modal"
+    >
+      <div
+        class="bg-surface-container-high border border-outline-variant w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden scale-in"
+      >
+        <div
+          class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest"
+        >
+          <h3 class="text-headline-sm font-headline-sm text-on-surface">Create New Category</h3>
+          <button
+            class="material-symbols-outlined text-outline hover:text-on-surface transition-colors"
+            onclick="document.getElementById('add-modal').classList.add('hidden')"
+          >
+            close
+          </button>
+        </div>
+        <form class="p-6 space-y-5">
+          <div class="space-y-1.5">
+            <label class="text-label-caps text-outline uppercase">Category Name</label>
+            <input
+              class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface"
+              placeholder="e.g. Technology &amp; Software"
+              type="text"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-label-caps text-outline uppercase">Description</label>
+            <textarea
+              class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface"
+              placeholder="Define the scope of this transaction classification..."
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-outline uppercase">Status</label>
+              <select
+                class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface appearance-none"
+              >
+                <option>Active</option>
+                <option>Draft</option>
+                <option>Hidden</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-label-caps text-outline uppercase">Internal Code</label>
+              <input
+                class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface"
+                placeholder="CAT-00X"
+                type="text"
+              />
+            </div>
+          </div>
+          <div class="pt-4 flex justify-end gap-3">
+            <button
+              class="px-6 py-2.5 rounded-lg border border-outline-variant text-label-caps text-on-surface hover:bg-surface-container-highest transition-colors"
+              onclick="document.getElementById('add-modal').classList.add('hidden')"
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              class="px-6 py-2.5 rounded-lg bg-primary text-on-primary font-bold text-label-caps uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/20"
+              type="submit"
+            >
+              Create Category
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      // Micro-interactions for table rows
+      document.querySelectorAll('tbody tr').forEach((row) => {
+        row.addEventListener('click', () => {
+          // Flash interaction
+          row.classList.add('bg-primary/5')
+          setTimeout(() => row.classList.remove('bg-primary/5'), 300)
+        })
+      })
+
+      // Close modal on escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.getElementById('add-modal').classList.add('hidden')
+        }
+      })
+    </script>
+  </body>
+</html>
