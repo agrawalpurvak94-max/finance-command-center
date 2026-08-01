@@ -27,9 +27,9 @@ export function AppShell() {
 
       <Sidebar className="hidden md:flex" />
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <TopNav />
-        <main id="main-content" className="flex flex-1 flex-col">
+        <main id="main-content" className="flex min-w-0 flex-1 flex-col">
           <Outlet />
         </main>
       </div>

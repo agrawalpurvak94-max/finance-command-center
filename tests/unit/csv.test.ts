@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest'
+import { transactionsToCsv } from '@/utils/csv'
+import type { Transaction } from '@/types/transaction'
+
+const baseTransaction: Transaction = {
+  id: 'txn-1',
+  date: '2026-01-15',
+  merchant: { id: 'm1', name: 'Amazon Web Services' },
+  category: { id: 'c1', name: 'Cloud Infrastructure' },
+  client: { id: 'cl1', name: 'Acme Corp' },
+  account: {
+    id: 'a1',
+    kind: 'credit_card',
+    bankName: 'HDFC Bank',
+    cardNetwork: 'VISA',
+    last4: '4292',
+  },
+  ownerType: 'business',
+  type: 'debit',
+  amount: 14299,
+  status: 'reviewed',
+  notes: null,
+  duplicateOfId: null,
+}
+
+describe('transactionsToCsv', () => {
+  it('includes a header row and one row per transaction', () => {
+    const csv = transactionsToCsv([baseTransaction])
+    const lines = csv.split('\n')
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toBe(
+      'Date,Merchant,Category,Client,Bank/Card,Business/Personal,Amount,Status,Notes',
+    )
+    expect(lines[1]).toBe(
+      '2026-01-15,Amazon Web Services,Cloud Infrastructure,Acme Corp,HDFC Bank 4292,business,14299.00,reviewed,',
+    )
+  })
+
+  it('falls back to Uncategorized when category is null', () => {
+    const csv = transactionsToCsv([{ ...baseTransaction, category: null }])
+    expect(csv).toContain('Uncategorized')
+  })
+
+  it('quotes values containing commas', () => {
+    const csv = transactionsToCsv([
+      { ...baseTransaction, merchant: { id: 'm2', name: 'Foo, Bar & Co' } },
+    ])
+    expect(csv).toContain('"Foo, Bar & Co"')
+  })
+})

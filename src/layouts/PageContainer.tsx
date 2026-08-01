@@ -7,5 +7,5 @@ interface PageContainerProps {
 }
 
 export function PageContainer({ children, className }: PageContainerProps) {
-  return <section className={cn('flex-1 p-lg', className)}>{children}</section>
+  return <section className={cn('min-w-0 flex-1 p-lg', className)}>{children}</section>
 }
