@@ -8,6 +8,63 @@
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
+
+  /* Apex Ledger design tokens (from FInal Stitch Designs/.../apex_ledger/DESIGN.md)
+     WARNING: these named keys (xs/sm/md/lg/xl) shadow Tailwind's own built-in
+     max-w-{xs,sm,md,lg,xl} scale (confirmed: overriding --container-* does not
+     restore it — --spacing-* takes precedence for that utility regardless).
+     Never use bare max-w-xs/sm/md/lg/xl (or w-/h- on those names) anywhere in
+     this app — use an arbitrary value like max-w-[20rem] instead. */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-gutter: 16px;
+
+  --text-display-kpi: 36px;
+  --text-display-kpi--line-height: 44px;
+  --text-display-kpi--letter-spacing: -0.04em;
+  --text-display-kpi--font-weight: 600;
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-sm: 16px;
+  --text-headline-sm--line-height: 24px;
+  --text-headline-sm--font-weight: 600;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-table-mono: 13px;
+  --text-table-mono--line-height: 18px;
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 600;
+
+  /* Literal Apex Ledger surface/outline scale, kept under Stitch's own names
+     so ported markup can reuse the exact classes it shipped with. */
+  --color-surface: #131315;
+  --color-surface-dim: #131315;
+  --color-surface-bright: #39393b;
+  --color-surface-container-lowest: #0e0e10;
+  --color-surface-container-low: #1c1b1d;
+  --color-surface-container: #201f22;
+  --color-surface-container-high: #2a2a2c;
+  --color-surface-container-highest: #353437;
+  --color-on-surface: #e5e1e4;
+  --color-on-surface-variant: #c3c6d7;
+  --color-outline: #8d90a0;
+  --color-outline-variant: #434655;
+  --color-primary-container: #2563eb;
+  --color-on-primary-container: #eeefff;
+  --color-secondary-container: #3a4a5f;
+  --color-on-secondary-container: #a9bad3;
+  --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,6 +105,13 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Light mode: the finalized Stitch design (apex_ledger) is dark-mode-only —
+ * no light variant was ever designed. CLAUDE.md still requires Light/Dark/System
+ * support, so shadcn's generated defaults are kept here as a functional
+ * fallback rather than fabricating a light theme that wasn't part of the
+ * source-of-truth design.
+ */
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -63,6 +127,8 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+  --tertiary: oklch(0.65 0.15 40);
+  --on-tertiary: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -83,38 +149,42 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Dark mode: literal Apex Ledger token values — the finalized Stitch design. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #131315;
+  --foreground: #e5e1e4;
+  --card: #201f22;
+  --card-foreground: #e5e1e4;
+  --popover: #2a2a2c;
+  --popover-foreground: #e5e1e4;
+  --primary: #2563eb;
+  --primary-foreground: #eeefff;
+  --secondary: #b7c8e1;
+  --secondary-foreground: #213145;
+  --muted: #2a2a2c;
+  --muted-foreground: #c3c6d7;
+  --accent: #2a2a2c;
+  --accent-foreground: #e5e1e4;
+  --tertiary: #ffb596;
+  --on-tertiary: #581e00;
+  --destructive: #ffb4ab;
+  --border: #434655;
+  --input: #434655;
+  --ring: #2563eb;
+  --chart-1: #b4c5ff;
+  --chart-2: #47bfff;
+  --chart-3: #7e14ff;
+  --chart-4: #a9bad3;
+  --chart-5: #ffb596;
+  --radius: 0.5rem;
+  --sidebar: #0e0e10;
+  --sidebar-foreground: #e5e1e4;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #eeefff;
+  --sidebar-accent: #3a4a5f;
+  --sidebar-accent-foreground: #b4c5ff;
+  --sidebar-border: #434655;
+  --sidebar-ring: #2563eb;
 }
 
 @layer base {
