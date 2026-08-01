@@ -3221,6 +3221,54 @@ coverage
 
 \---
 
+MODULE COMPLETION GIT PROTOCOL
+
+For every future module, Claude follows this sequence without waiting for separate instructions:
+
+1\. Complete the implementation.
+
+2\. Generate the module report.
+
+3\. Include the report in the same commit as the feature.
+
+Never a separate documentation-only commit unless explicitly requested.
+
+4\. Run
+
+Build
+
+Typecheck
+
+Lint
+
+Tests
+
+Playwright
+
+Fix every issue before committing.
+
+5\. Commit using Conventional Commits.
+
+6\. Push automatically to GitHub.
+
+7\. Verify the push succeeded.
+
+8\. Include in the completion report
+
+Repository
+
+Branch
+
+Commit Hash
+
+Push Status
+
+Never stop at "committed locally" and call a module done.
+
+A module is only complete once it is pushed and the push is verified.
+
+\---
+
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
 CODE REVIEW CHECKLIST
@@ -3300,6 +3348,10 @@ No duplicated logic
 Performance acceptable
 
 Documentation updated
+
+Committed with the report in the same commit
+
+Pushed to GitHub and push verified
 
 Never consider
 
