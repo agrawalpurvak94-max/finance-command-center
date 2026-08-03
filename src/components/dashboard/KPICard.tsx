@@ -17,9 +17,15 @@ const trendToneClass = {
 
 interface KPICardProps {
   metric: FinancialSnapshotMetric
+  /**
+   * Defaults to INR currency formatting (Dashboard/Analytics usage).
+   * Pass a custom formatter for non-currency metrics — e.g. Statements'
+   * KPI row, which shows plain counts.
+   */
+  formatValue?: (value: number) => string
 }
 
-export function KPICard({ metric }: KPICardProps) {
+export function KPICard({ metric, formatValue = formatINR }: KPICardProps) {
   const TrendIcon = metric.trend ? trendIcon[metric.trend.direction] : null
 
   return (
@@ -32,7 +38,7 @@ export function KPICard({ metric }: KPICardProps) {
       <div>
         <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
         <div className="mt-xs text-display-kpi tabular-nums text-foreground">
-          {formatINR(metric.value)}
+          {formatValue(metric.value)}
         </div>
       </div>
       {metric.trend && TrendIcon && (

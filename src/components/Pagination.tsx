@@ -45,7 +45,7 @@ export function Pagination({
   return (
     <nav
       aria-label="Table pagination"
-      className="flex items-center justify-between rounded-lg border border-border bg-card p-sm"
+      className="flex flex-wrap items-center justify-between gap-sm rounded-lg border border-border bg-card p-sm"
     >
       <div className="flex items-center gap-sm">
         <span className="text-body-sm text-muted-foreground">Rows per page:</span>
@@ -74,7 +74,13 @@ export function Pagination({
           <ChevronLeft className="size-4" aria-hidden="true" />
         </button>
 
-        <div className="flex gap-xs">
+        {/* Numbered page buttons can overflow narrow viewports (e.g. a
+            7-page result set), so they're desktop-only; mobile gets a
+            compact "Page X of Y" label instead of horizontal scroll. */}
+        <span className="text-body-sm text-muted-foreground sm:hidden">
+          Page {page} of {pageCount}
+        </span>
+        <div className="hidden gap-xs sm:flex">
           {getPageItems(page, pageCount).map((item, index) =>
             item === 'ellipsis' ? (
               <span

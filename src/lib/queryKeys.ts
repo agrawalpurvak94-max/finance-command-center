@@ -1,4 +1,5 @@
 import type { TransactionListParams } from '@/domain/Transaction'
+import type { StatementListParams } from '@/domain/Statement'
 
 export const queryKeys = {
   dashboard: {
@@ -16,5 +17,10 @@ export const queryKeys = {
     clients: ['transactions', 'clients'] as const,
     merchants: ['transactions', 'merchants'] as const,
     accounts: ['transactions', 'accounts'] as const,
+  },
+  statements: {
+    all: ['statements'] as const,
+    list: (params: StatementListParams) => ['statements', 'list', params] as const,
+    summary: ['statements', 'summary'] as const,
   },
 }
