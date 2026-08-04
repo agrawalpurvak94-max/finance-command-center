@@ -1,10 +1,17 @@
 import type { Transaction } from '@/domain/Transaction'
+import type { CategoryRecord } from '@/domain/Category'
 
 function escapeCsvValue(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`
   }
   return value
+}
+
+function rowsToCsv(headers: readonly string[], rows: readonly (readonly unknown[])[]): string {
+  return [headers, ...rows]
+    .map((row) => row.map((cell) => escapeCsvValue(String(cell))).join(','))
+    .join('\n')
 }
 
 export function transactionsToCsv(transactions: readonly Transaction[]): string {
@@ -32,9 +39,31 @@ export function transactionsToCsv(transactions: readonly Transaction[]): string 
     txn.notes ?? '',
   ])
 
-  return [headers, ...rows]
-    .map((row) => row.map((cell) => escapeCsvValue(String(cell))).join(','))
-    .join('\n')
+  return rowsToCsv(headers, rows)
+}
+
+export function categoriesToCsv(categories: readonly CategoryRecord[]): string {
+  const headers = [
+    'Category Name',
+    'Parent Category',
+    'Description',
+    'Transaction Count',
+    'Merchants Assigned',
+    'Status',
+    'Last Updated',
+  ]
+
+  const rows = categories.map((category) => [
+    category.name,
+    category.parentCategory?.name ?? '',
+    category.description,
+    category.transactionCount,
+    category.merchantsAssigned,
+    category.status,
+    category.lastUpdatedAt,
+  ])
+
+  return rowsToCsv(headers, rows)
 }
 
 export function downloadCsv(filename: string, csvContent: string): void {

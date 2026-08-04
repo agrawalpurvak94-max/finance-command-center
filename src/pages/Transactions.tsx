@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import type { RowSelectionState } from '@tanstack/react-table'
 import { Search, Receipt } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
@@ -8,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { Pagination } from '@/components/Pagination'
 import { FloatingActionButton } from '@/components/FloatingActionButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { TransactionsHeader } from '@/components/transactions/TransactionsHeader'
 import { FilterToolbar } from '@/components/transactions/FilterToolbar'
 import { BulkActionToolbar } from '@/components/transactions/BulkActionToolbar'
@@ -32,12 +34,24 @@ import type { Transaction, TransactionFilters, TransactionSort } from '@/domain/
 const emptyFilters: TransactionFilters = {}
 
 export function Transactions() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Drill-down entry point (e.g. Categories' "View Transactions" row
+  // action navigates here with ?categoryId=...). Captured once on mount so
+  // clearing it doesn't reappear if the user then edits filters by hand.
+  const [drillDownCategoryId, setDrillDownCategoryId] = useState<string | undefined>(
+    () => searchParams.get('categoryId') ?? undefined,
+  )
+
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<TransactionSort | undefined>({ id: 'date', desc: true })
-  const [draftFilters, setDraftFilters] = useState<TransactionFilters>(emptyFilters)
-  const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>(emptyFilters)
+  const [draftFilters, setDraftFilters] = useState<TransactionFilters>(() =>
+    drillDownCategoryId ? { categoryId: drillDownCategoryId } : emptyFilters,
+  )
+  const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>(() =>
+    drillDownCategoryId ? { categoryId: drillDownCategoryId } : emptyFilters,
+  )
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -91,12 +105,37 @@ export function Transactions() {
     downloadCsv('transactions-selected.csv', transactionsToCsv(rows))
   }
 
+  function handleClearDrillDown() {
+    setDrillDownCategoryId(undefined)
+    setDraftFilters((prev) => ({ ...prev, categoryId: undefined }))
+    setAppliedFilters((prev) => ({ ...prev, categoryId: undefined }))
+    setPage(1)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('categoryId')
+        return next
+      },
+      { replace: true },
+    )
+  }
+
   return (
     <PageContainer className="flex flex-col gap-md">
       <TransactionsHeader
         onExportCsv={handleExportCurrentPage}
         onNewTransaction={() => setNewTransactionOpen(true)}
       />
+
+      {drillDownCategoryId && (
+        <ActiveFilterBanner
+          label={`Filtered by category: ${
+            categoriesQuery.data?.find((c) => c.id === drillDownCategoryId)?.name ??
+            drillDownCategoryId
+          }`}
+          onClear={handleClearDrillDown}
+        />
+      )}
 
       <div className="relative max-w-96">
         <Search
