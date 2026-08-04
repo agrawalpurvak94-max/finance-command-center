@@ -37,7 +37,7 @@ export function KPICard({ metric, formatValue = formatINR }: KPICardProps) {
     >
       <div>
         <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
-        <div className="mt-xs text-display-kpi tabular-nums text-foreground">
+        <div className="mt-xs text-display-kpi tabular-nums text-foreground break-all">
           {formatValue(metric.value)}
         </div>
       </div>

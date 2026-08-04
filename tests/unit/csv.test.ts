@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { categoriesToCsv, transactionsToCsv } from '@/utils/csv'
+import { categoriesToCsv, merchantsToCsv, transactionsToCsv } from '@/utils/csv'
 import type { Transaction } from '@/domain/Transaction'
 import type { CategoryRecord } from '@/domain/Category'
+import type { MerchantRecord } from '@/domain/Merchant'
 
 const baseTransaction: Transaction = {
   id: 'txn-1',
@@ -85,5 +86,49 @@ describe('categoriesToCsv', () => {
   it('quotes descriptions containing commas', () => {
     const csv = categoriesToCsv([{ ...baseCategory, description: 'Compute, storage, and CDN' }])
     expect(csv).toContain('"Compute, storage, and CDN"')
+  })
+})
+
+const baseMerchant: MerchantRecord = {
+  id: 'merchant-1',
+  name: 'Amazon Web Services',
+  aliases: ['AWS'],
+  defaultCategory: { id: 'cat-1', name: 'Cloud Infrastructure' },
+  status: 'active',
+  notes: null,
+  hasRules: true,
+  transactionCount: 21,
+  totalSpend: 1659886,
+  averageTransaction: 87362.42,
+  lastTransactionAt: '2026-08-01',
+}
+
+describe('merchantsToCsv', () => {
+  it('includes a header row and one row per merchant', () => {
+    const csv = merchantsToCsv([baseMerchant])
+    const lines = csv.split('\n')
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toBe(
+      'Merchant Name,Default Category,Transaction Count,Total Spend,Average Transaction,Last Transaction,Status',
+    )
+    expect(lines[1]).toBe(
+      'Amazon Web Services,Cloud Infrastructure,21,1659886.00,87362.42,2026-08-01,active',
+    )
+  })
+
+  it('falls back to Uncategorized when default category is null', () => {
+    const csv = merchantsToCsv([{ ...baseMerchant, defaultCategory: null }])
+    expect(csv).toContain('Uncategorized')
+  })
+
+  it('leaves last transaction blank when there is none', () => {
+    const csv = merchantsToCsv([{ ...baseMerchant, lastTransactionAt: null }])
+    const lines = csv.split('\n')
+    expect(lines[1].endsWith(',active')).toBe(true)
+  })
+
+  it('quotes merchant names containing commas', () => {
+    const csv = merchantsToCsv([{ ...baseMerchant, name: 'Foo, Bar & Co' }])
+    expect(csv).toContain('"Foo, Bar & Co"')
   })
 })

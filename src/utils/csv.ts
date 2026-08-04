@@ -1,5 +1,6 @@
 import type { Transaction } from '@/domain/Transaction'
 import type { CategoryRecord } from '@/domain/Category'
+import type { MerchantRecord } from '@/domain/Merchant'
 
 function escapeCsvValue(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -61,6 +62,30 @@ export function categoriesToCsv(categories: readonly CategoryRecord[]): string {
     category.merchantsAssigned,
     category.status,
     category.lastUpdatedAt,
+  ])
+
+  return rowsToCsv(headers, rows)
+}
+
+export function merchantsToCsv(merchants: readonly MerchantRecord[]): string {
+  const headers = [
+    'Merchant Name',
+    'Default Category',
+    'Transaction Count',
+    'Total Spend',
+    'Average Transaction',
+    'Last Transaction',
+    'Status',
+  ]
+
+  const rows = merchants.map((merchant) => [
+    merchant.name,
+    merchant.defaultCategory?.name ?? 'Uncategorized',
+    merchant.transactionCount,
+    merchant.totalSpend.toFixed(2),
+    merchant.averageTransaction.toFixed(2),
+    merchant.lastTransactionAt ?? '',
+    merchant.status,
   ])
 
   return rowsToCsv(headers, rows)

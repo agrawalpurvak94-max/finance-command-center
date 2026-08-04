@@ -1,6 +1,7 @@
 import type { TransactionListParams } from '@/domain/Transaction'
 import type { StatementListParams } from '@/domain/Statement'
 import type { CategoryListParams } from '@/domain/Category'
+import type { MerchantListParams } from '@/domain/Merchant'
 
 export const queryKeys = {
   dashboard: {
@@ -28,5 +29,10 @@ export const queryKeys = {
     all: ['categories'] as const,
     list: (params: CategoryListParams) => ['categories', 'list', params] as const,
     summary: ['categories', 'summary'] as const,
+  },
+  merchants: {
+    all: ['merchants'] as const,
+    list: (params: MerchantListParams) => ['merchants', 'list', params] as const,
+    summary: ['merchants', 'summary'] as const,
   },
 }

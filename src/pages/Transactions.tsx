@@ -33,13 +33,36 @@ import type { Transaction, TransactionFilters, TransactionSort } from '@/domain/
 
 const emptyFilters: TransactionFilters = {}
 
+// Drill-down entry points other modules navigate here with (e.g. Categories'
+// and Merchants' "View Transactions" row actions). One shared mechanism per
+// CLAUDE.md's "do not duplicate business logic" — adding a module here means
+// adding one entry to this map, not a second drill-down implementation.
+const DRILL_DOWN_PARAMS = {
+  categoryId: { label: 'category' },
+  merchantId: { label: 'merchant' },
+} as const
+
+type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
+
+interface DrillDown {
+  param: DrillDownParam
+  id: string
+}
+
+function readDrillDownFromSearchParams(searchParams: URLSearchParams): DrillDown | undefined {
+  for (const param of Object.keys(DRILL_DOWN_PARAMS) as DrillDownParam[]) {
+    const id = searchParams.get(param)
+    if (id) return { param, id }
+  }
+  return undefined
+}
+
 export function Transactions() {
   const [searchParams, setSearchParams] = useSearchParams()
-  // Drill-down entry point (e.g. Categories' "View Transactions" row
-  // action navigates here with ?categoryId=...). Captured once on mount so
-  // clearing it doesn't reappear if the user then edits filters by hand.
-  const [drillDownCategoryId, setDrillDownCategoryId] = useState<string | undefined>(
-    () => searchParams.get('categoryId') ?? undefined,
+  // Captured once on mount so clearing it doesn't reappear if the user then
+  // edits filters by hand.
+  const [drillDown, setDrillDown] = useState<DrillDown | undefined>(() =>
+    readDrillDownFromSearchParams(searchParams),
   )
 
   const [search, setSearch] = useState('')
@@ -47,10 +70,10 @@ export function Transactions() {
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<TransactionSort | undefined>({ id: 'date', desc: true })
   const [draftFilters, setDraftFilters] = useState<TransactionFilters>(() =>
-    drillDownCategoryId ? { categoryId: drillDownCategoryId } : emptyFilters,
+    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
   )
   const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>(() =>
-    drillDownCategoryId ? { categoryId: drillDownCategoryId } : emptyFilters,
+    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
   )
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
@@ -106,19 +129,27 @@ export function Transactions() {
   }
 
   function handleClearDrillDown() {
-    setDrillDownCategoryId(undefined)
-    setDraftFilters((prev) => ({ ...prev, categoryId: undefined }))
-    setAppliedFilters((prev) => ({ ...prev, categoryId: undefined }))
+    if (!drillDown) return
+    const { param } = drillDown
+    setDrillDown(undefined)
+    setDraftFilters((prev) => ({ ...prev, [param]: undefined }))
+    setAppliedFilters((prev) => ({ ...prev, [param]: undefined }))
     setPage(1)
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        next.delete('categoryId')
+        next.delete(param)
         return next
       },
       { replace: true },
     )
   }
+
+  const drillDownLabel = drillDown
+    ? drillDown.param === 'categoryId'
+      ? (categoriesQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id)
+      : (merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id)
+    : null
 
   return (
     <PageContainer className="flex flex-col gap-md">
@@ -127,12 +158,9 @@ export function Transactions() {
         onNewTransaction={() => setNewTransactionOpen(true)}
       />
 
-      {drillDownCategoryId && (
+      {drillDown && (
         <ActiveFilterBanner
-          label={`Filtered by category: ${
-            categoriesQuery.data?.find((c) => c.id === drillDownCategoryId)?.name ??
-            drillDownCategoryId
-          }`}
+          label={`Filtered by ${DRILL_DOWN_PARAMS[drillDown.param].label}: ${drillDownLabel}`}
           onClear={handleClearDrillDown}
         />
       )}
