@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Search, Store } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
@@ -64,6 +64,17 @@ export function Merchants() {
   // by id at restore time sidesteps that instead of trying to fix table
   // cell identity project-wide, which is out of this module's scope.
   const reviewTriggerMerchantId = useRef<string | null>(null)
+  // Base UI's own scroll-lock (applied while the drawer/dialog is open)
+  // clamps window.scrollY the moment it engages, and the browser never
+  // auto-restores it once the lock lifts — confirmed via instrumentation
+  // (scrollTo/scrollIntoView were never called; the drop happens a frame
+  // before the lock's own "overflow: hidden" is even applied, so it's a
+  // side effect of Base UI's internal lock, not this page's rendering).
+  // That's library behavior out of this module's scope to fix generically,
+  // but the table is fully obscured/inert for the whole time the drawer is
+  // open anyway, so restoring the captured position on close satisfies
+  // "preserves scroll position" without touching Base UI internals.
+  const scrollPositionRef = useRef<number | null>(null)
 
   const categoriesQuery = useTransactionCategories()
 
@@ -85,32 +96,66 @@ export function Merchants() {
     setFormOpen(true)
   }
 
-  function handleEditMerchant(merchant: MerchantRecord) {
+  // The row-action handlers below are memoized with useCallback — passed
+  // straight through to MerchantTable, which puts them in its `columns`
+  // useMemo's dependency array. Unmemoized, they're new function references
+  // on every Merchants render, which made TanStack Table's flexRender treat
+  // every cell as a brand-new component and remount it on each render —
+  // discovered because it broke drawer focus restoration (see
+  // reviewTriggerMerchantId below) and, more visibly, reset window scroll
+  // position on drawer open (the transient DOM churn briefly shrinks the
+  // document, which clamps scrollY). Memoizing here removes the churn at
+  // its source, scoped to this page — MerchantTable/columns themselves are
+  // unchanged, and no other module's tables are touched.
+  const handleEditMerchant = useCallback((merchant: MerchantRecord) => {
     setEditingMerchant(merchant)
     setFormOpen(true)
-  }
+  }, [])
 
-  function handleReviewMerchant(merchant: MerchantRecord) {
+  const handleReviewMerchant = useCallback((merchant: MerchantRecord) => {
     reviewTriggerMerchantId.current = merchant.id
+    scrollPositionRef.current = window.scrollY
     setReviewingMerchant(merchant)
     setReviewOpen(true)
-  }
+  }, [])
 
-  function handleChangeCategory(merchant: MerchantRecord, categoryId: string | null) {
-    updateMerchant.mutate({
-      id: merchant.id,
-      input: {
-        name: merchant.name,
-        defaultCategoryId: categoryId,
-        status: merchant.status,
-        notes: merchant.notes,
-      },
-    })
-  }
+  // TanStack Query's useMutation() returns a new wrapper object on every
+  // render (isPending/isIdle/etc. tracking) — only .mutate itself is
+  // referentially stable — so depending on the whole `updateMerchant`
+  // object here would silently defeat this useCallback, same failure mode
+  // as leaving it unmemoized. Depending on the stable .mutate specifically
+  // is what actually keeps handleChangeCategory's identity fixed.
+  const updateMerchantMutate = updateMerchant.mutate
+  const handleChangeCategory = useCallback(
+    (merchant: MerchantRecord, categoryId: string | null) => {
+      updateMerchantMutate({
+        id: merchant.id,
+        input: {
+          name: merchant.name,
+          defaultCategoryId: categoryId,
+          status: merchant.status,
+          notes: merchant.notes,
+        },
+      })
+    },
+    [updateMerchantMutate],
+  )
 
-  function handleViewTransactions(merchant: MerchantRecord) {
-    navigate(`/transactions?merchantId=${encodeURIComponent(merchant.id)}`)
-  }
+  const handleViewTransactions = useCallback(
+    (merchant: MerchantRecord) => {
+      navigate(`/transactions?merchantId=${encodeURIComponent(merchant.id)}`)
+    },
+    [navigate],
+  )
+
+  const handleDeleteMerchant = useCallback((merchant: MerchantRecord) => {
+    setDeleteTarget(merchant)
+  }, [])
+
+  const handleSortChange = useCallback((next: MerchantSort) => {
+    setSort(next)
+    setPage(1)
+  }, [])
 
   function handleExport() {
     if (!listQuery.data) return
@@ -201,15 +246,13 @@ export function Merchants() {
             <MerchantTable
               merchants={data.rows}
               sort={sort}
-              onSortChange={(next) => {
-                setSort(next)
-                setPage(1)
-              }}
+              onSortChange={handleSortChange}
               onReview={handleReviewMerchant}
               onViewTransactions={handleViewTransactions}
               onEdit={handleEditMerchant}
               onChangeCategory={handleChangeCategory}
-              onDelete={(merchant) => setDeleteTarget(merchant)}
+              onDelete={handleDeleteMerchant}
+              selectedMerchantId={reviewOpen ? reviewingMerchant?.id : null}
             />
           )}
         </QueryBoundary>
@@ -269,6 +312,9 @@ export function Merchants() {
         open={reviewOpen}
         onOpenChange={setReviewOpen}
         onClosed={() => {
+          const restoreY = scrollPositionRef.current
+          if (restoreY !== null) window.scrollTo(0, restoreY)
+
           const id = reviewTriggerMerchantId.current
           if (!id) return
           // Re-query for a live node rather than reusing a captured ref —
@@ -278,7 +324,18 @@ export function Merchants() {
           setTimeout(() => {
             document
               .querySelector<HTMLElement>(`[data-merchant-row-trigger="${CSS.escape(id)}"]`)
-              ?.focus()
+              // preventScroll: focus() scrolls its target into view by
+              // default, which fights the "preserve table scroll position"
+              // requirement — the row is already on screen (that's how it
+              // got clicked), so no scroll adjustment is needed here.
+              ?.focus({ preventScroll: true })
+            // Base UI's scroll-lock itself clamps window.scrollY the moment
+            // it engages, independent of anything this page does (confirmed
+            // via instrumentation: no scrollTo/scrollIntoView call is ever
+            // made — see scrollPositionRef above) and never un-clamps on its
+            // own, so re-assert the saved position once more after this
+            // deferred cleanup in case its own trailing work re-touches it.
+            if (restoreY !== null) window.scrollTo(0, restoreY)
           }, 0)
         }}
         onViewAllTransactions={handleViewTransactions}

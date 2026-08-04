@@ -17,6 +17,7 @@ interface MerchantTableProps {
   onEdit: (merchant: MerchantRecord) => void
   onChangeCategory: (merchant: MerchantRecord, categoryId: string | null) => void
   onDelete: (merchant: MerchantRecord) => void
+  selectedMerchantId?: string | null
 }
 
 const sortableColumns: MerchantSort['id'][] = [
@@ -36,6 +37,7 @@ export function MerchantTable({
   onEdit,
   onChangeCategory,
   onDelete,
+  selectedMerchantId,
 }: MerchantTableProps) {
   const columns = useMemo<ColumnDef<MerchantRecord>[]>(
     () => [
@@ -204,7 +206,10 @@ export function MerchantTable({
                 if (target.closest('button, [role="combobox"], [role="menuitem"]')) return
                 onReview(row.original)
               }}
-              className="cursor-pointer transition-colors hover:bg-accent/40"
+              className={cn(
+                'cursor-pointer transition-colors hover:bg-accent/40',
+                row.original.id === selectedMerchantId && 'bg-accent/60 hover:bg-accent/60',
+              )}
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="p-md align-middle">

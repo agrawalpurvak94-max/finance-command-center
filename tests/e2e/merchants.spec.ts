@@ -228,4 +228,37 @@ test.describe('Merchant Review Drawer', () => {
     await expect(page.getByRole('heading', { name: 'Merchant Review' })).not.toBeVisible()
     await expect(nameButton).toBeFocused()
   })
+
+  test('the selected row stays visually highlighted while the drawer is open, and unhighlights on close', async ({
+    page,
+  }) => {
+    const row = page.locator('tbody tr').nth(1)
+    const classBefore = await row.getAttribute('class')
+    await row.locator('td').first().getByRole('button').click()
+    await expect(page.getByRole('heading', { name: 'Merchant Review' })).toBeVisible()
+    await expect(row).toHaveClass(/bg-accent\/60/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('heading', { name: 'Merchant Review' })).not.toBeVisible()
+    await expect(row).toHaveClass(classBefore ?? '')
+  })
+
+  test('closing the drawer preserves the table scroll position', async ({ page }) => {
+    await page.getByRole('combobox', { name: 'Rows per page' }).click()
+    await page.getByRole('option', { name: '25' }).click()
+    await expect(page.getByText('Rows per page:')).toBeVisible()
+
+    const row = page.locator('tbody tr').nth(10)
+    await row.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(100)
+    const scrollBefore = await page.evaluate(() => window.scrollY)
+
+    await row.locator('td').first().getByRole('button').click()
+    await expect(page.getByRole('heading', { name: 'Merchant Review' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('heading', { name: 'Merchant Review' })).not.toBeVisible()
+
+    await expect(async () => {
+      expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore)
+    }).toPass({ timeout: 2000 })
+  })
 })
