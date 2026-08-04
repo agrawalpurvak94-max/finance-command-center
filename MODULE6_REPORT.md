@@ -2,7 +2,7 @@
 
 Module 6 — Merchants ("Merchant Center")
 
-Generated 2026-08-04.
+Generated 2026-08-04. Updated 2026-08-04 with the Merchant Review Drawer (follow-up commit — see "Merchant Review Drawer" section below and the second entry in "Commits").
 
 ---
 
@@ -36,10 +36,19 @@ Supabase was **not** touched. All data flows through a typed mock repository (`M
 | `MerchantStatusBadge`    | Active/Inactive badge                                                                                                      |
 | `MerchantTable`          | TanStack Table instance: sticky header, sortable columns, inline-editable Default Category cell, horizontal-scroll wrapper |
 | `MerchantTableSkeleton`  | Table-shaped loading skeleton                                                                                              |
-| `MerchantRowActionsMenu` | Primary "View Transactions" icon button + secondary Edit/Change Category/Merge-placeholder/Delete dropdown                 |
+| `MerchantRowActionsMenu` | Primary "View Transactions" icon button + secondary Review/Edit/Change Category/Merge-placeholder/Delete dropdown          |
 | `MerchantFormDialog`     | Reusable Add/Edit dialog (Name, Default Category, Status, Notes, Aliases-placeholder, Merchant-Rules-placeholder)          |
+| `MerchantReviewDrawer`   | The 4-section review drawer (see "Merchant Review Drawer" below) — composes `EntityReviewDrawer`                           |
 
-No new "categoryVisuals"-style helper was needed here — merchants use a single fixed icon/color (`Store`/`primary`), unlike Categories' per-row icon/color variety, so nothing to factor out.
+**Generic/reusable, added for the drawer (`src/components/`, not Merchant-specific)**
+
+| Component                  | Responsibility                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `EntityReviewDrawer`       | The shell every future master-data drawer reuses: Sheet + header + scrollable content area         |
+| `EntityReviewDrawerFooter` | Standardized Cancel / Save Changes footer with loading state, rendered by the entity-specific body |
+| `Toast`                    | Minimal self-dismissing success toast (no toast library existed in this project)                   |
+
+No new "categoryVisuals"-style helper was needed for the table/dialog work here — merchants use a single fixed icon/color (`Store`/`primary`), unlike Categories' per-row icon/color variety, so nothing to factor out.
 
 ## Components/architecture reused (not duplicated)
 
@@ -58,7 +67,7 @@ No new "categoryVisuals"-style helper was needed here — merchants use a single
 
 ## Files changed
 
-**New:**
+**New (initial module):**
 
 ```
 src/repositories/merchant.repository.ts
@@ -70,7 +79,7 @@ src/components/merchants/*.tsx  (7 files, listed above)
 tests/e2e/merchants.spec.ts
 ```
 
-**Modified:**
+**Modified (initial module):**
 
 ```
 src/domain/Merchant.ts         — additive only; original `Merchant` interface unchanged
@@ -84,11 +93,83 @@ tests/unit/csv.test.ts         — added merchantsToCsv coverage (existing trans
                                   categoriesToCsv assertions unchanged and still passing)
 ```
 
+**New (Merchant Review Drawer follow-up):**
+
+```
+src/components/EntityReviewDrawer.tsx        — generic drawer shell + EntityReviewDrawerFooter
+src/components/Toast.tsx                     — minimal success toast
+src/components/merchants/MerchantReviewDrawer.tsx
+```
+
+**Modified (Merchant Review Drawer follow-up):**
+
+```
+src/components/merchants/MerchantTable.tsx        — row/name click open the drawer; interactive-
+                                                     cell clicks no longer also trigger it
+src/components/merchants/MerchantRowActionsMenu.tsx — added "Review Merchant" menu item
+src/pages/Merchants.tsx                           — drawer + toast state, focus-restoration logic
+tests/e2e/merchants.spec.ts                       — 11 new drawer specs
+```
+
 ## Bug found and fixed during verification
 
 **`KPICard`'s value text overflows its card when the formatted number is long.** Screenshotting the Merchant summary row (5 KPI cards, `lg:grid-cols-5`, narrower per-card than the 4-column grids Categories/Statements use) showed "Total Spend" — `₹2,38,34,938` — visibly bleeding past its card's right edge into the next card. Confirmed programmatically: that card's `scrollWidth` (228px) exceeded its `clientWidth` (216px); all four other cards measured equal. Root cause: the value `<div>` had no wrapping behavior, and `₹2,38,34,938` is a single unbroken string the browser can't line-break at spaces. No prior module's KPI values were both currency-formatted _and_ in a 5-column grid at once (Statements' 5-column row is all short plain counts; Dashboard's currency values sit in a roomier grid) — so this is a real, previously-latent bug in a shared component, not something Merchants introduced on its own.
 
 Fixed with a one-class addition (`break-all` on the value `<div>` in `src/components/dashboard/KPICard.tsx`) so long values wrap onto a second line instead of overflowing; CSS Grid's default row-stretch alignment means the other four cards in that row grow to match height automatically, so the row stays visually even. Re-verified: `scrollWidth === clientWidth` on all 5 cards afterward, and re-screenshotted Dashboard/Statements/Categories to confirm no visual regression on their (short) KPI values.
+
+## Merchant Review Drawer
+
+Added in a follow-up commit, after the base module above was already committed and pushed — per instruction, nothing in the base module was rewritten; this is purely additive.
+
+### Objective and interaction model
+
+The Stitch "Intelligence Detail" panel established that the primary interaction for reviewing a merchant is a right-side slide-over, not a page navigation. Three equivalent entry points open it, all wired to the same `handleReviewMerchant`:
+
+- Clicking anywhere on a merchant's table row (except an interactive cell).
+- Clicking the merchant's name specifically.
+- The "Review Merchant" item in the row's "..." menu (new — added above "Edit Merchant").
+
+Clicking the inline Default Category selector, a sort header, or another row action does **not** also open the drawer — the row's `onClick` checks whether the click originated inside `button, [role="combobox"], [role="menuitem"]` via `event.target.closest(...)` and no-ops if so, rather than every interactive cell stopping propagation individually (simpler, and avoided real accessibility errors — see "Bugs found" below). The underlying table and its current filters/sort/pagination are never touched by opening or closing the drawer, since it's an overlay (`Sheet`/portal), not a route change — "preserve filters/pagination/scroll position" from the spec falls out of that for free, it isn't separately implemented.
+
+### Reusable `EntityReviewDrawer`
+
+Built as a generic component in `src/components/` (not `components/merchants/`), per the explicit instruction not to build a Merchant-only drawer:
+
+- `EntityReviewDrawer` — Sheet-based shell: header with an accessible/visible title, and a scrollable content area for arbitrary `children`. No Save/Cancel opinion baked in.
+- `EntityReviewDrawerFooter` — the standardized Cancel / Save Changes / loading-state footer, rendered by the entity-specific body (e.g. `MerchantReviewDrawer`'s `DrawerBody`) as the **last** child of `EntityReviewDrawer`'s content, using `sticky bottom-0` so it stays pinned while the rest of the content scrolls beneath it.
+
+`MerchantReviewDrawer` supplies only the four Merchant-specific sections as children — nothing merchant-specific lives in `EntityReviewDrawer` itself. When Categories/Clients/Accounts/Credit Cards get their own review drawers, they compose the same two primitives the same way.
+
+### Section content
+
+1. **Merchant Identity** — logo placeholder (`Store` icon, matching the table's row icon), editable Merchant Name, editable Status (+ a read-only "Current Status" badge showing the persisted value alongside the draft edit), and a disabled "Merchant ID — assigned automatically — coming soon" field (spec: "future placeholder").
+2. **Classification** — Default Category via the same reused `CategorySelector`; Client Mapping rendered as a disabled placeholder (`MerchantRecord` has no client-mapping field, and this task's instructions explicitly forbid modifying domain models here — see "Scope note" below); Notes via `Textarea`.
+3. **Merchant Intelligence** (read-only) — Total Transactions/Total Spend/Average Transaction come straight from the already-loaded `MerchantRecord` (no extra fetch); Last Transaction likewise. First Seen is the one genuinely new query: `useTransactionsList({ ..., sort: { id: 'date', desc: false }, filters: { merchantId }, pageSize: 1 })`, reusing the existing hook/repository exactly as-is, just with ascending sort to get the earliest transaction.
+4. **Recent Transactions** — latest 5 via `useTransactionsList({ ..., sort: { id: 'date', desc: true }, filters: { merchantId }, pageSize: 5 })`. Columns are Date/Amount/Category/Account-Card, reusing `AccountCell` from `components/transactions/` for the last one. "View All Transactions" calls the **same** `handleViewTransactions` the row's primary action already uses — `navigate('/transactions?merchantId=...')` — not a second navigation path.
+
+### Scope note: Client Mapping
+
+The spec lists "Client Mapping" as editable, but `MerchantRecord` has no client-mapping field, and this task's own "DO NOT CHANGE" section forbids modifying domain models. Rather than either inventing a field (violates the constraint) or building a selector that silently discards its value on save (misleading), it's rendered as a disabled placeholder — the same honest pattern already established for Aliases/Merchant Rules in `MerchantFormDialog` and Icon in Categories' form. Flagged here explicitly since it's a real spec/constraint conflict, not an oversight.
+
+### Save flow
+
+`Save Changes` calls the existing `useUpdateMerchant()` mutation with the drawer's draft values (name/defaultCategoryId/status/notes — the same shape `MerchantFormDialog` already sends, no new mutation or endpoint). On success: the drawer closes, the table's row updates via the existing query invalidation (no drawer-specific refetch logic), and `Toast` shows "`<name>` saved." for 3 seconds. `Cancel` and `Escape` both discard the draft without mutating.
+
+### Accessibility features
+
+- **Escape / click-outside / focus trap** — inherited from Base UI's `Dialog` primitive underlying `Sheet`, the same one `TransactionDetailsDrawer`/`StatementDetailsDrawer` already use. Not custom-built.
+- **Row-click exception is scoped and justified**, not a blanket suppression: making an entire `<tr>` a real ARIA button (`role="button" tabIndex={0}`) was considered and rejected — it would nest an interactive widget around the row's _own_ interactive children (the category selector, action buttons), which is invalid ARIA nesting and would make keyboard Tab/Enter behavior actively confusing around those controls. The name button and "Review Merchant" menu item are the fully keyboard-operable equivalents of the row click; the row's `onClick` is documented in-code as mouse-only convenience layered on top of them.
+- **Focus restoration to the triggering row** — this needed real custom work; see "Bugs found" below.
+- Form fields use the same `Label`/`aria-required`/`aria-invalid` pattern as every other form in this app; read-only Intelligence values use plain text, not disabled inputs, so screen readers announce them as static content rather than unavailable controls.
+
+### Responsive behaviour
+
+Screenshotted at 1440px/834px/390px with the drawer open at each. `document.body.scrollWidth === clientWidth` at all three — no page-level overflow. The drawer is `w-full` on mobile (fills the viewport) and `sm:max-w-lg` from the `sm` breakpoint up, matching `TransactionDetailsDrawer`/`StatementDetailsDrawer`'s existing `side="right"` sizing convention rather than a new breakpoint scheme.
+
+### Bugs found and fixed during verification
+
+1. **A real accessibility lint error, not a style nit.** The first draft stopped click propagation on wrapper `<div>`s around the Default Category cell and the actions menu, to keep the row's own `onClick` from also firing. ESLint's `jsx-a11y/click-events-have-key-events` and `no-static-element-interactions` correctly rejected this — a `<div onClick>` with no keyboard equivalent is a real a11y gap, not a false positive. Fixed by removing those wrapper divs entirely and instead checking the click target on the row's own handler (`event.target.closest('button, [role="combobox"], [role="menuitem"]')) — see "Interaction model" above. Zero lint errors after.
+2. **Focus restoration required real investigation, not just wiring a ref.** The first implementation captured `document.activeElement` on open and called `.focus()` on it from the Sheet's `onOpenChange(false)` callback — and focus landed on `<body>` every time, not the button. Root-caused via a `MutationObserver` + a monkey-patched `HTMLElement.prototype.focus` in a scratch Playwright script (not guesswork): opening the drawer changes this page's state, which re-renders `MerchantTable` with brand-new (unmemoized) row-action callback props, which changes the `columns` `useMemo`'s dependency array, which makes TanStack Table's `flexRender` treat every cell as a new component instance and remount it — so **any** DOM ref captured before that point is reliably stale by close time. This is a pre-existing characteristic every table in this codebase shares (Category/Statement/Transaction tables all follow the identical unmemoized-callbacks-in-`useMemo`-deps pattern); it was simply never observed before because no prior feature depended on DOM node identity surviving a parent re-render. Fixing it project-wide (wrapping every page's row-action handlers in `useCallback`) was out of this module's scope, so the fix is scoped to Merchants: store the merchant's **id**, not a DOM node, and re-query a fresh element (`[data-merchant-row-trigger="<id>"]`, a small new attribute on the name button) at restore time. Separately, Base UI's `Dialog` only auto-restores focus when opened via its own `Trigger` component — every dialog in this app (this one included) is opened via externally-controlled state instead — so restoration is explicit, hooked off `onOpenChangeComplete` (exposed through `EntityReviewDrawer`'s new `onClosed` prop) rather than a guessed timeout, deferred one further macrotask because Base UI keeps moving focus onto its own closing popup container a couple more times immediately after that callback fires. Verified with a dedicated Playwright test (`toBeFocused()` on the original trigger after Escape) across both the name-click and menu-item entry points.
 
 ## Architecture decisions
 
@@ -101,17 +182,17 @@ Fixed with a one-class addition (`break-all` on the value `<div>` in `src/compon
 
 ## Testing results
 
-| Check                                                           | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npx tsc -b --noEmit`                                           | ✔ Pass                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `npx eslint .`                                                  | ✔ 0 errors (6 pre-existing benign warnings: `useReactTable` React Compiler notices on `MerchantTable`/`CategoryTable`/`StatementTable`/`TransactionTable`, `react-refresh/only-export-components` on `badge.tsx`/`button.tsx`)                                                                                                                                                                                                                                      |
-| `npm run build`                                                 | ✔ Pass — `Merchants` chunk builds as its own lazy-loaded bundle (23.3kB / 6.9kB gzip)                                                                                                                                                                                                                                                                                                                                                                               |
-| `npx vitest run`                                                | ✔ 14/14 (4 new `merchantsToCsv` cases: header+row format, Uncategorized fallback, blank last-transaction cell, comma-quoting; existing `transactionsToCsv`/`categoriesToCsv` cases unchanged and still passing)                                                                                                                                                                                                                                                     |
-| `npx playwright test --project=chromium`                        | ✔ 36/36 (26 pre-existing + **10 new** Merchants specs: list loads, all 5 KPIs visible, search filters rows, row menu shows Edit/Change Category/Merge-placeholder/Delete, primary action drills into Transactions with the filter+banner applied, Default Category cell is inline-editable, Add Merchant dialog exposes every spec'd field including the two disabled placeholders, required-name validation, Edit prefills from the row, sorting toggles asc/desc) |
-| Responsive — desktop (1440px) / tablet (834px) / mobile (390px) | ✔ Screenshotted at all three; `document.body.scrollWidth === clientWidth` at every breakpoint — no page-level horizontal overflow (after the KPICard fix above)                                                                                                                                                                                                                                                                                                     |
-| Drill-down end-to-end                                           | ✔ Verified manually + in Playwright: clicking "View Transactions" on Adobe Creative Cloud navigates to `/transactions?merchantId=merchant-adobe`, shows "Filtered by merchant: Adobe Creative Cloud", and the ledger correctly shows only that merchant's 14 transactions                                                                                                                                                                                           |
-| Keyboard / accessibility                                        | ✔ Inherited from Base UI's accessible primitives — same pattern as Modules 3–5                                                                                                                                                                                                                                                                                                                                                                                      |
-| Dark mode                                                       | ✔ Only mode exercised (consistent with Modules 1–5)                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Check                                                           | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npx tsc -b --noEmit`                                           | ✔ Pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `npx eslint .`                                                  | ✔ 0 errors (6 pre-existing benign warnings: `useReactTable` React Compiler notices on `MerchantTable`/`CategoryTable`/`StatementTable`/`TransactionTable`, `react-refresh/only-export-components` on `badge.tsx`/`button.tsx`)                                                                                                                                                                                                                                                                      |
+| `npm run build`                                                 | ✔ Pass — `Merchants` chunk builds as its own lazy-loaded bundle (23.3kB / 6.9kB gzip)                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `npx vitest run`                                                | ✔ 14/14 (4 new `merchantsToCsv` cases: header+row format, Uncategorized fallback, blank last-transaction cell, comma-quoting; existing `transactionsToCsv`/`categoriesToCsv` cases unchanged and still passing)                                                                                                                                                                                                                                                                                     |
+| `npx playwright test --project=chromium`                        | ✔ 46/46 (26 pre-existing + 10 base-module Merchants specs + **11 new drawer specs**: opens via name click / row click / "Review Merchant" menu item, does NOT open on an interactive-cell click, all 4 sections render with their spec'd fields, View All Transactions drills into Transactions reusing the existing banner, Cancel discards edits, Escape closes, Save Changes persists + shows the toast, and — the one that mattered most — focus is restored to the triggering row after close) |
+| Responsive — desktop (1440px) / tablet (834px) / mobile (390px) | ✔ Screenshotted at all three; `document.body.scrollWidth === clientWidth` at every breakpoint — no page-level horizontal overflow (after the KPICard fix above)                                                                                                                                                                                                                                                                                                                                     |
+| Drill-down end-to-end                                           | ✔ Verified manually + in Playwright: clicking "View Transactions" on Adobe Creative Cloud navigates to `/transactions?merchantId=merchant-adobe`, shows "Filtered by merchant: Adobe Creative Cloud", and the ledger correctly shows only that merchant's 14 transactions                                                                                                                                                                                                                           |
+| Keyboard / accessibility                                        | ✔ Inherited from Base UI's accessible primitives — same pattern as Modules 3–5                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Dark mode                                                       | ✔ Only mode exercised (consistent with Modules 1–5)                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 Two test-authoring bugs (not app bugs) were caught while writing `merchants.spec.ts`, both the same class Modules 3–5 already flagged: `getByText('Total Spend')` matched both the KPI label and the sortable table-column header with identical text (scoped with `{ exact: true }.first()`), and a second click on `getByRole('button', { name: 'Add Merchant' })` timed out because Base UI marks the rest of the page inert while a dialog is open — the header button becomes inaccessible, leaving only the dialog's own submit button, so the extra `.nth(1)` was actually wrong, not needed.
 
@@ -122,6 +203,8 @@ Two test-authoring bugs (not app bugs) were caught while writing `merchants.spec
 3. Alias management ("Alias manager coming soon") and rule building ("Rule builder coming soon") are explicit future placeholders per this task's spec — `MerchantRecord.aliases`/`hasRules` already model the read side; only write UIs remain, and per CLAUDE.md's Merchant Center contract, any actual categorization-rule _logic_ stays out of this module's scope regardless (n8n/AI Categorisation territory).
 4. Merge Merchants is disabled in the row menu ("Soon") — per the spec's "Future placeholder" note. When scoped, it should follow the audit-preserving behavior CLAUDE.md's original Merchant Center business rules describe ("Merge should preserve audit history").
 5. The generalized `DRILL_DOWN_PARAMS` map in `Transactions.tsx` is ready for Client/Account/Credit Card/Statement drill-downs the moment those modules are built — no Transactions-side changes needed beyond adding one map entry per new param.
+6. Client Mapping (drawer Classification section) needs a real field on `MerchantRecord` (or a join through a future `clients` relationship) before it can be more than a placeholder — see "Scope note: Client Mapping" above.
+7. `EntityReviewDrawer`/`EntityReviewDrawerFooter` are ready to be reused as-is by Categories/Clients/Accounts/Credit Cards' own review drawers when those are built — no changes anticipated to the shell itself, only to the entity-specific body composing it.
 
 ## Commits
 
@@ -135,6 +218,7 @@ Two test-authoring bugs (not app bugs) were caught while writing `merchants.spec
 8. `feat(module-4): implement statements module`
 9. `docs: update project governance and development roadmap`
 10. `feat(module-5): implement categories module`
-11. `feat(module-6): implement merchants module` — this module
+11. `feat(module-6): implement merchants module`
+12. `feat(module-6): add merchant review drawer` — this follow-up
 
 Stopping here per instruction. Awaiting explicit approval before beginning Module 7.

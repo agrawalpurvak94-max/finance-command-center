@@ -12,6 +12,7 @@ interface MerchantTableProps {
   merchants: readonly MerchantRecord[]
   sort: MerchantSort | undefined
   onSortChange: (sort: MerchantSort) => void
+  onReview: (merchant: MerchantRecord) => void
   onViewTransactions: (merchant: MerchantRecord) => void
   onEdit: (merchant: MerchantRecord) => void
   onChangeCategory: (merchant: MerchantRecord, categoryId: string | null) => void
@@ -30,6 +31,7 @@ export function MerchantTable({
   merchants,
   sort,
   onSortChange,
+  onReview,
   onViewTransactions,
   onEdit,
   onChangeCategory,
@@ -45,7 +47,17 @@ export function MerchantTable({
             <div className="flex size-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
               <Store className="size-4" aria-hidden="true" />
             </div>
-            <span className="text-body-sm font-semibold text-foreground">{row.original.name}</span>
+            <button
+              type="button"
+              data-merchant-row-trigger={row.original.id}
+              onClick={(e) => {
+                e.stopPropagation()
+                onReview(row.original)
+              }}
+              className="text-body-sm font-semibold text-foreground underline-offset-2 hover:underline focus-visible:underline"
+            >
+              {row.original.name}
+            </button>
           </div>
         ),
       },
@@ -113,6 +125,7 @@ export function MerchantTable({
         cell: ({ row }) => (
           <MerchantRowActionsMenu
             merchant={row.original}
+            onReview={onReview}
             onViewTransactions={onViewTransactions}
             onEdit={onEdit}
             onDelete={onDelete}
@@ -120,7 +133,7 @@ export function MerchantTable({
         ),
       },
     ],
-    [onViewTransactions, onEdit, onChangeCategory, onDelete],
+    [onReview, onViewTransactions, onEdit, onChangeCategory, onDelete],
   )
 
   const table = useReactTable({
@@ -177,7 +190,22 @@ export function MerchantTable({
         </thead>
         <tbody className="divide-y divide-border">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="transition-colors hover:bg-accent/40">
+            <tr
+              key={row.id}
+              onClick={(e) => {
+                // Whole-row click is a mouse convenience layered on top of
+                // the name button and the "Review Merchant" menu item,
+                // which are the fully keyboard-accessible equivalents — so
+                // this only needs to no-op when the click originated from
+                // one of the row's own interactive controls (category
+                // selector, row action buttons) rather than implement its
+                // own keyboard handling.
+                const target = e.target as HTMLElement
+                if (target.closest('button, [role="combobox"], [role="menuitem"]')) return
+                onReview(row.original)
+              }}
+              className="cursor-pointer transition-colors hover:bg-accent/40"
+            >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="p-md align-middle">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

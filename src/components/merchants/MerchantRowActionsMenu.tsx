@@ -1,4 +1,4 @@
-import { ArrowUpRight, Pencil, Tag, Trash2, MoreVertical, Combine } from 'lucide-react'
+import { ArrowUpRight, Pencil, Tag, Trash2, MoreVertical, Combine, IdCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import type { MerchantRecord } from '@/domain/Merchant'
 
 interface MerchantRowActionsMenuProps {
   merchant: MerchantRecord
+  onReview: (merchant: MerchantRecord) => void
   onViewTransactions: (merchant: MerchantRecord) => void
   onEdit: (merchant: MerchantRecord) => void
   onDelete: (merchant: MerchantRecord) => void
@@ -18,6 +19,7 @@ interface MerchantRowActionsMenuProps {
 
 export function MerchantRowActionsMenu({
   merchant,
+  onReview,
   onViewTransactions,
   onEdit,
   onDelete,
@@ -43,6 +45,11 @@ export function MerchantRowActionsMenu({
           <MoreVertical className="size-4" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => onReview(merchant)}>
+            <IdCard className="size-4" aria-hidden="true" />
+            Review Merchant
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onEdit(merchant)}>
             <Pencil className="size-4" aria-hidden="true" />
             Edit Merchant

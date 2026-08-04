@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Search, Store } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
@@ -7,12 +7,14 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { Pagination } from '@/components/Pagination'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Toast } from '@/components/Toast'
 import { MerchantsHeader } from '@/components/merchants/MerchantsHeader'
 import { MerchantFilters } from '@/components/merchants/MerchantFilters'
 import { MerchantSummaryWidget } from '@/components/merchants/MerchantSummaryWidget'
 import { MerchantTable } from '@/components/merchants/MerchantTable'
 import { MerchantTableSkeleton } from '@/components/merchants/MerchantTableSkeleton'
 import { MerchantFormDialog } from '@/components/merchants/MerchantFormDialog'
+import { MerchantReviewDrawer } from '@/components/merchants/MerchantReviewDrawer'
 import {
   useCreateMerchant,
   useDeleteMerchant,
@@ -42,6 +44,26 @@ export function Merchants() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingMerchant, setEditingMerchant] = useState<MerchantRecord | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<MerchantRecord | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewingMerchant, setReviewingMerchant] = useState<MerchantRecord | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  // Base UI's Sheet only auto-restores focus when opened via its own
+  // Trigger component; every dialog/drawer in this app (including this one)
+  // is opened via externally-controlled state instead, so restoring focus
+  // has to be done explicitly — see MerchantReviewDrawer's onClosed (fires
+  // once the close transition genuinely finishes, via EntityReviewDrawer/
+  // Sheet's onOpenChangeComplete).
+  //
+  // Storing a merchant id (not a captured DOM node) deliberately: opening
+  // the drawer changes this page's state, which re-renders MerchantTable
+  // with new (unmemoized) row-action callbacks, which changes its `columns`
+  // useMemo, which makes TanStack Table's flexRender treat every cell as a
+  // brand-new component and remount it — so a DOM ref captured at open time
+  // is reliably stale by close time regardless of which of the three entry
+  // points (row / name / "Review Merchant" menu item) was used. Re-querying
+  // by id at restore time sidesteps that instead of trying to fix table
+  // cell identity project-wide, which is out of this module's scope.
+  const reviewTriggerMerchantId = useRef<string | null>(null)
 
   const categoriesQuery = useTransactionCategories()
 
@@ -66,6 +88,12 @@ export function Merchants() {
   function handleEditMerchant(merchant: MerchantRecord) {
     setEditingMerchant(merchant)
     setFormOpen(true)
+  }
+
+  function handleReviewMerchant(merchant: MerchantRecord) {
+    reviewTriggerMerchantId.current = merchant.id
+    setReviewingMerchant(merchant)
+    setReviewOpen(true)
   }
 
   function handleChangeCategory(merchant: MerchantRecord, categoryId: string | null) {
@@ -177,6 +205,7 @@ export function Merchants() {
                 setSort(next)
                 setPage(1)
               }}
+              onReview={handleReviewMerchant}
               onViewTransactions={handleViewTransactions}
               onEdit={handleEditMerchant}
               onChangeCategory={handleChangeCategory}
@@ -234,6 +263,29 @@ export function Merchants() {
           setDeleteTarget(null)
         }}
       />
+
+      <MerchantReviewDrawer
+        merchant={reviewingMerchant}
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        onClosed={() => {
+          const id = reviewTriggerMerchantId.current
+          if (!id) return
+          // Re-query for a live node rather than reusing a captured ref —
+          // see the comment on reviewTriggerMerchantId above for why a
+          // captured ref goes stale here. Deferred one macrotask so it also
+          // runs after Base UI's own trailing focus-into-popup cleanup.
+          setTimeout(() => {
+            document
+              .querySelector<HTMLElement>(`[data-merchant-row-trigger="${CSS.escape(id)}"]`)
+              ?.focus()
+          }, 0)
+        }}
+        onViewAllTransactions={handleViewTransactions}
+        onSaved={setToastMessage}
+      />
+
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
     </PageContainer>
   )
 }
