@@ -35,6 +35,135 @@ Never redesign approved architecture.
 
 \---
 
+\# PROJECT PHASE: FEATURE DEVELOPMENT MODE
+
+Status as of 2026-08-03: ARCHITECTURE FROZEN.
+
+The architecture, shared components, domain layer, and project foundation are now considered complete.
+
+\- Application Shell — done  
+\- Dashboard — done  
+\- Domain layer (\`src/domain/\*\`) — done, shared, do not fork  
+\- Repository/service/hook layering — done, do not redesign  
+\- Shared components (\`PageContainer\`, \`QueryBoundary\`, \`EmptyState\`, \`ConfirmDialog\`, \`Pagination\`, \`FloatingActionButton\`, shadcn/ui primitives) — done, reuse only
+
+The project has transitioned from architecture-first to feature delivery.
+
+\---
+
+\#\# New Development Philosophy
+
+From this point onward
+
+\- Prioritize delivering business functionality.  
+\- Reuse existing architecture.  
+\- Reuse existing components.  
+\- Reuse existing domain models.  
+\- Avoid repository-wide refactoring.  
+\- Avoid introducing new architectural patterns unless absolutely necessary.  
+\- Limit changes to the current module and shared reusable components only when required.
+
+The architecture is considered frozen.
+
+\---
+
+\#\# Feature Development Rules
+
+Architecture is frozen. For every future module
+
+1\. Reuse existing components whenever possible.
+
+2\. Reuse existing domain models.
+
+3\. Reuse existing repositories.
+
+4\. Reuse existing hooks.
+
+5\. Do not duplicate business logic.
+
+6\. Do not move folders — no folder restructuring.
+
+7\. Do not rename modules.
+
+8\. No project-wide refactoring unless explicitly requested — do not perform project-wide cleanup.
+
+9\. Do not introduce new abstractions unless reused by multiple modules.
+
+10\. One module at a time — build production-ready code only.
+
+11\. Complete quality checks (build, typecheck, lint, tests, Playwright) before every commit.
+
+12\. Wait for explicit approval before starting the next module.
+
+\---
+
+\#\# Authoritative Module Sequence
+
+This table is the single source of truth for module order and commit scope. If any other section of this document (including the numbered "MODULE" contract headers in Parts 4–5) appears to disagree with this table, this table wins.
+
+Completed
+
+\| Module \| Name \| Status \|  
+\| --- \| --- \| --- \|  
+\| 1 \| Application Shell \| ✅ Done \|  
+\| 2 \| Dashboard \| ✅ Done \|  
+\| 3 \| Transactions \| ✅ Done \|  
+\| 4 \| Statements \| ✅ Done \|
+
+Upcoming — build in this order, one at a time, stopping for explicit approval between each
+
+\| Module \| Name \| Purpose \|  
+\| --- \| --- \| --- \|  
+\| 5 \| Categories \| Master data for transaction categorization. \|  
+\| 6 \| Merchants \| Merchant management and merchant-category mapping. \|  
+\| 7 \| Clients \| Client master data and client assignment. \|  
+\| 8 \| Accounts \| Bank account management. \|  
+\| 9 \| Credit Cards \| Credit card management. \|  
+\| 10 \| Analytics \| Historical insights and reporting. \|  
+\| 11 \| Settings \| Application configuration. \|  
+\| 12A \| Supabase Integration \| Replace mock repositories with live Supabase repositories, Authentication, and Storage. No UI redesign. \|  
+\| 12B \| n8n Integration \| Connect and verify n8n workflows (A/B/C) against the live Supabase schema built in 12A. No UI redesign, no workflow changes. \|
+
+Deferred — not part of the current module sequence (Modules 1–11, plus 12A/12B) (see the "DEFERRED MODULES" note at the end of Part 5 for why, and what re-approval requires)
+
+\- AI Review Center  
+\- Global Search
+
+\---
+
+\#\# Module Development Process
+
+Every future module follows exactly this process.
+
+Step 1 — Review
+
+\- PRODUCT\_DECISIONS.md  
+\- CLAUDE.md  
+\- COMPONENT\_LIBRARY.md  
+\- DOMAIN\_ARCHITECTURE\_REPORT.md
+
+Step 2 — Review the corresponding Stitch design.
+
+Step 3 — Identify reusable components. Reuse before creating new components.
+
+Step 4 — Implement only the current module.
+
+Step 5 — Run Build, Typecheck, ESLint, Prettier, Unit Tests, Playwright.
+
+Step 6 — Fix every issue.
+
+Step 7 — Generate MODULEX\_REPORT.md.
+
+Step 8 — Commit.
+
+Step 9 — Push.
+
+Step 10 — Stop. Wait for explicit approval before beginning the next module.
+
+Steps 5, 8, and 9 above are governed in full mechanical detail by the "MODULE COMPLETION GIT PROTOCOL" in Part 6 — that section is the how-to; this list is the overall sequence. Do not duplicate its detail here.
+
+\---
+
 \# PROJECT OVERVIEW
 
 Project Name
@@ -661,10 +790,6 @@ Routes
 
 Dashboard
 
-/accounts
-
-/accounts/:id
-
 /transactions
 
 /transactions/:id
@@ -673,13 +798,27 @@ Dashboard
 
 /statements/:id
 
-/analytics
+/categories
 
 /merchants
 
-/ai-review
+/merchants/:id
+
+/clients
+
+/accounts
+
+/accounts/:id
+
+/credit-cards
+
+/analytics
 
 /settings
+
+\---
+
+Route order above follows the Authoritative Module Sequence. \`/ai-review\` and a dedicated global-search route are intentionally omitted — see "DEFERRED MODULES" at the end of Part 5.
 
 \---
 
@@ -2075,83 +2214,7 @@ Settings
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
-MODULE 3
-
-ACCOUNTS
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-Goal
-
-Provide a complete overview of every financial account.
-
-Pages
-
-/accounts
-
-/accounts/:id
-
-Views
-
-vw\_accounts
-
-vw\_account\_summary
-
-vw\_account\_transactions
-
-vw\_account\_trends
-
-vw\_account\_health
-
-Components
-
-AccountCard
-
-AccountSummary
-
-BalanceHistory
-
-TransactionTable
-
-HealthCard
-
-StatementHistory
-
-Hooks
-
-useAccounts()
-
-Services
-
-accounts.service.ts
-
-Features
-
-Balance
-
-Credit Utilization
-
-Health Score
-
-Statements
-
-Recent Transactions
-
-Monthly Trends
-
-Acceptance Criteria
-
-No duplicate queries
-
-All charts responsive
-
-Virtualized transaction list
-
-\---
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-MODULE 4
+MODULE 3 — ✅ DONE
 
 TRANSACTIONS
 
@@ -2241,7 +2304,7 @@ Optimistic Updates
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
-MODULE 5
+MODULE 4 — ✅ DONE
 
 STATEMENTS
 
@@ -2339,19 +2402,27 @@ These already exist in n8n.
 
 END OF PART 4
 
-The next section continues with
+Modules 1–4 above are complete (see the Authoritative Module Sequence table in "PROJECT PHASE: FEATURE DEVELOPMENT MODE" near the top of this document). The next section continues with the upcoming modules, in build order:
 
-MODULE 6 Analytics
+MODULE 5 Categories
 
-MODULE 7 Merchant Center
+MODULE 6 Merchants
 
-MODULE 8 AI Review
+MODULE 7 Clients
 
-MODULE 9 Global Search
+MODULE 8 Accounts
 
-MODULE 10 Settings
+MODULE 9 Credit Cards
 
-followed by Testing, Git Workflow, Deployment, Session Continuity and Definition of Done.
+MODULE 10 Analytics
+
+MODULE 11 Settings
+
+MODULE 12A Supabase Integration
+
+MODULE 12B n8n Integration
+
+followed by a Deferred Modules note, then Testing, Git Workflow, Deployment, Session Continuity and Definition of Done.
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#  
 \#  
@@ -2359,15 +2430,23 @@ followed by Testing, Git Workflow, Deployment, Session Continuity and Definition
 \#  
 \# MODULE IMPLEMENTATION CONTRACTS  
 \#  
+\# Categories  
+\#  
+\# Merchants  
+\#  
+\# Clients  
+\#  
+\# Accounts  
+\#  
+\# Credit Cards  
+\#  
 \# Analytics  
 \#  
-\# Merchant Center  
-\#  
-\# AI Review  
-\#  
-\# Global Search  
-\#  
 \# Settings  
+\#  
+\# Supabase Integration  
+\#  
+\# n8n Integration  
 \#  
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
@@ -2397,11 +2476,301 @@ Never implement features outside the current module.
 
 Complete the current module before starting another.
 
+Build in the exact order given in the Authoritative Module Sequence table. Stop after each module and wait for explicit approval before beginning the next (per the Module Development Process, Step 10).
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 5
+
+CATEGORIES
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Master data for transaction categorization.
+
+Domain model
+
+\`domain/Category.ts\` (\`Category\`) already exists — reuse, do not fork.
+
+Contract status
+
+Pages, Components, Hooks, Services, Views, Features, Business Rules, Acceptance Criteria, and Out of Scope are NOT yet fully scoped. They are to be defined at Step 1–3 of the Module Development Process, immediately before implementation begins, following the same contract format as every module above — not invented here in advance.
+
+Provisional naming (mechanical convention only, not a design decision)
+
+useCategories() — hook
+
+categories.service.ts — service
+
 \---
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
 MODULE 6
+
+MERCHANTS
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Purpose (per the updated roadmap)
+
+Merchant management and merchant-category mapping.
+
+Page/nav display name remains "Merchant Center" (per PRODUCT\_DECISIONS.md's approved sidebar); commit scope is \`module-6\` / \`merchants\`.
+
+Goal
+
+Create a Merchant Intelligence Center.
+
+This is not simply a lookup table.
+
+It is the learning engine of the application.
+
+Pages
+
+/merchants
+
+/merchants/:id
+
+Views
+
+vw\_merchants
+
+vw\_merchant\_details
+
+vw\_merchant\_transactions
+
+vw\_merchant\_analytics
+
+vw\_merchant\_review
+
+Components
+
+MerchantTable
+
+MerchantProfile
+
+MerchantAnalytics
+
+MerchantHistory
+
+AliasManager
+
+CategoryEditor
+
+MergeDialog
+
+LearningHistory
+
+ConfidenceBadge
+
+Hooks
+
+useMerchants()
+
+Services
+
+merchant.service.ts
+
+Features
+
+Merchant Search
+
+Merchant Profile
+
+Aliases
+
+Merchant Statistics
+
+Transaction History
+
+Category Rules
+
+Confidence Score
+
+Merchant Merge
+
+Merchant Notes
+
+Learning Timeline
+
+Future
+
+Merchant Logos
+
+Merchant Website
+
+Merchant Type
+
+Business Rules
+
+Merchant Memory is authoritative.
+
+Manual corrections improve future categorisation.
+
+Never overwrite historical data.
+
+Merge should preserve audit history.
+
+Acceptance Criteria
+
+Search under 300ms
+
+Virtualized table
+
+Duplicate detection
+
+Responsive layout
+
+Out of Scope
+
+AI Categorisation Logic
+
+n8n Merchant Learning
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 7
+
+CLIENTS
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Client master data and client assignment.
+
+Domain model
+
+\`domain/Client.ts\` (\`Client\`) already exists — reuse, do not fork.
+
+Contract status
+
+Pages, Components, Hooks, Services, Views, Features, Business Rules, Acceptance Criteria, and Out of Scope are NOT yet fully scoped. They are to be defined at Step 1–3 of the Module Development Process, immediately before implementation begins, following the same contract format as every module above — not invented here in advance.
+
+Provisional naming (mechanical convention only, not a design decision)
+
+useClients() — hook
+
+clients.service.ts — service
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 8
+
+ACCOUNTS
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Provide a complete overview of every financial account.
+
+Pages
+
+/accounts
+
+/accounts/:id
+
+Views
+
+vw\_accounts
+
+vw\_account\_summary
+
+vw\_account\_transactions
+
+vw\_account\_trends
+
+vw\_account\_health
+
+Components
+
+AccountCard
+
+AccountSummary
+
+BalanceHistory
+
+TransactionTable
+
+HealthCard
+
+StatementHistory
+
+Hooks
+
+useAccounts()
+
+Services
+
+accounts.service.ts
+
+Features
+
+Balance
+
+Credit Utilization
+
+Health Score
+
+Statements
+
+Recent Transactions
+
+Monthly Trends
+
+Acceptance Criteria
+
+No duplicate queries
+
+All charts responsive
+
+Virtualized transaction list
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 9
+
+CREDIT CARDS
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Credit card management.
+
+Credit Cards is a standalone module — per PRODUCT\_DECISIONS.md, do not merge it into Accounts.
+
+Domain model
+
+\`domain/CreditCard.ts\` (\`KNOWN\_CARD\_NETWORKS\`, \`CardNetwork\`) already exists — reuse, do not fork.
+
+Contract status
+
+Pages, Components, Hooks, Services, Views, Features, Business Rules, Acceptance Criteria, and Out of Scope are NOT yet fully scoped. They are to be defined at Step 1–3 of the Module Development Process, immediately before implementation begins, following the same contract format as every module above — not invented here in advance. When scoping this module, revisit \`ARCHITECTURE\_AUDIT.md\`'s open recommendation on whether \`ConnectedAccount\` and \`TransactionAccount\` should share a base interface once this module's real display needs are known.
+
+Provisional naming (mechanical convention only, not a design decision)
+
+useCreditCards() — hook
+
+credit-cards.service.ts — service
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 10
 
 ANALYTICS
 
@@ -2525,327 +2894,7 @@ Tax Reports
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
-MODULE 7
-
-MERCHANT CENTER
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-Goal
-
-Create a Merchant Intelligence Center.
-
-This is not simply a lookup table.
-
-It is the learning engine of the application.
-
-Pages
-
-/merchants
-
-/merchants/:id
-
-Views
-
-vw\_merchants
-
-vw\_merchant\_details
-
-vw\_merchant\_transactions
-
-vw\_merchant\_analytics
-
-vw\_merchant\_review
-
-Components
-
-MerchantTable
-
-MerchantProfile
-
-MerchantAnalytics
-
-MerchantHistory
-
-AliasManager
-
-CategoryEditor
-
-MergeDialog
-
-LearningHistory
-
-ConfidenceBadge
-
-Hooks
-
-useMerchants()
-
-Services
-
-merchant.service.ts
-
-Features
-
-Merchant Search
-
-Merchant Profile
-
-Aliases
-
-Merchant Statistics
-
-Transaction History
-
-Category Rules
-
-Confidence Score
-
-Merchant Merge
-
-Merchant Notes
-
-Learning Timeline
-
-Future
-
-Merchant Logos
-
-Merchant Website
-
-Merchant Type
-
-Business Rules
-
-Merchant Memory is authoritative.
-
-Manual corrections improve future categorisation.
-
-Never overwrite historical data.
-
-Merge should preserve audit history.
-
-Acceptance Criteria
-
-Search under 300ms
-
-Virtualized table
-
-Duplicate detection
-
-Responsive layout
-
-Out of Scope
-
-AI Categorisation Logic
-
-n8n Merchant Learning
-
-\---
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-MODULE 8
-
-AI REVIEW CENTER
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-Goal
-
-Provide a Human-in-the-Loop interface for reviewing AI decisions.
-
-Pages
-
-/ai-review
-
-Views
-
-vw\_ai\_review
-
-vw\_ai\_review\_summary
-
-vw\_ai\_accuracy
-
-vw\_ai\_learning
-
-Components
-
-ReviewQueue
-
-ReviewDrawer
-
-ConfidenceMeter
-
-AIExplanation
-
-ApprovalPanel
-
-BulkApprovalToolbar
-
-AccuracyDashboard
-
-LearningTimeline
-
-Hooks
-
-useAIReview()
-
-Services
-
-ai-review.service.ts
-
-Features
-
-Pending Queue
-
-Approve
-
-Reject
-
-Edit Category
-
-Edit Merchant
-
-Edit Client
-
-Confidence Breakdown
-
-Learning History
-
-Accuracy Statistics
-
-Bulk Actions
-
-Business Rules
-
-AI decisions are suggestions.
-
-User decisions become ground truth.
-
-Never overwrite user corrections.
-
-Acceptance Criteria
-
-Bulk review supported
-
-Keyboard shortcuts
-
-Responsive
-
-Accessible
-
-Audit history maintained
-
-Out of Scope
-
-Model Training
-
-Prompt Engineering
-
-AI Provider Selection
-
-\---
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-MODULE 9
-
-GLOBAL SEARCH
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-Goal
-
-Provide application-wide search.
-
-Keyboard shortcut
-
-CTRL \+ K
-
-Pages
-
-Available from every page.
-
-Views
-
-vw\_global\_search
-
-Components
-
-SearchCommand
-
-SearchInput
-
-SearchResults
-
-SearchHistory
-
-QuickActions
-
-Filters
-
-Hooks
-
-useSearch()
-
-Services
-
-search.service.ts
-
-Features
-
-Transaction Search
-
-Merchant Search
-
-Statement Search
-
-Account Search
-
-Category Search
-
-Settings Search
-
-Recent Searches
-
-Keyboard Navigation
-
-Instant Results
-
-Business Rules
-
-Search should use SQL Views.
-
-No client-side indexing.
-
-Debounce requests.
-
-Acceptance Criteria
-
-Search under 300ms
-
-Keyboard accessible
-
-Responsive
-
-Dark Mode
-
-No duplicate requests
-
-Out of Scope
-
-Natural Language Search
-
-AI Chat
-
-Voice Search
-
-\---
-
-\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
-
-MODULE 10
+MODULE 11
 
 SETTINGS
 
@@ -2952,6 +3001,322 @@ Out of Scope
 User Management
 
 Multi-Tenant Configuration
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 12A
+
+SUPABASE INTEGRATION
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Replace mock repositories with live Supabase repositories.
+
+Connect
+
+Supabase
+
+Authentication
+
+Storage
+
+No UI redesign.
+
+Pages
+
+None new — every existing page keeps its current UI exactly.
+
+Components
+
+None new — no visual changes. If a component was reading shape incorrectly against the real schema, fix the data mapping only, not the component's markup/design.
+
+Hooks
+
+None new — existing hooks (\`useDashboard\`, \`useTransactions\`, \`useStatements\`, and every hook added by Modules 5–11) keep their exact signatures. Only the repository each hook's service resolves to changes.
+
+Services
+
+Every \`\*.service.ts\` file changes exactly one line each: swap the exported \`mockXRepository\` instance for a new \`SupabaseXRepository implements XRepository\`. This is the single swap point every prior module's report has documented — see e.g. \`statements.service.ts\`.
+
+Views
+
+Implement the SQL views enumerated in Part 3's "REQUIRED SQL VIEWS" section (plus any additional views identified as this module's repositories are built) as real Supabase views/RPCs.
+
+Business Rules
+
+Every module's existing \`Repository\` interface is the contract the Supabase implementation must satisfy — do not change the interface to fit Supabase; make Supabase fit the interface. If an interface genuinely cannot be satisfied, stop and ask before changing it.
+
+Acceptance Criteria
+
+Every module's existing Playwright suite still passes unmodified against live data.
+
+No component, hook, or page file changes except the one-line repository swap per service file.
+
+No mock data remains reachable from any page.
+
+Out of Scope
+
+UI redesign of any kind.
+
+n8n workflow verification (see Module 12B).
+
+New feature functionality (this module is a data-source swap, not a feature module).
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+MODULE 12B
+
+n8n INTEGRATION
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+Goal
+
+Connect and verify n8n Workflows A, B, and C against the live Supabase schema built in Module 12A.
+
+No UI redesign.
+
+Pages
+
+None new.
+
+Components
+
+None new.
+
+Hooks
+
+None new — no hook signatures change.
+
+Services
+
+None — this module does not touch \`\*.service.ts\` files. It verifies that the tables/views Workflows A/B/C already write to match what Module 12A's Supabase repositories read from.
+
+Business Rules
+
+Never modify Workflow A (Transaction Email Processing), Workflow B (Statement Processing), or Workflow C (Merchant Learning) — per "WHAT CLAUDE MUST NEVER CHANGE" and "n8n INTEGRATION" in Part 1/3. This module only builds interfaces around them, per the "EXISTING BACKEND (CRITICAL)" section.
+
+If a workflow's output doesn't match what a repository expects, the fix is in the repository's mapping layer, not in the workflow — never edit n8n to fit the frontend.
+
+Acceptance Criteria
+
+Every Workflow A/B/C output table/view is confirmed reachable by its corresponding Module 12A repository.
+
+End-to-end smoke test: a real Gmail-sourced transaction and a real statement both appear correctly in the live UI.
+
+Out of Scope
+
+UI redesign of any kind.
+
+Any change to Workflow A, B, or C.
+
+New feature functionality.
+
+\---
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+DEFERRED MODULES — NOT PART OF THE CURRENT MODULE SEQUENCE
+
+\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
+
+The two contracts below (AI Review Center, Global Search) were part of the original architecture-phase module list but are NOT included in the Authoritative Module Sequence (Modules 1–12) established during the 2026-08-03 roadmap update. Reason: PRODUCT\_DECISIONS.md's approved sidebar navigation structure does not include either as a section, and the project owner's updated module order (see near the top of this document) does not schedule them.
+
+They are kept here, unmodified, for reference only — not deleted, since they represent real prior design work. Do not build either without the project owner first re-adding it to the Authoritative Module Sequence table with an explicit module number.
+
+\---
+
+DEFERRED — AI REVIEW CENTER
+
+Goal
+
+Provide a Human-in-the-Loop interface for reviewing AI decisions.
+
+Pages
+
+/ai-review
+
+Views
+
+vw\_ai\_review
+
+vw\_ai\_review\_summary
+
+vw\_ai\_accuracy
+
+vw\_ai\_learning
+
+Components
+
+ReviewQueue
+
+ReviewDrawer
+
+ConfidenceMeter
+
+AIExplanation
+
+ApprovalPanel
+
+BulkApprovalToolbar
+
+AccuracyDashboard
+
+LearningTimeline
+
+Hooks
+
+useAIReview()
+
+Services
+
+ai-review.service.ts
+
+Features
+
+Pending Queue
+
+Approve
+
+Reject
+
+Edit Category
+
+Edit Merchant
+
+Edit Client
+
+Confidence Breakdown
+
+Learning History
+
+Accuracy Statistics
+
+Bulk Actions
+
+Business Rules
+
+AI decisions are suggestions.
+
+User decisions become ground truth.
+
+Never overwrite user corrections.
+
+Acceptance Criteria
+
+Bulk review supported
+
+Keyboard shortcuts
+
+Responsive
+
+Accessible
+
+Audit history maintained
+
+Out of Scope
+
+Model Training
+
+Prompt Engineering
+
+AI Provider Selection
+
+\---
+
+DEFERRED — GLOBAL SEARCH
+
+Goal
+
+Provide application-wide search.
+
+Keyboard shortcut
+
+CTRL \+ K
+
+Pages
+
+Available from every page.
+
+Views
+
+vw\_global\_search
+
+Components
+
+SearchCommand
+
+SearchInput
+
+SearchResults
+
+SearchHistory
+
+QuickActions
+
+Filters
+
+Hooks
+
+useSearch()
+
+Services
+
+search.service.ts
+
+Features
+
+Transaction Search
+
+Merchant Search
+
+Statement Search
+
+Account Search
+
+Category Search
+
+Settings Search
+
+Recent Searches
+
+Keyboard Navigation
+
+Instant Results
+
+Business Rules
+
+Search should use SQL Views.
+
+No client-side indexing.
+
+Debounce requests.
+
+Acceptance Criteria
+
+Search under 300ms
+
+Keyboard accessible
+
+Responsive
+
+Dark Mode
+
+No duplicate requests
+
+Out of Scope
+
+Natural Language Search
+
+AI Chat
+
+Voice Search
 
 \---
 
@@ -3209,7 +3574,7 @@ feat: add dashboard cashflow widgets
 
 Module-scoped feature commits
 
-Every feature commit for Modules 4 and onward must scope the type with the module number.
+Every feature commit for Modules 3 and onward must scope the type with the module number. This mapping is derived from, and must always match, the Authoritative Module Sequence table in "PROJECT PHASE: FEATURE DEVELOPMENT MODE" near the top of this document.
 
 Format
 
@@ -3217,23 +3582,27 @@ feat(module-N): implement \<module-name\> module
 
 Mapping
 
-feat(module-4): implement statements module
+feat(module-3): implement transactions module — ✅ done
 
-feat(module-5): implement accounts module
+feat(module-4): implement statements module — ✅ done
 
-feat(module-6): implement credit cards module
+feat(module-5): implement categories module
 
-feat(module-7): implement categories module
+feat(module-6): implement merchants module
 
-feat(module-8): implement merchants module
+feat(module-7): implement clients module
 
-feat(module-9): implement clients module
+feat(module-8): implement accounts module
+
+feat(module-9): implement credit cards module
 
 feat(module-10): implement analytics module
 
 feat(module-11): implement settings module
 
-feat(module-12): integrate supabase
+feat(module-12a): integrate supabase
+
+feat(module-12b): integrate n8n
 
 The module report is included in the SAME commit as the feature. See MODULE COMPLETION GIT PROTOCOL below.
 
