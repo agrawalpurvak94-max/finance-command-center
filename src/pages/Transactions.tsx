@@ -42,6 +42,7 @@ const DRILL_DOWN_PARAMS = {
   categoryId: { label: 'category' },
   merchantId: { label: 'merchant' },
   bankAccountId: { label: 'bank account' },
+  creditCardId: { label: 'credit card' },
 } as const
 
 type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
