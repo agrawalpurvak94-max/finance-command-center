@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { Search, FileText } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
 import { Input } from '@/components/ui/input'
@@ -6,6 +7,7 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { Pagination } from '@/components/Pagination'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { StatementsHeader } from '@/components/statements/StatementsHeader'
 import { StatementFilters } from '@/components/statements/StatementFilters'
 import { StatementSummaryWidget } from '@/components/statements/StatementSummaryWidget'
@@ -26,16 +28,44 @@ import type {
   StatementFilters as StatementFiltersType,
   StatementSort,
 } from '@/domain/Statement'
+import type { TransactionAccount } from '@/domain/Account'
 
 const emptyFilters: StatementFiltersType = {}
 
+// Drill-down entry point Accounts (Module 8) / Credit Cards (Module 9) "View
+// All Statements" navigates here with — same shared mechanism Transactions.tsx
+// established (see its DRILL_DOWN_PARAMS comment), reused rather than a
+// second routing implementation, per CLAUDE.md's "do not duplicate business
+// logic" and the module spec's "Do NOT implement another routing mechanism".
+const ACCOUNT_ID_PARAM = 'accountId'
+
+function readAccountDrillDown(searchParams: URLSearchParams): string | undefined {
+  return searchParams.get(ACCOUNT_ID_PARAM) ?? undefined
+}
+
+function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: string): string {
+  const account = accounts.find((a) => a.id === id)
+  return account ? `${account.bankName} •••• ${account.last4}` : id
+}
+
 export function Statements() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Captured once on mount so clearing it doesn't reappear if the user then
+  // edits filters by hand — same pattern as Transactions.tsx's drillDown.
+  const [accountDrillDownId, setAccountDrillDownId] = useState<string | undefined>(() =>
+    readAccountDrillDown(searchParams),
+  )
+
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<StatementSort | undefined>({ id: 'statementDate', desc: true })
-  const [draftFilters, setDraftFilters] = useState<StatementFiltersType>(emptyFilters)
-  const [appliedFilters, setAppliedFilters] = useState<StatementFiltersType>(emptyFilters)
+  const [draftFilters, setDraftFilters] = useState<StatementFiltersType>(() =>
+    accountDrillDownId ? { accountId: accountDrillDownId } : emptyFilters,
+  )
+  const [appliedFilters, setAppliedFilters] = useState<StatementFiltersType>(() =>
+    accountDrillDownId ? { accountId: accountDrillDownId } : emptyFilters,
+  )
   const [selectedStatement, setSelectedStatement] = useState<Statement | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -75,6 +105,26 @@ export function Statements() {
     })
   }
 
+  function handleClearAccountDrillDown() {
+    if (!accountDrillDownId) return
+    setAccountDrillDownId(undefined)
+    setDraftFilters((prev) => ({ ...prev, accountId: undefined }))
+    setAppliedFilters((prev) => ({ ...prev, accountId: undefined }))
+    setPage(1)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(ACCOUNT_ID_PARAM)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const accountDrillDownLabelText = accountDrillDownId
+    ? accountDrillDownLabel(accountsQuery.data ?? [], accountDrillDownId)
+    : null
+
   return (
     <PageContainer className="flex flex-col gap-md">
       <StatementsHeader
@@ -85,6 +135,13 @@ export function Statements() {
         }}
         isRefreshing={listQuery.isFetching || summaryQuery.isFetching}
       />
+
+      {accountDrillDownId && (
+        <ActiveFilterBanner
+          label={`Filtered by account: ${accountDrillDownLabelText}`}
+          onClear={handleClearAccountDrillDown}
+        />
+      )}
 
       <StatementSummaryWidget query={summaryQuery} />
 

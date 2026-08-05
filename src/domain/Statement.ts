@@ -30,6 +30,8 @@ export interface StatementFilters {
   readonly accountKind?: AccountKind
   readonly status?: StatementStatus
   readonly clientId?: string
+  /** Drill-down filter from Accounts (Module 8) / Credit Cards (Module 9) "View All Statements". */
+  readonly accountId?: string
 }
 
 export interface StatementSort {

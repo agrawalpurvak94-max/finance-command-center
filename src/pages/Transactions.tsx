@@ -30,6 +30,7 @@ import {
 } from '@/hooks/useTransactions'
 import { downloadCsv, transactionsToCsv } from '@/utils/csv'
 import type { Transaction, TransactionFilters, TransactionSort } from '@/domain/Transaction'
+import type { TransactionAccount } from '@/domain/Account'
 
 const emptyFilters: TransactionFilters = {}
 
@@ -40,6 +41,7 @@ const emptyFilters: TransactionFilters = {}
 const DRILL_DOWN_PARAMS = {
   categoryId: { label: 'category' },
   merchantId: { label: 'merchant' },
+  bankAccountId: { label: 'bank account' },
 } as const
 
 type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
@@ -55,6 +57,11 @@ function readDrillDownFromSearchParams(searchParams: URLSearchParams): DrillDown
     if (id) return { param, id }
   }
   return undefined
+}
+
+function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: string): string {
+  const account = accounts.find((a) => a.id === id)
+  return account ? `${account.bankName} •••• ${account.last4}` : id
 }
 
 export function Transactions() {
@@ -148,7 +155,9 @@ export function Transactions() {
   const drillDownLabel = drillDown
     ? drillDown.param === 'categoryId'
       ? (categoriesQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id)
-      : (merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id)
+      : drillDown.param === 'merchantId'
+        ? (merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id)
+        : accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
     : null
 
   return (
