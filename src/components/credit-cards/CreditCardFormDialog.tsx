@@ -67,7 +67,10 @@ export function CreditCardFormDialog({
 }: CreditCardFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* sm:max-w-128 (numbered scale, = 32rem), not sm:max-w-lg — this app's
+          --spacing-lg token shadows Tailwind's named max-w-lg scale; see
+          ui/dialog.tsx. */}
+      <DialogContent className="sm:max-w-128">
         {open && (
           <CreditCardFormBody
             isPending={isPending}
@@ -129,7 +132,7 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
       </DialogHeader>
 
       <div className="flex flex-col gap-md">
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="credit-card-bank">
               Bank
@@ -183,7 +186,7 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
           {submitted && cardNameError && <FieldError>{cardNameError}</FieldError>}
         </div>
 
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="credit-card-last4">
               Last 4 Digits
@@ -221,7 +224,7 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="credit-card-statement-date">Statement Date</Label>
             <Input

@@ -345,24 +345,6 @@ function DrawerBody({
             placeholder="Internal notes about this card…"
           />
         </div>
-        <div className="grid grid-cols-2 gap-md">
-          <div>
-            <Label htmlFor="credit-card-rewards">Rewards</Label>
-            <Input id="credit-card-rewards" placeholder="Rewards tracking coming soon" disabled />
-          </div>
-          <div>
-            <Label htmlFor="credit-card-offers">Offers</Label>
-            <Input id="credit-card-offers" placeholder="Offers coming soon" disabled />
-          </div>
-          <div>
-            <Label htmlFor="credit-card-autopay">AutoPay</Label>
-            <Input id="credit-card-autopay" placeholder="AutoPay setup coming soon" disabled />
-          </div>
-          <div>
-            <Label htmlFor="credit-card-rules">Card Rules</Label>
-            <Input id="credit-card-rules" placeholder="Card rules coming soon" disabled />
-          </div>
-        </div>
       </section>
 
       <EntityReviewDrawerFooter

@@ -70,7 +70,12 @@ export function AccountSummaryWidget({ query }: AccountSummaryWidgetProps) {
       {(summary) => (
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
           {toMetrics(summary).map((metric) => (
-            <KPICard key={metric.id} metric={metric} formatValue={metric.formatValue} />
+            <KPICard
+              key={metric.id}
+              metric={metric}
+              formatValue={metric.formatValue}
+              valueClassName="text-headline-lg sm:text-2xl"
+            />
           ))}
         </div>
       )}

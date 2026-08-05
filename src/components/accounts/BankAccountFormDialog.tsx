@@ -62,7 +62,10 @@ export function BankAccountFormDialog({
 }: BankAccountFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* sm:max-w-128 (numbered scale, = 32rem), not sm:max-w-lg — this app's
+          --spacing-lg token shadows Tailwind's named max-w-lg scale; see
+          ui/dialog.tsx. */}
+      <DialogContent className="sm:max-w-128">
         {/* Rendered only while open, so every open mounts a fresh instance —
             same fix as MerchantFormDialog/CategoryFormDialog. */}
         {open && (
@@ -125,7 +128,7 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
       </DialogHeader>
 
       <div className="flex flex-col gap-md">
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="bank-account-bank">
               Bank
@@ -182,7 +185,7 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
           {submitted && accountNameError && <FieldError>{accountNameError}</FieldError>}
         </div>
 
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="bank-account-nickname">Nickname</Label>
             <Input
@@ -210,7 +213,7 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-md">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           <div>
             <Label htmlFor="bank-account-opening-balance">Opening Balance</Label>
             <Input

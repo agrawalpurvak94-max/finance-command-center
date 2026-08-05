@@ -76,7 +76,12 @@ export function CreditCardSummaryWidget({ query }: CreditCardSummaryWidgetProps)
       {(summary) => (
         <div className="grid grid-cols-1 gap-md sm:grid-cols-3 lg:grid-cols-5">
           {toMetrics(summary).map((metric) => (
-            <KPICard key={metric.id} metric={metric} formatValue={metric.formatValue} />
+            <KPICard
+              key={metric.id}
+              metric={metric}
+              formatValue={metric.formatValue}
+              valueClassName="text-headline-lg sm:text-2xl"
+            />
           ))}
         </div>
       )}

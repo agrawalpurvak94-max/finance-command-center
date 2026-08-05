@@ -26,15 +26,15 @@ export function BankAccountCard({ account, isSelected, onOpen }: BankAccountCard
       onClick={() => onOpen(account)}
       aria-label={`View ${account.nickname ?? account.accountName}`}
       className={cn(
-        'group flex flex-col gap-md rounded-xl border border-border bg-card p-md text-left shadow-sm transition-all duration-200',
+        'group flex h-full flex-col gap-md rounded-xl border border-border bg-card p-md text-left shadow-sm transition-all duration-200',
         'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isSelected && 'border-primary/50 ring-2 ring-primary/30',
       )}
     >
       <div className="flex items-start justify-between gap-sm">
-        <div className="flex items-center gap-sm">
-          <Avatar>
+        <div className="flex min-w-0 flex-1 items-center gap-sm">
+          <Avatar className="shrink-0">
             <AvatarFallback className="bg-primary/10 font-semibold text-primary">
               {getBankInitials(account.bankName)}
             </AvatarFallback>
@@ -43,36 +43,43 @@ export function BankAccountCard({ account, isSelected, onOpen }: BankAccountCard
             <p className="truncate text-body-md font-semibold text-foreground">
               {account.nickname ?? account.accountName}
             </p>
-            <p className="text-body-sm text-muted-foreground">{account.bankName}</p>
+            <p className="truncate text-body-sm text-muted-foreground">{account.bankName}</p>
           </div>
         </div>
         <BankAccountHealthBadge health={account.health} />
       </div>
 
       <div className="flex items-center gap-xs text-body-sm text-muted-foreground">
-        <span>{accountTypeLabel[account.accountType]}</span>
+        <span className="shrink-0">{accountTypeLabel[account.accountType]}</span>
         <span aria-hidden="true">•</span>
-        <span className="text-table-mono tabular-nums">•••• {account.last4}</span>
+        <span className="shrink-0 text-table-mono tabular-nums">•••• {account.last4}</span>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <p className="text-label-caps uppercase text-muted-foreground">Current Balance</p>
-        <p className="text-display-kpi tabular-nums text-foreground break-all">
+        <p
+          className="truncate text-headline-lg tabular-nums text-foreground"
+          title={formatINR(account.currentBalance)}
+        >
           {formatINR(account.currentBalance)}
         </p>
-        <p className="mt-1 text-body-sm text-muted-foreground">
+        <p className="mt-1 truncate text-body-sm text-muted-foreground">
           Available: {formatINR(account.availableBalance)}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-sm rounded-lg bg-muted/40 p-sm text-table-mono text-xs">
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground">Monthly Credits</p>
-          <p className="font-semibold text-secondary">+{formatINR(account.monthlyCredits)}</p>
+          <p className="truncate font-semibold text-secondary">
+            +{formatINR(account.monthlyCredits)}
+          </p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground">Monthly Debits</p>
-          <p className="font-semibold text-destructive">-{formatINR(account.monthlyDebits)}</p>
+          <p className="truncate font-semibold text-destructive">
+            -{formatINR(account.monthlyDebits)}
+          </p>
         </div>
       </div>
 
@@ -87,15 +94,15 @@ export function BankAccountCard({ account, isSelected, onOpen }: BankAccountCard
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border pt-sm text-body-sm text-muted-foreground">
-        <span>
+      <div className="mt-auto flex items-center justify-between gap-sm border-t border-border pt-sm text-body-sm text-muted-foreground">
+        <span className="min-w-0 truncate">
           {account.recentActivityCount} {account.recentActivityCount === 1 ? 'txn' : 'txns'} · 30d
         </span>
-        <span className="flex items-center gap-xs">
+        <span className="flex min-w-0 shrink-0 items-center gap-xs">
           {account.health === 'sync_required' && (
-            <RefreshCw className="size-3 text-blue-400" aria-hidden="true" />
+            <RefreshCw className="size-3 shrink-0 text-blue-400" aria-hidden="true" />
           )}
-          Last Sync: {account.lastSyncAt}
+          <span className="truncate">Last Sync: {account.lastSyncAt}</span>
         </span>
       </div>
     </button>

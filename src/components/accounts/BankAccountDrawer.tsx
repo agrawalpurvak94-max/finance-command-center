@@ -345,24 +345,6 @@ function DrawerBody({
             placeholder="Internal notes about this account…"
           />
         </div>
-        <div className="grid grid-cols-2 gap-md">
-          <div>
-            <Label htmlFor="bank-account-rules">Account Rules</Label>
-            <Input id="bank-account-rules" placeholder="Account rules coming soon" disabled />
-          </div>
-          <div>
-            <Label htmlFor="bank-account-import-rules">Import Rules</Label>
-            <Input id="bank-account-import-rules" placeholder="Import rules coming soon" disabled />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="bank-account-auto-categorization">Auto Categorization Rules</Label>
-          <Input
-            id="bank-account-auto-categorization"
-            placeholder="Auto categorization rules coming soon"
-            disabled
-          />
-        </div>
       </section>
 
       <EntityReviewDrawerFooter

@@ -78,9 +78,6 @@ test.describe('Bank Account Drawer', () => {
     await expect(drawer.getByRole('heading', { name: 'Statements' })).toBeVisible()
     await expect(drawer.getByRole('button', { name: 'View All Statements' })).toBeVisible()
     await expect(drawer.getByLabel('Internal Notes')).toBeVisible()
-    await expect(drawer.getByLabel('Account Rules')).toBeDisabled()
-    await expect(drawer.getByLabel('Import Rules')).toBeDisabled()
-    await expect(drawer.getByLabel('Auto Categorization Rules')).toBeDisabled()
   })
 
   test('View All Transactions navigates to Transactions with the bank account filter applied', async ({

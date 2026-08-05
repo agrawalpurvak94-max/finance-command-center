@@ -23,9 +23,18 @@ interface KPICardProps {
    * KPI row, which shows plain counts.
    */
   formatValue?: (value: number) => string
+  /**
+   * Overrides the value's text-size utility. Defaults to `text-display-kpi`
+   * (36px) — the right size for the 3–4 column grids Dashboard/Analytics
+   * use, but too large for denser 4–5 column rows (Accounts/Credit Cards),
+   * where large crore-value INR strings wrapped onto a second line even
+   * with `break-all`. Callers in tighter grids can pass a smaller size
+   * instead of the default.
+   */
+  valueClassName?: string
 }
 
-export function KPICard({ metric, formatValue = formatINR }: KPICardProps) {
+export function KPICard({ metric, formatValue = formatINR, valueClassName }: KPICardProps) {
   const TrendIcon = metric.trend ? trendIcon[metric.trend.direction] : null
 
   return (
@@ -35,9 +44,15 @@ export function KPICard({ metric, formatValue = formatINR }: KPICardProps) {
         metric.warningLabel && 'border-l-4 border-l-destructive',
       )}
     >
-      <div>
+      <div className="min-w-0">
         <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
-        <div className="mt-xs text-display-kpi tabular-nums text-foreground break-all">
+        <div
+          className={cn(
+            'mt-xs truncate tabular-nums text-foreground',
+            valueClassName ?? 'text-display-kpi',
+          )}
+          title={formatValue(metric.value)}
+        >
           {formatValue(metric.value)}
         </div>
       </div>

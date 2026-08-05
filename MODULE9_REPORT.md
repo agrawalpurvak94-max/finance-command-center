@@ -2,7 +2,7 @@
 
 Module 9 — Credit Cards
 
-Generated 2026-08-05. Built together with Module 8 (Accounts) in the same delivery pass, per explicit instruction. See `MODULE8_REPORT.md`'s "Combined build / Financial Accounts tab conflict" section for the full explanation of why this shipped as its own page/route rather than a tab inside Financial Accounts — short version: `PRODUCT_DECISIONS.md` explicitly requires Credit Cards to stay standalone ("Do not merge it into Accounts"), that decision was already reflected in the sidebar (`src/lib/navigation.ts`), and the project owner confirmed keeping them separate when the conflict was flagged before building anything.
+Generated 2026-08-05. Updated 2026-08-05 with a UI refinement pass (bug-fix/usability only — see "UI Refinement Pass" below). Built together with Module 8 (Accounts) in the same delivery pass, per explicit instruction. See `MODULE8_REPORT.md`'s "Combined build / Financial Accounts tab conflict" section for the full explanation of why this shipped as its own page/route rather than a tab inside Financial Accounts — short version: `PRODUCT_DECISIONS.md` explicitly requires Credit Cards to stay standalone ("Do not merge it into Accounts"), that decision was already reflected in the sidebar (`src/lib/navigation.ts`), and the project owner confirmed keeping them separate when the conflict was flagged before building anything.
 
 ---
 
@@ -107,10 +107,34 @@ Statements.tsx's `accountId` drill-down and `StatementFilters.accountId` (needed
 
 1. Implement `SupabaseCreditCardRepository implements CreditCardRepository`, backed by the future `accounts` table (shared with bank accounts, per CLAUDE.md's `accounts`/`credit_cards` distinction being a `kind` discriminator at the data layer, not necessarily two tables) and a credit-card-specific view.
 2. Change one line in `src/services/credit-cards.service.ts` to construct it instead of `MockCreditCardRepository`.
-3. Rewards / Offers / AutoPay / Card Rules are explicit future placeholders in the drawer's Notes section — no fields exist on `CreditCardRecord` for them yet.
+3. Rewards / Offers / AutoPay / Card Rules were removed from the drawer's Notes section during the UI refinement pass below (unused placeholders, not part of current product scope) — reintroduce as real fields on `CreditCardRecord` if/when actually designed, rather than restoring disabled placeholders.
+
+## UI Refinement Pass (2026-08-05)
+
+A follow-up bug-fix/usability pass — no new functionality, no business-logic changes, no architectural changes. Full root-cause writeup is in `MODULE8_REPORT.md` (the shared-component fix is identical for both modules); this section covers what's specific to the Credit Cards side.
+
+**Root cause (shared, see `MODULE8_REPORT.md` for detail):** `src/styles/index.css`'s custom `--spacing-*` design tokens shadow Tailwind's named `max-w-xs/sm/md/lg/xl` scale, silently collapsing any dialog/drawer using it to a few pixels of `max-width` at ≥640px viewports — confirmed on Merchant's pre-existing "Add Merchant" dialog, i.e. predates this session and affects the whole app. Fixed in the shared `ui/dialog.tsx`, `EntityReviewDrawer.tsx`, `StatementDetailsDrawer.tsx`, and `TransactionDetailsDrawer.tsx` by switching to the numbered spacing scale (`max-w-96`/`max-w-128`/`max-w-112`) per the codebase's own documented remedy for this exact collision. Approved by the project owner as an intentional expansion beyond the two named modules, since it's a genuine pre-existing defect with a trivial, non-breaking fix (same precedent as Module 6's `KPICard` fix).
+
+**`CreditCardFormDialog` (Add Credit Card)** — this is the actual "dialog too narrow" bug reported for this module. Fixed the same way as `BankAccountFormDialog`: `sm:max-w-lg` (broken — resolved to 24px, not 512px, due to the token collision above) → `sm:max-w-128` (= 32rem / 512px, correct); the three paired-field rows (`Bank`/`Network`, `Last 4 Digits`/`Credit Limit`, `Statement Date`/`Due Date`) changed from unconditional `grid-cols-2` to `grid-cols-1 sm:grid-cols-2` so mobile stacks instead of cramming.
+
+**`CreditCardTile` overflow fixes** (mirrors `BankAccountCard`'s fixes exactly, for "the two modules should feel identical in quality"):
+
+- Health badge (e.g. "PAYMENT OVERDUE", "HIGH UTILIZATION") was getting squeezed/clipped on cards with a longer bank/card name — same root cause as `BankAccountCard`: the avatar+name flex block lacked `min-w-0`. Fixed with `min-w-0 flex-1` + `shrink-0` on the avatar/badge + `truncate` added to the bank-name line.
+- `Outstanding` had the same 36px/`break-all` wrapping bug the KPI cards had — fixed with `truncate` + a smaller `text-headline-lg` size + a `title` attribute with the full value.
+- Network badge/last-4 row, utilization %, Limit/Available row, the Statement Date/Due Date/Minimum Due/Monthly Spend grid, and the Top-merchant/Last-transaction footer all got `min-w-0`/`truncate`/`shrink-0` added defensively.
+- Tile is now `h-full` with `mt-auto` on the footer row, matching `BankAccountCard`'s fix, so all 16 tiles in a row keep consistent height and footer alignment regardless of how much each card's content varies.
+
+**KPI value wrapping** — `CreditCardSummaryWidget` (5-column grid, the densest KPI row in the app) now passes `KPICard`'s new `valueClassName="text-headline-lg sm:text-2xl"` (see `MODULE8_REPORT.md` for the shared `KPICard` fix itself) so values like `₹1,77,18,120` never wrap.
+
+**`CreditCardDrawer`:** removed the Rewards / Offers / AutoPay / Card Rules placeholder section entirely (unused, disabled, "coming soon" — not part of current product scope, and their clipped placeholder text was one of the originally reported bugs). Notes (the one real, editable field) is now the drawer's only Section 5 field.
+
+Playwright: `tests/e2e/credit-cards.spec.ts`'s "shows all five sections with the expected fields" test updated to drop the four removed-placeholder assertions.
+
+**Verification:** re-ran the full quality gate after all fixes — `tsc -b --noEmit` clean, `eslint` 0 errors (same 6 pre-existing benign warnings), `npm run build` clean, `vitest run` 14/14, `playwright --project=chromium` 71/71 (3 incidental failures on the first full-suite run — `accounts.spec.ts`'s drawer-open test, `categories.spec.ts`'s search test, `merchants.spec.ts`'s sort test — all reproduced as sandbox parallel-load flakiness and passed 4/4 when re-run in isolation at reduced worker count, not a regression). Also captured before/after Playwright screenshots at desktop (1600px) / laptop (1280px) / tablet (834px) / mobile (390px) for both modules' pages, dialogs, and drawers; confirmed `document.documentElement.scrollWidth === clientWidth` (no horizontal overflow) at all four breakpoints both before and after.
 
 ## Commits
 
-This module's commit: `feat(module-9): implement credit cards module` (report included in the same commit).
+- `feat(module-9): implement credit cards module` (initial)
+- `fix(module-8,module-9): ui refinement pass for accounts and credit cards` (this follow-up, report included in the same commit) — one combined commit since the root-cause fix is in shared components (`KPICard`, `ui/dialog.tsx`, `EntityReviewDrawer`, `StatementDetailsDrawer`, `TransactionDetailsDrawer`) used by both modules and beyond; see `MODULE8_REPORT.md` for the identical entry.
 
-Stopping here per instruction. Module 8 (Accounts) was built in the same pass — see `MODULE8_REPORT.md`. Not beginning Module 7 or Module 10; awaiting explicit approval before any further module.
+Stopping here per instruction. Not beginning Module 7 or Module 10; awaiting explicit approval before any further module.

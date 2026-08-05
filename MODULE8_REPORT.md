@@ -2,7 +2,7 @@
 
 Module 8 — Accounts ("Financial Accounts")
 
-Generated 2026-08-05. Built together with Module 9 (Credit Cards) in the same delivery pass, per explicit instruction — see "Combined build / Module 6-9 tab conflict" below for why the two are still two separate pages, modules, and commits.
+Generated 2026-08-05. Updated 2026-08-05 with a UI refinement pass (bug-fix/usability only — see "UI Refinement Pass" below). Built together with Module 9 (Credit Cards) in the same delivery pass, per explicit instruction — see "Combined build / Module 6-9 tab conflict" below for why the two are still two separate pages, modules, and commits.
 
 ---
 
@@ -123,10 +123,36 @@ src/lib/queryKeys.ts             — added `accounts` query-key namespace
 
 1. Implement `SupabaseBankAccountRepository implements BankAccountRepository` (`list`/`getSummary`/`create`/`update`/`delete`/`syncAll`), backed by the future `accounts` table and a `vw_accounts`/`vw_account_summary` view per CLAUDE.md Part 3.
 2. Change one line in `src/services/accounts.service.ts` to construct it instead of `MockBankAccountRepository`.
-3. Account Rules / Import Rules / Auto Categorization Rules are explicit future placeholders in the drawer's Notes section — no fields exist on `BankAccountRecord` for them yet; scope them when actually designed.
+3. Account Rules / Import Rules / Auto Categorization Rules were removed from the drawer's Notes section during the UI refinement pass below (unused placeholders, not part of current product scope) — reintroduce as real fields on `BankAccountRecord` if/when actually designed, rather than restoring disabled placeholders.
+
+## UI Refinement Pass (2026-08-05)
+
+A follow-up bug-fix/usability pass — no new functionality, no business-logic changes, no architectural changes. Scope: fix every text-overflow/layout defect across Accounts and Credit Cards, bring the two modules to identical visual quality. See `MODULE9_REPORT.md` for the Credit-Cards-side detail; this section covers what's specific to or shared from the Accounts side.
+
+**Root cause found and fixed (shared component, affects the whole app):** `src/styles/index.css` defines custom `--spacing-xs/sm/md/lg/xl` design tokens that — per a comment already in that file — silently shadow Tailwind's built-in `max-w-xs/sm/md/lg/xl` scale. Any component using the named scale (e.g. `sm:max-w-sm`) was resolving to a few pixels of `max-width`, not the intended size, at any viewport ≥640px. Measured live: `ui/dialog.tsx`'s base `sm:max-w-sm` computed to **8px** (not 384px) — confirmed on an untouched, already-shipped dialog (Merchant's "Add Merchant") before touching anything, so this predates this session and affects every dialog in the app, not just Accounts/Credit Cards. Flagged to the project owner before proceeding (a shared-component fix reaching beyond the two modules named in this task); approved to fix broadly, matching the precedent Module 6 already set for fixing a real defect in a shared component (`KPICard`) when found. Fixed by switching to the numbered spacing scale or an arbitrary value everywhere the named scale was used for `max-w-*` (the codebase's own documented remedy):
+
+- `src/components/ui/dialog.tsx` — base `sm:max-w-sm` → `sm:max-w-96` (= 24rem, correct).
+- `src/components/EntityReviewDrawer.tsx`, `src/components/statements/StatementDetailsDrawer.tsx`, `src/components/transactions/TransactionDetailsDrawer.tsx` — same fix (`sm:max-w-lg`/`sm:max-w-md` → `sm:max-w-128`/`sm:max-w-112`). Note: `SheetContent`'s own default (`data-[side=right]:sm:max-w-96`) turned out to already out-rank these simple overrides in the CSS cascade — so these three were effectively already rendering at a safe 384px regardless of the broken value, meaning this part of the fix is a correctness/consistency change with no visible effect, not a regression risk.
+- `src/components/accounts/BankAccountFormDialog.tsx`, `src/components/credit-cards/CreditCardFormDialog.tsx` (this task's actual "dialog too narrow" reports) — `sm:max-w-lg` → `sm:max-w-128` (= 32rem / 512px), which **does** take effect since these pass their own `className` straight to `DialogContent` with no competing compound-variant default in the way. This is the fix that actually resolves the reported narrow Add-dialog issue.
+
+**KPI value wrapping** — `KPICard` (shared) hardcoded `text-display-kpi` (36px) with `break-all`, which let long crore-value INR strings (e.g. `₹1,77,18,120`) wrap onto a second line inside dense 4–5 column grids instead of overflowing cleanly. Added an optional `valueClassName` prop (defaults to the existing `text-display-kpi`, so every other module's KPI row is visually unchanged) and switched `break-all` → `truncate` (+ a `title` attribute with the full value) so a value can never wrap, only truncate in a genuine extreme case. `AccountSummaryWidget`/`CreditCardSummaryWidget` pass `valueClassName="text-headline-lg sm:text-2xl"` — sized to always fit their grids without wrapping.
+
+**`BankAccountCard` overflow fixes:**
+
+- The health badge (e.g. "NEEDS REVIEW") was getting squeezed/clipped on accounts with a longer bank name — the avatar+name flex block lacked `min-w-0`, so it refused to shrink and pushed the badge past the card's edge. Fixed with `min-w-0 flex-1` on that block, `truncate` added to the bank-name line (previously only the account-name line truncated), and explicit `shrink-0` on the avatar/badge.
+- `Current Balance` had the same 36px/break-all wrapping bug as the KPI cards — same fix (`truncate` + a smaller `text-headline-lg` size + `title`).
+- Every other value cell (Monthly Credits/Debits, recent-activity/last-sync footer) got `min-w-0`/`truncate` added defensively so no combination of long bank name + large balance can reintroduce clipping.
+- The card is now `h-full` with `mt-auto` on the footer row, so cards in the same grid row (which CSS Grid already stretches to equal height) keep their footer pinned to the bottom instead of leaving uneven trailing whitespace when sibling cards have shorter content.
+
+**`BankAccountFormDialog` (Link Bank Account):** widened per the dialog-width fix above; the three paired-field rows (`Bank`/`Account Type`, `Nickname`/`Account Number`, `Opening Balance`/`Status`) changed from an unconditional `grid-cols-2` to `grid-cols-1 sm:grid-cols-2`, so mobile viewports stack fields instead of cramming two per row.
+
+**`BankAccountDrawer`:** removed the Account Rules / Import Rules / Auto Categorization Rules placeholder section entirely (unused, disabled, "coming soon" — not part of current product scope, and their clipped placeholder text was one of the originally reported bugs). Notes (the one real, editable field) is now the drawer's only Section 5 field.
+
+Playwright: `tests/e2e/accounts.spec.ts`'s "shows all five sections with the expected fields" test updated to drop the three removed-placeholder assertions.
 
 ## Commits
 
-This module's commit: `feat(module-8): implement accounts module` (report included in the same commit, per the Module Completion Git Protocol).
+- `feat(module-8): implement accounts module` (initial)
+- `fix(module-8,module-9): ui refinement pass for accounts and credit cards` (this follow-up, report included in the same commit) — one combined commit since the root-cause fix is in shared components (`KPICard`, `ui/dialog.tsx`, `EntityReviewDrawer`) used by both modules; see `MODULE9_REPORT.md` for the identical entry.
 
 Stopping here per instruction. Module 9 (Credit Cards) was built in the same pass — see `MODULE9_REPORT.md`. Not beginning Module 7 or Module 10; awaiting explicit approval before any further module.

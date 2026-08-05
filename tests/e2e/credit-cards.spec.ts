@@ -77,10 +77,6 @@ test.describe('Credit Card Drawer', () => {
     await expect(drawer.getByRole('heading', { name: 'Statements' })).toBeVisible()
     await expect(drawer.getByRole('button', { name: 'View All Statements' })).toBeVisible()
     await expect(drawer.getByLabel('Internal Notes')).toBeVisible()
-    await expect(drawer.getByLabel('Rewards')).toBeDisabled()
-    await expect(drawer.getByLabel('Offers')).toBeDisabled()
-    await expect(drawer.getByLabel('AutoPay')).toBeDisabled()
-    await expect(drawer.getByLabel('Card Rules')).toBeDisabled()
   })
 
   test('View All Transactions navigates to Transactions with the credit card filter applied', async ({

@@ -56,7 +56,10 @@ export function EntityReviewDrawer({
         if (!stillOpen) onClosed?.()
       }}
     >
-      <SheetContent side="right" className="flex h-full w-full flex-col sm:max-w-lg">
+      {/* sm:max-w-128 (numbered scale, = 32rem), not sm:max-w-lg — this app's
+          --spacing-lg token shadows Tailwind's named max-w-lg scale; see
+          ui/dialog.tsx. */}
+      <SheetContent side="right" className="flex h-full w-full flex-col sm:max-w-128">
         <SheetHeader className="border-b border-border">
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>

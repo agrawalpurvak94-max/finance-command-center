@@ -23,7 +23,10 @@ export function StatementDetailsDrawer({
 }: StatementDetailsDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+      {/* sm:max-w-112 (numbered scale, = 28rem), not sm:max-w-md — this app's
+          --spacing-md token shadows Tailwind's named max-w-md scale; see
+          ui/dialog.tsx. */}
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-112">
         {statement && <DrawerBody statement={statement} />}
       </SheetContent>
     </Sheet>

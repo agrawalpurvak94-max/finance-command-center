@@ -48,7 +48,14 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          // NOTE: sm:max-w-96 (the numbered scale, = 24rem) — NOT sm:max-w-sm.
+          // This app's --spacing-sm token (src/styles/index.css) shadows
+          // Tailwind's built-in max-w-sm/md/lg/xl scale, silently collapsing
+          // max-width to a few px at >=640px viewports. Confirmed live (every
+          // dialog in the app, e.g. Merchants' "Add Merchant", rendered at
+          // ~32px wide at desktop width before this fix). Use the numbered
+          // scale or an arbitrary value for max-w here — never the named one.
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-96 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
           className,
         )}
         {...props}

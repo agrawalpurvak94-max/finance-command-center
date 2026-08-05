@@ -35,7 +35,10 @@ export function TransactionDetailsDrawer({
 }: TransactionDetailsDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+      {/* sm:max-w-112 (numbered scale, = 28rem), not sm:max-w-md — this app's
+          --spacing-md token shadows Tailwind's named max-w-md scale; see
+          ui/dialog.tsx. */}
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-112">
         {transaction && (
           // Keyed by id so switching transactions remounts (and resets local
           // notes-draft state) instead of syncing it via an effect.
