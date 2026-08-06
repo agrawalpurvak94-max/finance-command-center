@@ -102,13 +102,20 @@ describe('MockAnalyticsRepository.getRecurringMerchants', () => {
   })
 })
 
-describe('MockAnalyticsRepository.getStatementProcessingStatus', () => {
-  it('only returns statuses that actually have statements, each with a positive count', async () => {
-    const rows = await repo.getStatementProcessingStatus(noFilters)
-    expect(rows.length).toBeGreaterThan(0)
-    for (const row of rows) {
-      expect(row.value).toBeGreaterThan(0)
-      expect(row.drillTarget).toBe('statements')
+describe('MockAnalyticsRepository.getOwnerTypeSpend', () => {
+  it('every bucket splits spend into business and personal, both non-negative', async () => {
+    const points = await repo.getOwnerTypeSpend(noFilters)
+    expect(points.length).toBeGreaterThan(0)
+    for (const point of points) {
+      expect(point.business).toBeGreaterThanOrEqual(0)
+      expect(point.personal).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('narrows to zero personal spend when filtered to business only', async () => {
+    const points = await repo.getOwnerTypeSpend({ ownerType: 'business' })
+    for (const point of points) {
+      expect(point.personal).toBe(0)
     }
   })
 })

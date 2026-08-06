@@ -29,11 +29,7 @@ interface SpendTrendChartProps extends AnalyticsWidgetHandlers {
   onGranularityChange: (granularity: AnalyticsGranularity) => void
 }
 
-const SERIES = [
-  { key: 'spend', label: 'Spend', color: 'var(--color-viz-1)' },
-  { key: 'income', label: 'Income', color: 'var(--color-viz-3)' },
-  { key: 'cashFlow', label: 'Cash Flow', color: 'var(--color-viz-4)' },
-] as const
+const SPEND_COLOR = 'var(--viz-1)'
 
 export function SpendTrendChart({
   data,
@@ -60,24 +56,7 @@ export function SpendTrendChart({
   return (
     <ChartCard
       title="Financial Performance Overview"
-      subtitle="Spend vs Income vs Cash Flow"
-      legend={
-        <div className="flex items-center gap-md">
-          {SERIES.map((s) => (
-            <span
-              key={s.key}
-              className="flex items-center gap-xs text-label-caps text-muted-foreground"
-            >
-              <span
-                className="size-2 rounded-full"
-                style={{ backgroundColor: s.color }}
-                aria-hidden="true"
-              />
-              {s.label}
-            </span>
-          ))}
-        </div>
-      }
+      subtitle="Spend over time"
       onViewTransactions={() => onDrillDown({})}
     >
       <div className="mb-sm flex justify-end gap-xs">
@@ -102,11 +81,11 @@ export function SpendTrendChart({
           onMouseLeave={() => onHover(null)}
           margin={{ left: 4, right: 12, top: 8, bottom: 0 }}
         >
-          <CartesianGrid vertical={false} stroke="var(--color-viz-grid)" />
+          <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
           <XAxis
             dataKey="bucketLabel"
             tickLine={false}
-            axisLine={{ stroke: 'var(--color-viz-axis)' }}
+            axisLine={{ stroke: 'var(--viz-axis)' }}
             tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
             interval="preserveStartEnd"
           />
@@ -118,31 +97,30 @@ export function SpendTrendChart({
             tickFormatter={(v: number) => formatINR(v).replace('.00', '')}
           />
           <Tooltip
-            cursor={{ stroke: 'var(--color-viz-axis)', strokeWidth: 1 }}
+            cursor={{ stroke: 'var(--viz-axis)', strokeWidth: 1 }}
             content={({ active, label, payload }) => (
               <ChartTooltip
                 active={active}
                 label={label as string}
-                entries={SERIES.map((s) => ({
-                  label: s.label,
-                  color: s.color,
-                  value: Number(payload?.find((p) => p.dataKey === s.key)?.value ?? 0),
-                }))}
+                entries={[
+                  {
+                    label: 'Spend',
+                    color: SPEND_COLOR,
+                    value: Number(payload?.find((p) => p.dataKey === 'spend')?.value ?? 0),
+                  },
+                ]}
               />
             )}
           />
-          {SERIES.map((s) => (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5, className: 'cursor-pointer' }}
-              animationDuration={220}
-            />
-          ))}
+          <Line
+            type="monotone"
+            dataKey="spend"
+            stroke={SPEND_COLOR}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 5, className: 'cursor-pointer' }}
+            animationDuration={220}
+          />
         </LineChart>
       </ResponsiveContainer>
     </ChartCard>

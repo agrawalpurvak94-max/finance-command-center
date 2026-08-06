@@ -18,7 +18,6 @@ interface SecondaryAnalyticsTabsProps extends AnalyticsWidgetHandlers {
   recurringMerchants: readonly AnalyticsRankedRow[]
   largestExpenses: readonly AnalyticsRankedRow[]
   refundAnalysis: readonly AnalyticsRankedRow[]
-  statementProcessingStatus: readonly AnalyticsRankedRow[]
 }
 
 interface TabDef {
@@ -32,7 +31,6 @@ interface TabDef {
     | 'recurring'
     | 'largest'
     | 'refunds'
-    | 'statements'
   readonly label: string
   readonly valueColumnLabel: string
   readonly secondaryColumnLabel?: string
@@ -88,12 +86,6 @@ const TAB_DEFS: readonly TabDef[] = [
     valueColumnLabel: 'Refunded',
     secondaryColumnLabel: 'Refunds',
   },
-  {
-    id: 'statements',
-    label: 'Statement Processing',
-    valueColumnLabel: 'Statements',
-    secondaryColumnLabel: 'Txns Extracted',
-  },
 ]
 
 export function SecondaryAnalyticsTabs({
@@ -106,7 +98,6 @@ export function SecondaryAnalyticsTabs({
   recurringMerchants,
   largestExpenses,
   refundAnalysis,
-  statementProcessingStatus,
   hoveredDimension,
   onHover,
   onCrossFilter,
@@ -122,7 +113,6 @@ export function SecondaryAnalyticsTabs({
     recurring: recurringMerchants,
     largest: largestExpenses,
     refunds: refundAnalysis,
-    statements: statementProcessingStatus,
   }
 
   return (

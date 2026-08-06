@@ -42,7 +42,7 @@ export function ClientSpendChart({
           <XAxis
             dataKey="label"
             tickLine={false}
-            axisLine={{ stroke: 'var(--color-viz-axis)' }}
+            axisLine={{ stroke: 'var(--viz-axis)' }}
             tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
             interval={0}
             angle={-20}
@@ -64,9 +64,7 @@ export function ClientSpendChart({
                 <ChartTooltip
                   active={active}
                   label={row?.label}
-                  entries={
-                    row ? [{ label: 'Spend', value: row.value, color: 'var(--color-viz-3)' }] : []
-                  }
+                  entries={row ? [{ label: 'Spend', value: row.value, color: 'var(--viz-3)' }] : []}
                 />
               )
             }}
@@ -89,7 +87,7 @@ export function ClientSpendChart({
             {data.map((row) => (
               <Cell
                 key={row.id}
-                fill="var(--color-viz-3)"
+                fill="var(--viz-3)"
                 className="transition-opacity duration-200"
                 opacity={isHighlighted(hoveredDimension, row.drillFilter) ? 1 : 0.35}
               />

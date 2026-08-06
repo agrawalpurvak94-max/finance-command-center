@@ -4,22 +4,14 @@ import type { AnalyticsFilters } from '@/domain/Analytics'
  * The three interaction tiers every Analytics widget wires into (see
  * MODULE10_REPORT.md "Interactivity"): hover cross-highlights in place
  * (visual only), click cross-filters (commits, stacks, refetches), and
- * drill-down navigates to Transactions/Statements with the current filters.
- * One shared contract so no widget invents its own click model.
+ * drill-down navigates to Transactions with the current filters. One shared
+ * contract so no widget invents its own click model.
  */
 export interface AnalyticsWidgetHandlers {
   readonly hoveredDimension: Partial<AnalyticsFilters> | null
   readonly onHover: (dimension: Partial<AnalyticsFilters> | null) => void
   readonly onCrossFilter: (dimension: Partial<AnalyticsFilters>) => void
-  /** `statementStatus` is the one escape hatch: Statement Processing Status
-   * rows have no `AnalyticsFilters`-compatible dimension (statement status
-   * and transaction status are different enums), so they carry their raw
-   * status string here instead of through `filters`. */
-  readonly onDrillDown: (
-    filters: Partial<AnalyticsFilters>,
-    target?: 'transactions' | 'statements',
-    statementStatus?: string,
-  ) => void
+  readonly onDrillDown: (filters: Partial<AnalyticsFilters>) => void
 }
 
 /** True when `candidate` should render at full opacity given the current

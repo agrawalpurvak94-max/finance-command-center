@@ -2,7 +2,6 @@ import {
   Banknote,
   Bookmark,
   Briefcase,
-  CalendarDays,
   CalendarRange,
   CreditCard,
   Landmark,
@@ -153,21 +152,6 @@ export function GlobalFilterBar({
           onChange={(v) => onChange({ bankName: v })}
           ariaLabel="Bank filter"
         />
-      </FilterChip>
-
-      <FilterChip icon={CalendarDays} label="Statement Month" isActive={!!draft.statementMonth}>
-        <div>
-          <Label htmlFor="analytics-statement-month">Month</Label>
-          <Input
-            id="analytics-statement-month"
-            type="month"
-            value={draft.statementMonth ?? ''}
-            onChange={(e) => onChange({ statementMonth: e.target.value || undefined })}
-          />
-          <p className="mt-xs text-body-sm text-muted-foreground">
-            Only scopes Statement Processing Status.
-          </p>
-        </div>
       </FilterChip>
 
       <FilterChip icon={ListFilter} label="Transaction Type" isActive={!!draft.type}>

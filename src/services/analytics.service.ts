@@ -6,7 +6,7 @@ const repository = new MockAnalyticsRepository()
 export const analyticsService = {
   getSummary: repository.getSummary.bind(repository),
   getSpendTrend: repository.getSpendTrend.bind(repository),
-  getCashFlow: repository.getCashFlow.bind(repository),
+  getOwnerTypeSpend: repository.getOwnerTypeSpend.bind(repository),
   getCategorySpend: repository.getCategorySpend.bind(repository),
   getMerchantSpend: repository.getMerchantSpend.bind(repository),
   getClientSpend: repository.getClientSpend.bind(repository),
@@ -16,7 +16,6 @@ export const analyticsService = {
   getRecurringMerchants: repository.getRecurringMerchants.bind(repository),
   getLargestExpenses: repository.getLargestExpenses.bind(repository),
   getRefundAnalysis: repository.getRefundAnalysis.bind(repository),
-  getStatementProcessingStatus: repository.getStatementProcessingStatus.bind(repository),
   getInsights: repository.getInsights.bind(repository),
   listBankNames: repository.listBankNames.bind(repository),
 }

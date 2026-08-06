@@ -59,7 +59,8 @@ export const queryKeys = {
     summary: (filters: AnalyticsFilters) => ['analytics', 'summary', filters] as const,
     spendTrend: (filters: AnalyticsFilters, granularity: AnalyticsGranularity) =>
       ['analytics', 'spend-trend', filters, granularity] as const,
-    cashFlow: (filters: AnalyticsFilters) => ['analytics', 'cash-flow', filters] as const,
+    ownerTypeSpend: (filters: AnalyticsFilters) =>
+      ['analytics', 'owner-type-spend', filters] as const,
     categorySpend: (filters: AnalyticsFilters) => ['analytics', 'category-spend', filters] as const,
     merchantSpend: (filters: AnalyticsFilters) => ['analytics', 'merchant-spend', filters] as const,
     clientSpend: (filters: AnalyticsFilters) => ['analytics', 'client-spend', filters] as const,
@@ -75,8 +76,6 @@ export const queryKeys = {
       ['analytics', 'largest-expenses', filters] as const,
     refundAnalysis: (filters: AnalyticsFilters) =>
       ['analytics', 'refund-analysis', filters] as const,
-    statementProcessingStatus: (filters: AnalyticsFilters) =>
-      ['analytics', 'statement-processing-status', filters] as const,
     insights: (filters: AnalyticsFilters) => ['analytics', 'insights', filters] as const,
     bankNames: ['analytics', 'bank-names'] as const,
   },

@@ -78,20 +78,6 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-  --color-viz-1: var(--viz-1);
-  --color-viz-2: var(--viz-2);
-  --color-viz-3: var(--viz-3);
-  --color-viz-4: var(--viz-4);
-  --color-viz-5: var(--viz-5);
-  --color-viz-6: var(--viz-6);
-  --color-viz-7: var(--viz-7);
-  --color-viz-8: var(--viz-8);
-  --color-viz-good: var(--viz-good);
-  --color-viz-warning: var(--viz-warning);
-  --color-viz-serious: var(--viz-serious);
-  --color-viz-critical: var(--viz-critical);
-  --color-viz-grid: var(--viz-grid);
-  --color-viz-axis: var(--viz-axis);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -164,7 +150,14 @@
 
   /* Analytics chart palette — validated categorical/status ramps (dataviz
      skill reference palette), independent of the grayscale --chart-1..5
-     shadcn defaults above which were never designed for the light surface. */
+     shadcn defaults above which were never designed for the light surface.
+     Intentionally NOT re-exported through @theme inline as --color-viz-*:
+     confirmed via getComputedStyle that Tailwind v4's @theme inline silently
+     drops a subset of var()-indirected custom properties (reproducible —
+     --color-viz-2/5/6/7/good/warning/serious/critical resolved to an empty
+     string while --color-viz-1/3/4/8/grid/axis resolved fine, no discernible
+     pattern). Consume these directly as var(--viz-N) in chart components —
+     confirmed reliable — never through a --color-viz-* alias. */
   --viz-1: #2a78d6;
   --viz-2: #eb6834;
   --viz-3: #1baf7a;

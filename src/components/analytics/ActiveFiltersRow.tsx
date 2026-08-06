@@ -28,7 +28,6 @@ const FILTER_LABELS: Partial<Record<keyof AnalyticsFilters, string>> = {
   ownerType: 'Biz/Personal',
   paymentMode: 'Payment Mode',
   status: 'Status',
-  statementMonth: 'Statement Month',
   amountMin: 'Min Amount',
   amountMax: 'Max Amount',
 }

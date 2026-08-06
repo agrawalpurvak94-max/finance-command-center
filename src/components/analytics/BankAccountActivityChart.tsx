@@ -34,24 +34,15 @@ export function BankAccountActivityChart({
       legend={
         <div className="flex items-center gap-md text-label-caps text-muted-foreground">
           <span className="flex items-center gap-xs">
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: 'var(--color-viz-3)' }}
-            />
+            <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--viz-3)' }} />
             Credits
           </span>
           <span className="flex items-center gap-xs">
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: 'var(--color-viz-8)' }}
-            />
+            <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--viz-8)' }} />
             Debits
           </span>
           <span className="flex items-center gap-xs">
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: 'var(--color-viz-1)' }}
-            />
+            <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--viz-1)' }} />
             Net
           </span>
         </div>
@@ -74,19 +65,19 @@ export function BankAccountActivityChart({
         >
           <defs>
             <linearGradient id="viz-credits-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-viz-3)" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="var(--color-viz-3)" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="var(--viz-3)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--viz-3)" stopOpacity={0.02} />
             </linearGradient>
             <linearGradient id="viz-debits-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-viz-8)" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="var(--color-viz-8)" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="var(--viz-8)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--viz-8)" stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="var(--color-viz-grid)" />
+          <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
           <XAxis
             dataKey="bucketLabel"
             tickLine={false}
-            axisLine={{ stroke: 'var(--color-viz-axis)' }}
+            axisLine={{ stroke: 'var(--viz-axis)' }}
             tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
           />
           <YAxis
@@ -97,7 +88,7 @@ export function BankAccountActivityChart({
             tickFormatter={(v: number) => formatINR(v).replace('.00', '')}
           />
           <Tooltip
-            cursor={{ stroke: 'var(--color-viz-axis)', strokeWidth: 1 }}
+            cursor={{ stroke: 'var(--viz-axis)', strokeWidth: 1 }}
             content={({ active, label, payload }) => (
               <ChartTooltip
                 active={active}
@@ -105,17 +96,17 @@ export function BankAccountActivityChart({
                 entries={[
                   {
                     label: 'Credits',
-                    color: 'var(--color-viz-3)',
+                    color: 'var(--viz-3)',
                     value: Number(payload?.find((p) => p.dataKey === 'credits')?.value ?? 0),
                   },
                   {
                     label: 'Debits',
-                    color: 'var(--color-viz-8)',
+                    color: 'var(--viz-8)',
                     value: Number(payload?.find((p) => p.dataKey === 'debits')?.value ?? 0),
                   },
                   {
                     label: 'Net',
-                    color: 'var(--color-viz-1)',
+                    color: 'var(--viz-1)',
                     value: Number(payload?.find((p) => p.dataKey === 'net')?.value ?? 0),
                   },
                 ]}
@@ -125,7 +116,7 @@ export function BankAccountActivityChart({
           <Area
             type="monotone"
             dataKey="credits"
-            stroke="var(--color-viz-3)"
+            stroke="var(--viz-3)"
             strokeWidth={2}
             fill="url(#viz-credits-fill)"
             animationDuration={220}
@@ -133,7 +124,7 @@ export function BankAccountActivityChart({
           <Area
             type="monotone"
             dataKey="debits"
-            stroke="var(--color-viz-8)"
+            stroke="var(--viz-8)"
             strokeWidth={2}
             fill="url(#viz-debits-fill)"
             animationDuration={220}
@@ -141,7 +132,7 @@ export function BankAccountActivityChart({
           <Line
             type="monotone"
             dataKey="net"
-            stroke="var(--color-viz-1)"
+            stroke="var(--viz-1)"
             strokeWidth={2}
             dot={false}
             animationDuration={220}

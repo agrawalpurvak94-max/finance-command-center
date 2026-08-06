@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
 import type { AnalyticsCardSeriesResult } from '@/domain/Analytics'
 
-const VIZ_COLOR = (index: number) => `var(--color-viz-${(index % 8) + 1})`
+const VIZ_COLOR = (index: number) => `var(--viz-${(index % 8) + 1})`
 
 interface CreditCardSpendChartProps extends AnalyticsWidgetHandlers {
   data: AnalyticsCardSeriesResult
@@ -67,7 +67,7 @@ export function CreditCardSpendChart({
           <XAxis
             dataKey="bucketLabel"
             tickLine={false}
-            axisLine={{ stroke: 'var(--color-viz-axis)' }}
+            axisLine={{ stroke: 'var(--viz-axis)' }}
             tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
           />
           <YAxis

@@ -21,10 +21,9 @@ import { MerchantSpendChart } from '@/components/analytics/MerchantSpendChart'
 import { ClientSpendChart } from '@/components/analytics/ClientSpendChart'
 import { CreditCardSpendChart } from '@/components/analytics/CreditCardSpendChart'
 import { BankAccountActivityChart } from '@/components/analytics/BankAccountActivityChart'
-import { CashFlowChart } from '@/components/analytics/CashFlowChart'
+import { BizPersonalSpendChart } from '@/components/analytics/BizPersonalSpendChart'
 import { SecondaryAnalyticsTabs } from '@/components/analytics/SecondaryAnalyticsTabs'
 import { InsightsPanel } from '@/components/analytics/InsightsPanel'
-import { FutureCapabilitiesStrip } from '@/components/analytics/FutureCapabilitiesStrip'
 import { categorySlicesToRows, cardSeriesToRows } from '@/components/analytics/analyticsRowMappers'
 import { downloadCsv, analyticsRowsToCsv, transactionsToCsv, statementsToCsv } from '@/utils/csv'
 import { cn } from '@/lib/utils'
@@ -78,17 +77,7 @@ export function Analytics() {
       setAppliedFilters((prev) => ({ ...prev, ...dimension }))
       setDraftFilters((prev) => ({ ...prev, ...dimension }))
     },
-    onDrillDown: (
-      extra: Partial<AnalyticsFilters>,
-      target: 'transactions' | 'statements' = 'transactions',
-      statementStatus?: string,
-    ) => {
-      if (target === 'statements') {
-        const params = new URLSearchParams()
-        if (statementStatus) params.set('status', statementStatus)
-        navigate(`/statements?${params.toString()}`)
-        return
-      }
+    onDrillDown: (extra: Partial<AnalyticsFilters>) => {
       const merged: AnalyticsFilters = { ...appliedFilters, ...extra }
       const params = new URLSearchParams()
       for (const key of TRANSACTION_FILTER_KEYS) {
@@ -319,14 +308,14 @@ export function Analytics() {
       <div
         className={cn(
           'transition-opacity duration-300',
-          analytics.cashFlow.isFetching && 'opacity-60',
+          analytics.ownerTypeSpend.isFetching && 'opacity-60',
         )}
       >
         <QueryBoundary
-          query={analytics.cashFlow}
+          query={analytics.ownerTypeSpend}
           skeleton={<Skeleton className="h-80 rounded-xl" />}
         >
-          {(data) => <CashFlowChart data={data} {...handlers} />}
+          {(data) => <BizPersonalSpendChart data={data} {...handlers} />}
         </QueryBoundary>
       </div>
 
@@ -345,7 +334,6 @@ export function Analytics() {
             recurringMerchants={analytics.recurringMerchants.data ?? []}
             largestExpenses={analytics.largestExpenses.data ?? []}
             refundAnalysis={analytics.refundAnalysis.data ?? []}
-            statementProcessingStatus={analytics.statementProcessingStatus.data ?? []}
             {...handlers}
           />
         )}
@@ -360,8 +348,6 @@ export function Analytics() {
           {(insights) => <InsightsPanel insights={insights} onInsightClick={handleInsightClick} />}
         </QueryBoundary>
       </div>
-
-      <FutureCapabilitiesStrip />
     </PageContainer>
   )
 }

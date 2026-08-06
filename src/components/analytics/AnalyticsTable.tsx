@@ -52,11 +52,7 @@ export function AnalyticsTable({
   }
 
   function handleRowDrillDown(row: AnalyticsRankedRow) {
-    if (row.drillTarget === 'statements') {
-      onDrillDown({}, 'statements', row.id)
-    } else {
-      onDrillDown(row.drillFilter ?? {}, row.drillTarget)
-    }
+    onDrillDown(row.drillFilter ?? {})
   }
 
   function handleExport() {
@@ -157,7 +153,7 @@ export function AnalyticsTable({
                   <td className="p-sm text-right">
                     <button
                       type="button"
-                      aria-label={`View ${row.drillTarget === 'statements' ? 'statements' : 'transactions'} for ${row.label}`}
+                      aria-label={`View transactions for ${row.label}`}
                       className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-primary"
                       onClick={(e) => {
                         e.stopPropagation()

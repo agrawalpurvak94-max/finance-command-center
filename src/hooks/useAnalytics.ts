@@ -22,9 +22,9 @@ export function useAnalytics(filters: AnalyticsFilters, granularity: AnalyticsGr
     placeholderData,
   })
 
-  const cashFlow = useQuery({
-    queryKey: queryKeys.analytics.cashFlow(filters),
-    queryFn: () => analyticsService.getCashFlow(filters),
+  const ownerTypeSpend = useQuery({
+    queryKey: queryKeys.analytics.ownerTypeSpend(filters),
+    queryFn: () => analyticsService.getOwnerTypeSpend(filters),
     placeholderData,
   })
 
@@ -82,12 +82,6 @@ export function useAnalytics(filters: AnalyticsFilters, granularity: AnalyticsGr
     placeholderData,
   })
 
-  const statementProcessingStatus = useQuery({
-    queryKey: queryKeys.analytics.statementProcessingStatus(filters),
-    queryFn: () => analyticsService.getStatementProcessingStatus(filters),
-    placeholderData,
-  })
-
   const insights = useQuery({
     queryKey: queryKeys.analytics.insights(filters),
     queryFn: () => analyticsService.getInsights(filters),
@@ -97,7 +91,7 @@ export function useAnalytics(filters: AnalyticsFilters, granularity: AnalyticsGr
   return {
     summary,
     spendTrend,
-    cashFlow,
+    ownerTypeSpend,
     categorySpend,
     merchantSpend,
     clientSpend,
@@ -107,7 +101,6 @@ export function useAnalytics(filters: AnalyticsFilters, granularity: AnalyticsGr
     recurringMerchants,
     largestExpenses,
     refundAnalysis,
-    statementProcessingStatus,
     insights,
   }
 }

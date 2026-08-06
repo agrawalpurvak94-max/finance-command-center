@@ -33,9 +33,6 @@ export interface AnalyticsFilters {
   readonly status?: TransactionStatus
   readonly amountMin?: number
   readonly amountMax?: number
-  /** 'YYYY-MM' — only scopes the Statement-sourced widgets; Transaction has no
-   * statement linkage in the current domain model, see MODULE10_REPORT.md. */
-  readonly statementMonth?: string
 }
 
 export type AnalyticsDimension = keyof AnalyticsFilters
@@ -67,14 +64,11 @@ export interface AnalyticsBucket {
 
 export interface AnalyticsTrendPoint extends AnalyticsBucket {
   readonly spend: number
-  readonly income: number
-  readonly cashFlow: number
 }
 
-export interface AnalyticsCashFlowPoint extends AnalyticsBucket {
-  readonly income: number
-  readonly expense: number
-  readonly net: number
+export interface AnalyticsOwnerTypePoint extends AnalyticsBucket {
+  readonly business: number
+  readonly personal: number
 }
 
 export interface AnalyticsCategorySlice {
@@ -96,11 +90,6 @@ export interface AnalyticsRankedRow {
   readonly secondaryLabel?: string
   readonly trend?: Trend
   readonly drillFilter?: Partial<AnalyticsFilters>
-  /** Which page "View Transactions" should navigate to for this row. Defaults
-   * to 'transactions' when omitted — only the Statement Processing Status
-   * table targets 'statements', per the brief's own "Statement Status →
-   * Statements → Status Filter Applied" example. */
-  readonly drillTarget?: 'transactions' | 'statements'
 }
 
 export interface AnalyticsCardSeriesPoint extends AnalyticsBucket {

@@ -63,9 +63,7 @@ export function MerchantSpendChart({
                 <ChartTooltip
                   active={active}
                   label={row?.label}
-                  entries={
-                    row ? [{ label: 'Spend', value: row.value, color: 'var(--color-viz-1)' }] : []
-                  }
+                  entries={row ? [{ label: 'Spend', value: row.value, color: 'var(--viz-1)' }] : []}
                 />
               )
             }}
@@ -88,7 +86,7 @@ export function MerchantSpendChart({
             {data.map((row) => (
               <Cell
                 key={row.id}
-                fill="var(--color-viz-1)"
+                fill="var(--viz-1)"
                 className="transition-opacity duration-200"
                 opacity={isHighlighted(hoveredDimension, row.drillFilter) ? 1 : 0.35}
               />

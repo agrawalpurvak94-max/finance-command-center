@@ -1,11 +1,11 @@
 import type {
   AnalyticsAccountActivityResult,
   AnalyticsCardSeriesResult,
-  AnalyticsCashFlowPoint,
   AnalyticsCategorySlice,
   AnalyticsFilters,
   AnalyticsGranularity,
   AnalyticsInsight,
+  AnalyticsOwnerTypePoint,
   AnalyticsRankedRow,
   AnalyticsSummary,
   AnalyticsTrendPoint,
@@ -24,7 +24,7 @@ export interface AnalyticsRepository {
     filters: AnalyticsFilters,
     granularity: AnalyticsGranularity,
   ): Promise<readonly AnalyticsTrendPoint[]>
-  getCashFlow(filters: AnalyticsFilters): Promise<readonly AnalyticsCashFlowPoint[]>
+  getOwnerTypeSpend(filters: AnalyticsFilters): Promise<readonly AnalyticsOwnerTypePoint[]>
   getCategorySpend(filters: AnalyticsFilters): Promise<readonly AnalyticsCategorySlice[]>
   getMerchantSpend(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
   getClientSpend(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
@@ -34,7 +34,6 @@ export interface AnalyticsRepository {
   getRecurringMerchants(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
   getLargestExpenses(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
   getRefundAnalysis(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
-  getStatementProcessingStatus(filters: AnalyticsFilters): Promise<readonly AnalyticsRankedRow[]>
   getInsights(filters: AnalyticsFilters): Promise<readonly AnalyticsInsight[]>
   listBankNames(): Promise<readonly string[]>
 }

@@ -2,24 +2,22 @@ import type { Category } from '@/domain/Category'
 import type { Merchant } from '@/domain/Merchant'
 import type { TransactionAccount } from '@/domain/Account'
 import type { Transaction } from '@/domain/Transaction'
-import type { Statement, StatementStatus } from '@/domain/Statement'
 import type { Trend } from '@/domain/Dashboard'
 import type {
   AnalyticsAccountActivityResult,
   AnalyticsBucket,
   AnalyticsCardSeriesResult,
-  AnalyticsCashFlowPoint,
   AnalyticsCategorySlice,
   AnalyticsFilters,
   AnalyticsGranularity,
   AnalyticsInsight,
+  AnalyticsOwnerTypePoint,
   AnalyticsRankedRow,
   AnalyticsSummary,
   AnalyticsTrendPoint,
 } from '@/domain/Analytics'
 import type { AnalyticsRepository } from '@/repositories/analytics.repository'
 import { mockTransactions } from '@/repositories/mock-data/generate-transactions'
-import { mockStatements } from '@/repositories/mock-data/generate-statements'
 import { mockAccounts, mockCreditCards } from '@/repositories/mock-data/reference-data'
 import { formatINR } from '@/utils/currency'
 
@@ -46,18 +44,6 @@ function matchesAnalyticsFilters(txn: Transaction, filters: AnalyticsFilters): b
   if (filters.status && txn.status !== filters.status) return false
   if (filters.amountMin !== undefined && txn.amount < filters.amountMin) return false
   if (filters.amountMax !== undefined && txn.amount > filters.amountMax) return false
-  return true
-}
-
-function matchesStatementFilters(stmt: Statement, filters: AnalyticsFilters): boolean {
-  if (filters.clientId && stmt.client?.id !== filters.clientId) return false
-  if (filters.bankAccountId && stmt.account.id !== filters.bankAccountId) return false
-  if (filters.creditCardId && stmt.account.id !== filters.creditCardId) return false
-  if (filters.bankName && stmt.account.bankName !== filters.bankName) return false
-  if (filters.statementMonth && stmt.statementDate.slice(0, 7) !== filters.statementMonth)
-    return false
-  if (filters.dateFrom && stmt.statementDate < filters.dateFrom) return false
-  if (filters.dateTo && stmt.statementDate > filters.dateTo) return false
   return true
 }
 
@@ -236,22 +222,6 @@ function computeTrend(current: number, previous: number, goodWhenUp: boolean): T
   return { direction, tone, label: `${sign}${pct.toFixed(1)}% MoM` }
 }
 
-const STATEMENT_STATUS_ORDER: readonly StatementStatus[] = [
-  'processed',
-  'imported',
-  'processing',
-  'pending_review',
-  'failed',
-]
-
-const STATEMENT_STATUS_LABELS: Record<StatementStatus, string> = {
-  processed: 'Processed',
-  imported: 'Imported',
-  processing: 'Processing',
-  pending_review: 'Pending Review',
-  failed: 'Failed',
-}
-
 export class MockAnalyticsRepository implements AnalyticsRepository {
   async getSummary(filters: AnalyticsFilters): Promise<AnalyticsSummary> {
     const txns = mockTransactions.filter((t) => matchesAnalyticsFilters(t, filters))
@@ -331,46 +301,36 @@ export class MockAnalyticsRepository implements AnalyticsRepository {
   ): Promise<readonly AnalyticsTrendPoint[]> {
     const buckets = buildBuckets(filters, granularity)
     const spend = buckets.map(() => 0)
-    const income = buckets.map(() => 0)
-    const txns = mockTransactions.filter((t) => matchesAnalyticsFilters(t, filters))
+    const debits = mockTransactions.filter(
+      (t) => matchesAnalyticsFilters(t, filters) && t.type === 'debit',
+    )
 
-    for (const t of txns) {
+    for (const t of debits) {
       const idx = bucketIndexForDate(t.date, buckets)
       if (idx === -1) continue
-      if (t.type === 'debit') spend[idx] += t.amount
-      else income[idx] += t.amount
+      spend[idx] += t.amount
     }
 
-    return withLatency(
-      buckets.map((b, i) => ({
-        ...b,
-        spend: spend[i],
-        income: income[i],
-        cashFlow: income[i] - spend[i],
-      })),
-    )
+    return withLatency(buckets.map((b, i) => ({ ...b, spend: spend[i] })))
   }
 
-  async getCashFlow(filters: AnalyticsFilters): Promise<readonly AnalyticsCashFlowPoint[]> {
+  async getOwnerTypeSpend(filters: AnalyticsFilters): Promise<readonly AnalyticsOwnerTypePoint[]> {
     const buckets = buildBuckets(filters, 'month')
-    const income = buckets.map(() => 0)
-    const expense = buckets.map(() => 0)
-    const txns = mockTransactions.filter((t) => matchesAnalyticsFilters(t, filters))
+    const business = buckets.map(() => 0)
+    const personal = buckets.map(() => 0)
+    const debits = mockTransactions.filter(
+      (t) => matchesAnalyticsFilters(t, filters) && t.type === 'debit',
+    )
 
-    for (const t of txns) {
+    for (const t of debits) {
       const idx = bucketIndexForDate(t.date, buckets)
       if (idx === -1) continue
-      if (t.type === 'credit') income[idx] += t.amount
-      else expense[idx] += t.amount
+      if (t.ownerType === 'business') business[idx] += t.amount
+      else personal[idx] += t.amount
     }
 
     return withLatency(
-      buckets.map((b, i) => ({
-        ...b,
-        income: income[i],
-        expense: expense[i],
-        net: income[i] - expense[i],
-      })),
+      buckets.map((b, i) => ({ ...b, business: business[i], personal: personal[i] })),
     )
   }
 
@@ -646,31 +606,6 @@ export class MockAnalyticsRepository implements AnalyticsRepository {
     )
   }
 
-  async getStatementProcessingStatus(
-    filters: AnalyticsFilters,
-  ): Promise<readonly AnalyticsRankedRow[]> {
-    const stmts = mockStatements.filter((s) => matchesStatementFilters(s, filters))
-    return withLatency(
-      STATEMENT_STATUS_ORDER.map((status) => {
-        const rows = stmts.filter((s) => s.status === status)
-        return {
-          // `id` doubles as the StatementStatus value the page's drill-down
-          // navigation reads for `drillTarget: 'statements'` rows — Statement
-          // status has no overlap with `AnalyticsFilters.status` (which is
-          // shaped for Transaction), so it can't round-trip through
-          // `drillFilter` the way every other row's dimension does.
-          id: status,
-          label: STATEMENT_STATUS_LABELS[status],
-          value: rows.length,
-          valueLabel: `${rows.length} statement${rows.length === 1 ? '' : 's'}`,
-          secondaryValue: sum(rows, (s) => s.transactionsExtracted),
-          secondaryLabel: 'transactions extracted',
-          drillTarget: 'statements' as const,
-        }
-      }).filter((row) => row.value > 0),
-    )
-  }
-
   async getInsights(filters: AnalyticsFilters): Promise<readonly AnalyticsInsight[]> {
     const insights: AnalyticsInsight[] = []
     const summary = await this.getSummary(filters)
@@ -695,18 +630,6 @@ export class MockAnalyticsRepository implements AnalyticsRepository {
           actionFilter: { merchantId: summary.highestSpendingMerchant.merchant.id },
         })
       }
-    }
-
-    const failedStatements = mockStatements.filter(
-      (s) => matchesStatementFilters(s, filters) && s.status === 'failed',
-    )
-    if (failedStatements.length > 0) {
-      insights.push({
-        id: 'insight-failed-statements',
-        severity: 'critical',
-        title: `${failedStatements.length} statement${failedStatements.length === 1 ? '' : 's'} failed processing`,
-        description: 'Review the Statements page to reprocess or re-upload the affected files.',
-      })
     }
 
     const cardSpend = await this.getCreditCardSpend(filters)

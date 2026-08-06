@@ -1,7 +1,6 @@
 import { AlertOctagon, AlertTriangle, CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { motion } from 'motion/react'
 import { EmptyState } from '@/components/EmptyState'
-import { cn } from '@/lib/utils'
 import type { AnalyticsInsight, AnalyticsInsightSeverity } from '@/domain/Analytics'
 
 const SEVERITY_ICON: Record<AnalyticsInsightSeverity, typeof Info> = {
@@ -12,12 +11,16 @@ const SEVERITY_ICON: Record<AnalyticsInsightSeverity, typeof Info> = {
   critical: AlertOctagon,
 }
 
-const SEVERITY_CLASS: Record<AnalyticsInsightSeverity, string> = {
-  good: 'text-viz-good bg-viz-good/10',
-  info: 'text-primary bg-primary/10',
-  warning: 'text-viz-warning bg-viz-warning/10',
-  serious: 'text-viz-serious bg-viz-serious/10',
-  critical: 'text-viz-critical bg-viz-critical/10',
+// Tailwind utility classes (text-viz-good, bg-viz-good/10, …) would depend on
+// --color-viz-* being registered in @theme, which is unreliable in this
+// Tailwind v4 setup (see index.css) — inline styles reading the raw
+// --viz-* custom properties directly instead.
+const SEVERITY_COLOR: Record<AnalyticsInsightSeverity, string> = {
+  good: 'var(--viz-good)',
+  info: 'var(--primary)',
+  warning: 'var(--viz-warning)',
+  serious: 'var(--viz-serious)',
+  critical: 'var(--viz-critical)',
 }
 
 interface InsightsPanelProps {
@@ -45,13 +48,12 @@ export function InsightsPanel({ insights, onInsightClick }: InsightsPanelProps) 
       {insights.map((insight, index) => {
         const Icon = SEVERITY_ICON[insight.severity]
         const clickable = Boolean(insight.actionFilter)
+        const color = SEVERITY_COLOR[insight.severity]
         const content = (
           <>
             <span
-              className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full',
-                SEVERITY_CLASS[insight.severity],
-              )}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full"
+              style={{ color, backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)` }}
             >
               <Icon className="size-4" aria-hidden="true" />
             </span>

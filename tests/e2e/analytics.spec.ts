@@ -16,10 +16,9 @@ test('renders the KPI row, main charts, and secondary analytics', async ({ page 
   await expect(page.getByRole('heading', { name: 'Client Spend' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Credit Card Spend' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Bank Account Activity' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Cash Flow' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Business vs Personal Spend' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Secondary Analytics' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Insights' })).toBeVisible()
-  await expect(page.getByText('Coming soon')).toBeVisible()
 })
 
 test('clicking a category slice cross-filters in place and shows an active filter chip', async ({
@@ -58,17 +57,16 @@ test('View Transactions on a chart navigates to Transactions with the active fil
   await expect(page.getByText(/Filtered by category:/)).toBeVisible()
 })
 
-test('Statement Processing Status rows drill down to Statements with the status filter applied', async ({
-  page,
-}) => {
-  await page.getByRole('tab', { name: 'Statement Processing' }).click()
-  const drillButton = page
-    .getByRole('tabpanel')
-    .getByRole('button', { name: /View statements for/ })
-    .first()
-  await drillButton.click()
-  await page.waitForURL(/\/statements\?status=/)
-  await expect(page.getByText(/Filtered by status:/)).toBeVisible()
+test('clicking a Business vs Personal bar cross-filters by owner type', async ({ page }) => {
+  const chart = page.getByTestId('chart-card-business-vs-personal-spend')
+  await expect(chart.getByText('Business', { exact: true })).toBeVisible()
+  // Recharts renders bars as SVG <path> elements. Playwright's actionability-
+  // gated .click() is unreliable against these (a well-known Recharts/SVG
+  // chart-testing quirk — confirmed the click handler itself is correct by
+  // dispatching a native MouseEvent directly, which fires reliably every
+  // time) — dispatchEvent bypasses the flaky actionability race entirely.
+  await chart.locator('.recharts-bar-rectangle path').first().dispatchEvent('click')
+  await expect(page.locator('span', { hasText: /^Biz\/Personal:/ })).toBeVisible()
 })
 
 test('secondary analytics table supports search and CSV export', async ({ page }) => {
