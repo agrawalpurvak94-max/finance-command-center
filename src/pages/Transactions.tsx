@@ -43,6 +43,7 @@ const DRILL_DOWN_PARAMS = {
   merchantId: { label: 'merchant' },
   bankAccountId: { label: 'bank account' },
   creditCardId: { label: 'credit card' },
+  clientId: { label: 'client' },
 } as const
 
 type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
@@ -153,13 +154,22 @@ export function Transactions() {
     )
   }
 
-  const drillDownLabel = drillDown
-    ? drillDown.param === 'categoryId'
-      ? (categoriesQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id)
-      : drillDown.param === 'merchantId'
-        ? (merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id)
-        : accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
-    : null
+  function resolveDrillDownLabel(): string | null {
+    if (!drillDown) return null
+    switch (drillDown.param) {
+      case 'categoryId':
+        return categoriesQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id
+      case 'merchantId':
+        return merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id
+      case 'clientId':
+        return clientsQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id
+      case 'bankAccountId':
+      case 'creditCardId':
+        return accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
+    }
+  }
+
+  const drillDownLabel = resolveDrillDownLabel()
 
   return (
     <PageContainer className="flex flex-col gap-md">

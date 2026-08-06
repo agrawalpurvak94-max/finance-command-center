@@ -69,6 +69,8 @@ export interface BankAccountRecord {
   readonly health: BankAccountHealth
   readonly status: BankAccountRecordStatus
   readonly notes: string | null
+  /** Module 7 (Clients) drill-down target — null for accounts not tied to a specific client. */
+  readonly clientId: string | null
 }
 
 export interface BankAccountFilters {
@@ -76,6 +78,7 @@ export interface BankAccountFilters {
   readonly accountType?: BankAccountType
   readonly status?: BankAccountRecordStatus
   readonly health?: BankAccountHealth
+  readonly clientId?: string
 }
 
 export interface BankAccountSort {

@@ -40,6 +40,17 @@ const CARD_NAMES: Record<string, string> = {
   'cc-hsbc-premier': 'HSBC Premier',
 }
 
+// Module 7 (Clients) drill-down target — most cards belong to the business
+// generally (null), a handful are tied to a specific client so "View Credit
+// Cards" has real rows to show across several different clients.
+const CARD_CLIENT_IDS: Record<string, string | null> = {
+  'cc-hdfc-biz-gold': 'client-acme',
+  'cc-axis-magnus': 'client-stellar',
+  'cc-kotak-corp': 'client-vortex',
+  'cc-amex-gold': 'client-finstrat',
+  'cc-indusind-legend': 'client-solargrid',
+}
+
 const healthWeights: readonly [CreditCardHealth, number][] = [
   ['healthy', 50],
   ['due_soon', 20],
@@ -150,6 +161,7 @@ function generateCreditCard(card: (typeof mockCreditCards)[number]): CreditCardR
     health,
     status: 'active',
     notes: null,
+    clientId: CARD_CLIENT_IDS[card.id] ?? null,
   }
 }
 

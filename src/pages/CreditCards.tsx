@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { Search, CreditCard as CreditCardIcon } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
 import { Input } from '@/components/ui/input'
@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { Toast } from '@/components/Toast'
+import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { CreditCardsHeader } from '@/components/credit-cards/CreditCardsHeader'
 import { CreditCardSummaryWidget } from '@/components/credit-cards/CreditCardSummaryWidget'
 import { CreditCardTile } from '@/components/credit-cards/CreditCardTile'
@@ -17,9 +18,18 @@ import {
   useCreditCardsSummary,
   useCreateCreditCard,
 } from '@/hooks/useCreditCards'
+import { useTransactionClients } from '@/hooks/useTransactions'
 import type { CreditCardRecord } from '@/domain/CreditCard'
 
 const PAGE_SIZE = 100
+
+// Drill-down entry point Clients (Module 7) "View Credit Cards" navigates
+// here with — same shared mechanism Accounts.tsx established.
+const CLIENT_ID_PARAM = 'clientId'
+
+function readClientDrillDown(searchParams: URLSearchParams): string | undefined {
+  return searchParams.get(CLIENT_ID_PARAM) ?? undefined
+}
 
 function CreditCardGridSkeleton() {
   return (
@@ -33,6 +43,12 @@ function CreditCardGridSkeleton() {
 
 export function CreditCards() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Captured once on mount so clearing it doesn't reappear if the user then
+  // edits filters by hand — same pattern as Accounts.tsx's drill-down.
+  const [clientDrillDownId, setClientDrillDownId] = useState<string | undefined>(() =>
+    readClientDrillDown(searchParams),
+  )
 
   const [search, setSearch] = useState('')
   const [formOpen, setFormOpen] = useState(false)
@@ -46,15 +62,35 @@ export function CreditCards() {
   const reviewTriggerCardId = useRef<string | null>(null)
   const scrollPositionRef = useRef<number | null>(null)
 
+  const clientsQuery = useTransactionClients()
+
   const summaryQuery = useCreditCardsSummary()
   const listQuery = useCreditCardsList({
     page: 1,
     pageSize: PAGE_SIZE,
     search: search || undefined,
     sort: { id: 'bankName', desc: false },
+    filters: clientDrillDownId ? { clientId: clientDrillDownId } : undefined,
   })
 
   const createCard = useCreateCreditCard()
+
+  function handleClearClientDrillDown() {
+    if (!clientDrillDownId) return
+    setClientDrillDownId(undefined)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(CLIENT_ID_PARAM)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const clientDrillDownLabel = clientDrillDownId
+    ? (clientsQuery.data?.find((c) => c.id === clientDrillDownId)?.name ?? clientDrillDownId)
+    : null
 
   const handleOpenCard = useCallback((card: CreditCardRecord) => {
     reviewTriggerCardId.current = card.id
@@ -82,6 +118,13 @@ export function CreditCards() {
   return (
     <PageContainer className="flex flex-col gap-md">
       <CreditCardsHeader onAddCreditCard={() => setFormOpen(true)} />
+
+      {clientDrillDownId && (
+        <ActiveFilterBanner
+          label={`Filtered by client: ${clientDrillDownLabel}`}
+          onClear={handleClearClientDrillDown}
+        />
+      )}
 
       <CreditCardSummaryWidget query={summaryQuery} />
 

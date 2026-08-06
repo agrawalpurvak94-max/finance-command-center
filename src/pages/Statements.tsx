@@ -32,15 +32,31 @@ import type { TransactionAccount } from '@/domain/Account'
 
 const emptyFilters: StatementFiltersType = {}
 
-// Drill-down entry point Accounts (Module 8) / Credit Cards (Module 9) "View
-// All Statements" navigates here with — same shared mechanism Transactions.tsx
-// established (see its DRILL_DOWN_PARAMS comment), reused rather than a
-// second routing implementation, per CLAUDE.md's "do not duplicate business
-// logic" and the module spec's "Do NOT implement another routing mechanism".
-const ACCOUNT_ID_PARAM = 'accountId'
+// Drill-down entry points other modules navigate here with — Accounts
+// (Module 8) / Credit Cards (Module 9) "View All Statements" (accountId),
+// Clients (Module 7) "View All Statements" (clientId). Same shared mechanism
+// Transactions.tsx established (see its DRILL_DOWN_PARAMS comment): adding a
+// module here means adding one entry to this map, not a second routing
+// implementation, per CLAUDE.md's "do not duplicate business logic" and each
+// module spec's "Do NOT implement another routing mechanism".
+const DRILL_DOWN_PARAMS = {
+  accountId: { label: 'account' },
+  clientId: { label: 'client' },
+} as const
 
-function readAccountDrillDown(searchParams: URLSearchParams): string | undefined {
-  return searchParams.get(ACCOUNT_ID_PARAM) ?? undefined
+type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
+
+interface DrillDown {
+  param: DrillDownParam
+  id: string
+}
+
+function readDrillDownFromSearchParams(searchParams: URLSearchParams): DrillDown | undefined {
+  for (const param of Object.keys(DRILL_DOWN_PARAMS) as DrillDownParam[]) {
+    const id = searchParams.get(param)
+    if (id) return { param, id }
+  }
+  return undefined
 }
 
 function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: string): string {
@@ -52,8 +68,8 @@ export function Statements() {
   const [searchParams, setSearchParams] = useSearchParams()
   // Captured once on mount so clearing it doesn't reappear if the user then
   // edits filters by hand — same pattern as Transactions.tsx's drillDown.
-  const [accountDrillDownId, setAccountDrillDownId] = useState<string | undefined>(() =>
-    readAccountDrillDown(searchParams),
+  const [drillDown, setDrillDown] = useState<DrillDown | undefined>(() =>
+    readDrillDownFromSearchParams(searchParams),
   )
 
   const [search, setSearch] = useState('')
@@ -61,10 +77,10 @@ export function Statements() {
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<StatementSort | undefined>({ id: 'statementDate', desc: true })
   const [draftFilters, setDraftFilters] = useState<StatementFiltersType>(() =>
-    accountDrillDownId ? { accountId: accountDrillDownId } : emptyFilters,
+    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
   )
   const [appliedFilters, setAppliedFilters] = useState<StatementFiltersType>(() =>
-    accountDrillDownId ? { accountId: accountDrillDownId } : emptyFilters,
+    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
   )
   const [selectedStatement, setSelectedStatement] = useState<Statement | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -105,24 +121,27 @@ export function Statements() {
     })
   }
 
-  function handleClearAccountDrillDown() {
-    if (!accountDrillDownId) return
-    setAccountDrillDownId(undefined)
-    setDraftFilters((prev) => ({ ...prev, accountId: undefined }))
-    setAppliedFilters((prev) => ({ ...prev, accountId: undefined }))
+  function handleClearDrillDown() {
+    if (!drillDown) return
+    const { param } = drillDown
+    setDrillDown(undefined)
+    setDraftFilters((prev) => ({ ...prev, [param]: undefined }))
+    setAppliedFilters((prev) => ({ ...prev, [param]: undefined }))
     setPage(1)
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        next.delete(ACCOUNT_ID_PARAM)
+        next.delete(param)
         return next
       },
       { replace: true },
     )
   }
 
-  const accountDrillDownLabelText = accountDrillDownId
-    ? accountDrillDownLabel(accountsQuery.data ?? [], accountDrillDownId)
+  const drillDownLabel = drillDown
+    ? drillDown.param === 'clientId'
+      ? (clientsQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id)
+      : accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
     : null
 
   return (
@@ -136,10 +155,10 @@ export function Statements() {
         isRefreshing={listQuery.isFetching || summaryQuery.isFetching}
       />
 
-      {accountDrillDownId && (
+      {drillDown && (
         <ActiveFilterBanner
-          label={`Filtered by account: ${accountDrillDownLabelText}`}
-          onClear={handleClearAccountDrillDown}
+          label={`Filtered by ${DRILL_DOWN_PARAMS[drillDown.param].label}: ${drillDownLabel}`}
+          onClear={handleClearDrillDown}
         />
       )}
 

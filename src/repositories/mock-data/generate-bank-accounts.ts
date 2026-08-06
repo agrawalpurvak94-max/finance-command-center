@@ -20,16 +20,26 @@ function mulberry32(seed: number) {
 
 const random = mulberry32(20260803)
 
-// Explicit per-account authoring (type/nickname) rather than random pick —
-// with only 5 accounts, this reads far more like real connected accounts
-// than a randomly assigned label would, and guarantees all three supported
-// account types (Savings/Current/Overdraft) actually appear.
-const ACCOUNT_META: Record<string, { type: BankAccountType; nickname: string | null }> = {
-  'acct-hdfc-current': { type: 'current', nickname: 'Primary Operating Account' },
-  'acct-icici-current': { type: 'current', nickname: 'Vendor Payments Account' },
-  'acct-axis-savings': { type: 'savings', nickname: 'Payroll Reserve' },
-  'acct-kotak-treasury': { type: 'overdraft', nickname: 'OD Facility' },
-  'acct-sbi-current': { type: 'current', nickname: null },
+// Explicit per-account authoring (type/nickname/clientId) rather than random
+// pick — with only 5 accounts, this reads far more like real connected
+// accounts than a randomly assigned label would, and guarantees all three
+// supported account types (Savings/Current/Overdraft) actually appear.
+// clientId is mostly null (most accounts belong to the business generally,
+// not a specific client) — one account is tied to a client so Module 7's
+// "View Accounts" drill-down has a real row to show.
+const ACCOUNT_META: Record<
+  string,
+  { type: BankAccountType; nickname: string | null; clientId: string | null }
+> = {
+  'acct-hdfc-current': { type: 'current', nickname: 'Primary Operating Account', clientId: null },
+  'acct-icici-current': {
+    type: 'current',
+    nickname: 'Vendor Payments Account',
+    clientId: null,
+  },
+  'acct-axis-savings': { type: 'savings', nickname: 'Payroll Reserve', clientId: null },
+  'acct-kotak-treasury': { type: 'overdraft', nickname: 'OD Facility', clientId: 'client-vortex' },
+  'acct-sbi-current': { type: 'current', nickname: null, clientId: null },
 }
 
 const accountTypeLabel: Record<BankAccountType, string> = {
@@ -82,7 +92,11 @@ function mostFrequent<T extends { id: string }>(items: readonly T[]): T | null {
 }
 
 function generateBankAccount(account: (typeof mockBankAccounts)[number]): BankAccountRecord {
-  const meta = ACCOUNT_META[account.id] ?? { type: 'current' as BankAccountType, nickname: null }
+  const meta = ACCOUNT_META[account.id] ?? {
+    type: 'current' as BankAccountType,
+    nickname: null,
+    clientId: null,
+  }
   const accountTransactions = mockTransactions.filter((txn) => txn.account.id === account.id)
   const thisMonthTxns = accountTransactions.filter((txn) => isThisMonth(txn.date))
 
@@ -134,6 +148,7 @@ function generateBankAccount(account: (typeof mockBankAccounts)[number]): BankAc
     health,
     status: 'active',
     notes: null,
+    clientId: meta.clientId,
   }
 }
 

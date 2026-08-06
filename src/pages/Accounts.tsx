@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { Search, Landmark } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
 import { Input } from '@/components/ui/input'
@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { Toast } from '@/components/Toast'
+import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { AccountsHeader } from '@/components/accounts/AccountsHeader'
 import { AccountSummaryWidget } from '@/components/accounts/AccountSummaryWidget'
 import { BankAccountCard } from '@/components/accounts/BankAccountCard'
@@ -18,9 +19,20 @@ import {
   useCreateBankAccount,
   useSyncAllBankAccounts,
 } from '@/hooks/useAccounts'
+import { useTransactionClients } from '@/hooks/useTransactions'
 import type { BankAccountRecord } from '@/domain/Account'
 
 const PAGE_SIZE = 100
+
+// Drill-down entry point Clients (Module 7) "View Accounts" navigates here
+// with — same shared mechanism Transactions.tsx/Statements.tsx established
+// (see their DRILL_DOWN_PARAMS comments); a single param here since Accounts
+// only ever receives a clientId filter today, not a small map of alternatives.
+const CLIENT_ID_PARAM = 'clientId'
+
+function readClientDrillDown(searchParams: URLSearchParams): string | undefined {
+  return searchParams.get(CLIENT_ID_PARAM) ?? undefined
+}
 
 function BankAccountGridSkeleton() {
   return (
@@ -34,6 +46,12 @@ function BankAccountGridSkeleton() {
 
 export function Accounts() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Captured once on mount so clearing it doesn't reappear if the user then
+  // edits filters by hand — same pattern as Transactions.tsx's drillDown.
+  const [clientDrillDownId, setClientDrillDownId] = useState<string | undefined>(() =>
+    readClientDrillDown(searchParams),
+  )
 
   const [search, setSearch] = useState('')
   const [formOpen, setFormOpen] = useState(false)
@@ -48,16 +66,36 @@ export function Accounts() {
   const reviewTriggerAccountId = useRef<string | null>(null)
   const scrollPositionRef = useRef<number | null>(null)
 
+  const clientsQuery = useTransactionClients()
+
   const summaryQuery = useBankAccountsSummary()
   const listQuery = useBankAccountsList({
     page: 1,
     pageSize: PAGE_SIZE,
     search: search || undefined,
     sort: { id: 'bankName', desc: false },
+    filters: clientDrillDownId ? { clientId: clientDrillDownId } : undefined,
   })
 
   const createAccount = useCreateBankAccount()
   const syncAll = useSyncAllBankAccounts()
+
+  function handleClearClientDrillDown() {
+    if (!clientDrillDownId) return
+    setClientDrillDownId(undefined)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(CLIENT_ID_PARAM)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const clientDrillDownLabel = clientDrillDownId
+    ? (clientsQuery.data?.find((c) => c.id === clientDrillDownId)?.name ?? clientDrillDownId)
+    : null
 
   const handleOpenAccount = useCallback((account: BankAccountRecord) => {
     reviewTriggerAccountId.current = account.id
@@ -95,6 +133,13 @@ export function Accounts() {
         onSyncAll={handleSyncAll}
         isSyncing={syncAll.isPending}
       />
+
+      {clientDrillDownId && (
+        <ActiveFilterBanner
+          label={`Filtered by client: ${clientDrillDownLabel}`}
+          onClear={handleClearClientDrillDown}
+        />
+      )}
 
       <AccountSummaryWidget query={summaryQuery} />
 

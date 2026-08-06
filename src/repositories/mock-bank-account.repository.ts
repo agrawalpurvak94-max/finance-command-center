@@ -29,6 +29,7 @@ function matchesFilters(account: BankAccountRecord, params: BankAccountListParam
   if (filters.accountType && account.accountType !== filters.accountType) return false
   if (filters.status && account.status !== filters.status) return false
   if (filters.health && account.health !== filters.health) return false
+  if (filters.clientId && account.clientId !== filters.clientId) return false
 
   return true
 }
@@ -125,6 +126,7 @@ export class MockBankAccountRepository implements BankAccountRepository {
       health: 'healthy',
       status: input.status,
       notes: null,
+      clientId: null,
     }
     this.accounts = [account, ...this.accounts]
     return withLatency(account, 400)

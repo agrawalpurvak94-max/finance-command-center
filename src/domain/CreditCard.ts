@@ -44,6 +44,8 @@ export interface CreditCardRecord {
   readonly health: CreditCardHealth
   readonly status: CreditCardRecordStatus
   readonly notes: string | null
+  /** Module 7 (Clients) drill-down target — null for cards not tied to a specific client. */
+  readonly clientId: string | null
 }
 
 export interface CreditCardFilters {
@@ -51,6 +53,7 @@ export interface CreditCardFilters {
   readonly network?: CardNetwork
   readonly status?: CreditCardRecordStatus
   readonly health?: CreditCardHealth
+  readonly clientId?: string
 }
 
 export interface CreditCardSort {

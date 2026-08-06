@@ -29,6 +29,7 @@ function matchesFilters(card: CreditCardRecord, params: CreditCardListParams): b
   if (filters.network && card.network !== filters.network) return false
   if (filters.status && card.status !== filters.status) return false
   if (filters.health && card.health !== filters.health) return false
+  if (filters.clientId && card.clientId !== filters.clientId) return false
 
   return true
 }
@@ -124,6 +125,7 @@ export class MockCreditCardRepository implements CreditCardRepository {
       health: 'healthy',
       status: input.status,
       notes: null,
+      clientId: null,
     }
     this.cards = [card, ...this.cards]
     return withLatency(card, 400)
