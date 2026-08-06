@@ -42,6 +42,7 @@ function matchesFilters(txn: Transaction, params: TransactionListParams): boolea
   if (filters.creditCardId && txn.account.id !== filters.creditCardId) return false
   if (filters.type && txn.type !== filters.type) return false
   if (filters.ownerType && txn.ownerType !== filters.ownerType) return false
+  if (filters.paymentMode && txn.paymentMode !== filters.paymentMode) return false
   if (filters.status && txn.status !== filters.status) return false
   if (filters.amountMin !== undefined && txn.amount < filters.amountMin) return false
   if (filters.amountMax !== undefined && txn.amount > filters.amountMax) return false
@@ -107,6 +108,7 @@ export class MockTransactionRepository implements TransactionRepository {
       type: input.type,
       amount: input.amount,
       status: 'pending_review',
+      paymentMode: account.kind === 'bank' ? 'netbanking' : 'card',
       notes: null,
       duplicateOfId: null,
     }

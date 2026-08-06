@@ -10,6 +10,11 @@ export type OwnerType = 'business' | 'personal'
 
 export type TransactionType = 'debit' | 'credit'
 
+/** Module 10 (Analytics) addition — how the transaction was settled. Derived
+ * deterministically in the mock generator; bank accounts skew upi/netbanking/
+ * cash/cheque, credit cards skew card/auto_debit. */
+export type PaymentMode = 'upi' | 'card' | 'netbanking' | 'cash' | 'cheque' | 'auto_debit'
+
 /**
  * Mirrors the eventual `transactions` Supabase table (see CLAUDE.md Part 3 —
  * an existing production table). Field names here are camelCase for the
@@ -28,6 +33,7 @@ export interface Transaction {
   readonly type: TransactionType
   readonly amount: number
   readonly status: TransactionStatus
+  readonly paymentMode: PaymentMode
   readonly notes: string | null
   readonly duplicateOfId: string | null
 }
@@ -42,6 +48,7 @@ export interface TransactionFilters {
   readonly creditCardId?: string
   readonly type?: TransactionType
   readonly ownerType?: OwnerType
+  readonly paymentMode?: PaymentMode
   readonly status?: TransactionStatus
   readonly amountMin?: number
   readonly amountMax?: number

@@ -39,9 +39,12 @@ const emptyFilters: StatementFiltersType = {}
 // module here means adding one entry to this map, not a second routing
 // implementation, per CLAUDE.md's "do not duplicate business logic" and each
 // module spec's "Do NOT implement another routing mechanism".
+// `status` was added for Analytics' (Module 10) "Statement Processing
+// Status" table drill-down — same map, same mechanism, one more entry.
 const DRILL_DOWN_PARAMS = {
   accountId: { label: 'account' },
   clientId: { label: 'client' },
+  status: { label: 'status' },
 } as const
 
 type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
@@ -64,6 +67,21 @@ function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: stri
   return account ? `${account.bankName} •••• ${account.last4}` : id
 }
 
+// `status` is a narrower union than `accountId`/`clientId` (plain strings),
+// so the seed can't use a single dynamic-key object literal type-safely —
+// this switch is the one place that needs to know each field's real type.
+function drillDownToStatementFilters(drillDown: DrillDown | undefined): StatementFiltersType {
+  if (!drillDown) return emptyFilters
+  switch (drillDown.param) {
+    case 'accountId':
+      return { accountId: drillDown.id }
+    case 'clientId':
+      return { clientId: drillDown.id }
+    case 'status':
+      return { status: drillDown.id as StatementFiltersType['status'] }
+  }
+}
+
 export function Statements() {
   const [searchParams, setSearchParams] = useSearchParams()
   // Captured once on mount so clearing it doesn't reappear if the user then
@@ -77,10 +95,10 @@ export function Statements() {
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<StatementSort | undefined>({ id: 'statementDate', desc: true })
   const [draftFilters, setDraftFilters] = useState<StatementFiltersType>(() =>
-    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
+    drillDownToStatementFilters(drillDown),
   )
   const [appliedFilters, setAppliedFilters] = useState<StatementFiltersType>(() =>
-    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
+    drillDownToStatementFilters(drillDown),
   )
   const [selectedStatement, setSelectedStatement] = useState<Statement | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -138,11 +156,19 @@ export function Statements() {
     )
   }
 
-  const drillDownLabel = drillDown
-    ? drillDown.param === 'clientId'
-      ? (clientsQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id)
-      : accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
-    : null
+  function resolveDrillDownLabel(): string | null {
+    if (!drillDown) return null
+    switch (drillDown.param) {
+      case 'clientId':
+        return clientsQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id
+      case 'accountId':
+        return accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
+      case 'status':
+        return drillDown.id.replace(/_/g, ' ')
+    }
+  }
+
+  const drillDownLabel = resolveDrillDownLabel()
 
   return (
     <PageContainer className="flex flex-col gap-md">

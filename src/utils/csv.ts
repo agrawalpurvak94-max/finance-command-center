@@ -2,6 +2,8 @@ import type { Transaction } from '@/domain/Transaction'
 import type { CategoryRecord } from '@/domain/Category'
 import type { MerchantRecord } from '@/domain/Merchant'
 import type { ClientRecord } from '@/domain/Client'
+import type { Statement } from '@/domain/Statement'
+import type { AnalyticsRankedRow } from '@/domain/Analytics'
 
 function escapeCsvValue(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -120,6 +122,52 @@ export function clientsToCsv(clients: readonly ClientRecord[]): string {
   ])
 
   return rowsToCsv(headers, rows)
+}
+
+export function statementsToCsv(statements: readonly Statement[]): string {
+  const headers = [
+    'Statement Date',
+    'Period',
+    'Account',
+    'Client',
+    'Status',
+    'Transactions Extracted',
+    'Imported At',
+  ]
+
+  const rows = statements.map((stmt) => [
+    stmt.statementDate,
+    stmt.statementPeriodLabel,
+    `${stmt.account.bankName} ${stmt.account.last4}`,
+    stmt.client?.name ?? '',
+    stmt.status,
+    stmt.transactionsExtracted,
+    stmt.importedAt,
+  ])
+
+  return rowsToCsv(headers, rows)
+}
+
+/** Generic exporter for every Analytics ranked-row dataset (Category/Merchant/
+ * Client/Card summaries and every secondary-analytics table) — one function
+ * instead of a bespoke CSV shape per widget, since they all share the same
+ * `AnalyticsRankedRow` shape. */
+export function analyticsRowsToCsv(
+  rows: readonly AnalyticsRankedRow[],
+  valueColumnLabel: string,
+  secondaryColumnLabel?: string,
+): string {
+  const headers = secondaryColumnLabel
+    ? ['Label', 'Detail', valueColumnLabel, secondaryColumnLabel]
+    : ['Label', 'Detail', valueColumnLabel]
+
+  const rows_ = rows.map((row) =>
+    secondaryColumnLabel
+      ? [row.label, row.sublabel ?? '', row.valueLabel, row.secondaryLabel ?? '']
+      : [row.label, row.sublabel ?? '', row.valueLabel],
+  )
+
+  return rowsToCsv(headers, rows_)
 }
 
 export function downloadCsv(filename: string, csvContent: string): void {

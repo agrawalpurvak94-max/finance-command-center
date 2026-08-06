@@ -34,31 +34,43 @@ import type { TransactionAccount } from '@/domain/Account'
 
 const emptyFilters: TransactionFilters = {}
 
+type FilterKey = keyof TransactionFilters
+const NUMERIC_FILTER_KEYS: readonly FilterKey[] = ['amountMin', 'amountMax']
+
 // Drill-down entry points other modules navigate here with (e.g. Categories'
-// and Merchants' "View Transactions" row actions). One shared mechanism per
-// CLAUDE.md's "do not duplicate business logic" — adding a module here means
-// adding one entry to this map, not a second drill-down implementation.
-const DRILL_DOWN_PARAMS = {
-  categoryId: { label: 'category' },
-  merchantId: { label: 'merchant' },
-  bankAccountId: { label: 'bank account' },
-  creditCardId: { label: 'credit card' },
-  clientId: { label: 'client' },
-} as const
-
-type DrillDownParam = keyof typeof DRILL_DOWN_PARAMS
-
-interface DrillDown {
-  param: DrillDownParam
-  id: string
+// and Merchants' "View Transactions" row actions, or Analytics' Export/chart
+// drill-downs). One shared mechanism per CLAUDE.md's "do not duplicate
+// business logic" — adding a module here means adding one entry to this map,
+// not a second drill-down implementation. Generalized from a single param to
+// every matching param present so Analytics can hand off its full stacked
+// filter set in one navigation (see MODULE10_REPORT.md); Modules 8/9 already
+// established the "extend this map" precedent for bankAccountId/creditCardId.
+const DRILL_DOWN_LABELS: Partial<Record<FilterKey, string>> = {
+  categoryId: 'category',
+  merchantId: 'merchant',
+  bankAccountId: 'bank account',
+  creditCardId: 'credit card',
+  clientId: 'client',
+  dateFrom: 'from date',
+  dateTo: 'to date',
+  type: 'type',
+  ownerType: 'biz/personal',
+  paymentMode: 'payment mode',
+  status: 'status',
+  amountMin: 'min amount',
+  amountMax: 'max amount',
 }
 
-function readDrillDownFromSearchParams(searchParams: URLSearchParams): DrillDown | undefined {
-  for (const param of Object.keys(DRILL_DOWN_PARAMS) as DrillDownParam[]) {
-    const id = searchParams.get(param)
-    if (id) return { param, id }
+const DRILL_DOWN_KEYS = Object.keys(DRILL_DOWN_LABELS) as FilterKey[]
+
+function readDrillDownFromSearchParams(searchParams: URLSearchParams): TransactionFilters {
+  const filters: Record<string, unknown> = {}
+  for (const key of DRILL_DOWN_KEYS) {
+    const raw = searchParams.get(key)
+    if (raw === null || raw === '') continue
+    filters[key] = NUMERIC_FILTER_KEYS.includes(key) ? Number(raw) : raw
   }
-  return undefined
+  return filters as TransactionFilters
 }
 
 function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: string): string {
@@ -70,19 +82,20 @@ export function Transactions() {
   const [searchParams, setSearchParams] = useSearchParams()
   // Captured once on mount so clearing it doesn't reappear if the user then
   // edits filters by hand.
-  const [drillDown, setDrillDown] = useState<DrillDown | undefined>(() =>
-    readDrillDownFromSearchParams(searchParams),
-  )
+  const [drillDown, setDrillDown] = useState<TransactionFilters | undefined>(() => {
+    const seeded = readDrillDownFromSearchParams(searchParams)
+    return Object.keys(seeded).length > 0 ? seeded : undefined
+  })
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sort, setSort] = useState<TransactionSort | undefined>({ id: 'date', desc: true })
-  const [draftFilters, setDraftFilters] = useState<TransactionFilters>(() =>
-    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
+  const [draftFilters, setDraftFilters] = useState<TransactionFilters>(
+    () => drillDown ?? emptyFilters,
   )
-  const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>(() =>
-    drillDown ? { [drillDown.param]: drillDown.id } : emptyFilters,
+  const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>(
+    () => drillDown ?? emptyFilters,
   )
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
@@ -139,15 +152,15 @@ export function Transactions() {
 
   function handleClearDrillDown() {
     if (!drillDown) return
-    const { param } = drillDown
+    const keys = Object.keys(drillDown) as FilterKey[]
     setDrillDown(undefined)
-    setDraftFilters((prev) => ({ ...prev, [param]: undefined }))
-    setAppliedFilters((prev) => ({ ...prev, [param]: undefined }))
+    setDraftFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
     setPage(1)
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        next.delete(param)
+        for (const key of keys) next.delete(key)
         return next
       },
       { replace: true },
@@ -156,17 +169,32 @@ export function Transactions() {
 
   function resolveDrillDownLabel(): string | null {
     if (!drillDown) return null
-    switch (drillDown.param) {
-      case 'categoryId':
-        return categoriesQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id
-      case 'merchantId':
-        return merchantsQuery.data?.find((m) => m.id === drillDown.id)?.name ?? drillDown.id
-      case 'clientId':
-        return clientsQuery.data?.find((c) => c.id === drillDown.id)?.name ?? drillDown.id
-      case 'bankAccountId':
-      case 'creditCardId':
-        return accountDrillDownLabel(accountsQuery.data ?? [], drillDown.id)
+    const parts: string[] = []
+    for (const key of Object.keys(drillDown) as FilterKey[]) {
+      const value = drillDown[key]
+      if (value === undefined) continue
+      const label = DRILL_DOWN_LABELS[key] ?? key
+      let displayValue: string
+      switch (key) {
+        case 'categoryId':
+          displayValue = categoriesQuery.data?.find((c) => c.id === value)?.name ?? String(value)
+          break
+        case 'merchantId':
+          displayValue = merchantsQuery.data?.find((m) => m.id === value)?.name ?? String(value)
+          break
+        case 'clientId':
+          displayValue = clientsQuery.data?.find((c) => c.id === value)?.name ?? String(value)
+          break
+        case 'bankAccountId':
+        case 'creditCardId':
+          displayValue = accountDrillDownLabel(accountsQuery.data ?? [], String(value))
+          break
+        default:
+          displayValue = String(value)
+      }
+      parts.push(`${label}: ${displayValue}`)
     }
+    return parts.join(', ')
   }
 
   const drillDownLabel = resolveDrillDownLabel()
@@ -180,7 +208,7 @@ export function Transactions() {
 
       {drillDown && (
         <ActiveFilterBanner
-          label={`Filtered by ${DRILL_DOWN_PARAMS[drillDown.param].label}: ${drillDownLabel}`}
+          label={`Filtered by ${drillDownLabel}`}
           onClear={handleClearDrillDown}
         />
       )}

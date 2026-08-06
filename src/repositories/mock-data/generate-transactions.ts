@@ -1,4 +1,4 @@
-import type { Transaction, TransactionStatus } from '@/domain/Transaction'
+import type { Transaction, TransactionStatus, PaymentMode } from '@/domain/Transaction'
 import {
   mockAccounts,
   mockCategories,
@@ -44,6 +44,29 @@ function pickStatus(): TransactionStatus {
   return 'reviewed'
 }
 
+const bankPaymentModeWeights: readonly [PaymentMode, number][] = [
+  ['upi', 45],
+  ['netbanking', 25],
+  ['cash', 15],
+  ['cheque', 15],
+]
+
+const cardPaymentModeWeights: readonly [PaymentMode, number][] = [
+  ['card', 75],
+  ['auto_debit', 25],
+]
+
+function pickPaymentMode(accountKind: 'bank' | 'credit_card'): PaymentMode {
+  const weights = accountKind === 'bank' ? bankPaymentModeWeights : cardPaymentModeWeights
+  const total = weights.reduce((sum, [, weight]) => sum + weight, 0)
+  let roll = random() * total
+  for (const [mode, weight] of weights) {
+    if (roll < weight) return mode
+    roll -= weight
+  }
+  return weights[0][0]
+}
+
 const notesPool = [
   'Monthly server scaling',
   'Team meeting coffee',
@@ -78,6 +101,7 @@ function generateTransaction(index: number): Transaction {
     type: random() > 0.08 ? 'debit' : 'credit',
     amount,
     status,
+    paymentMode: pickPaymentMode(account.kind),
     notes: random() > 0.6 ? pick(notesPool) : null,
     duplicateOfId: null,
   }

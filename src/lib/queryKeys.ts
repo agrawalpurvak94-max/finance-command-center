@@ -5,6 +5,7 @@ import type { MerchantListParams } from '@/domain/Merchant'
 import type { BankAccountListParams } from '@/domain/Account'
 import type { CreditCardListParams } from '@/domain/CreditCard'
 import type { ClientListParams } from '@/domain/Client'
+import type { AnalyticsFilters, AnalyticsGranularity } from '@/domain/Analytics'
 
 export const queryKeys = {
   dashboard: {
@@ -52,5 +53,31 @@ export const queryKeys = {
     all: ['clients'] as const,
     list: (params: ClientListParams) => ['clients', 'list', params] as const,
     summary: ['clients', 'summary'] as const,
+  },
+  analytics: {
+    all: ['analytics'] as const,
+    summary: (filters: AnalyticsFilters) => ['analytics', 'summary', filters] as const,
+    spendTrend: (filters: AnalyticsFilters, granularity: AnalyticsGranularity) =>
+      ['analytics', 'spend-trend', filters, granularity] as const,
+    cashFlow: (filters: AnalyticsFilters) => ['analytics', 'cash-flow', filters] as const,
+    categorySpend: (filters: AnalyticsFilters) => ['analytics', 'category-spend', filters] as const,
+    merchantSpend: (filters: AnalyticsFilters) => ['analytics', 'merchant-spend', filters] as const,
+    clientSpend: (filters: AnalyticsFilters) => ['analytics', 'client-spend', filters] as const,
+    creditCardSpend: (filters: AnalyticsFilters) =>
+      ['analytics', 'credit-card-spend', filters] as const,
+    bankAccountActivity: (filters: AnalyticsFilters) =>
+      ['analytics', 'bank-account-activity', filters] as const,
+    highestTransactions: (filters: AnalyticsFilters) =>
+      ['analytics', 'highest-transactions', filters] as const,
+    recurringMerchants: (filters: AnalyticsFilters) =>
+      ['analytics', 'recurring-merchants', filters] as const,
+    largestExpenses: (filters: AnalyticsFilters) =>
+      ['analytics', 'largest-expenses', filters] as const,
+    refundAnalysis: (filters: AnalyticsFilters) =>
+      ['analytics', 'refund-analysis', filters] as const,
+    statementProcessingStatus: (filters: AnalyticsFilters) =>
+      ['analytics', 'statement-processing-status', filters] as const,
+    insights: (filters: AnalyticsFilters) => ['analytics', 'insights', filters] as const,
+    bankNames: ['analytics', 'bank-names'] as const,
   },
 }
