@@ -1,0 +1,77 @@
+# N8N_NODE_DEPENDENCY_MAP.md
+
+Every node in the two live n8n workflow exports that reads or writes Supabase, mapped to the table/RPC it touches. Built by parsing the workflow JSON directly (node `parameters.url`/`tableId`/`queryParameters`/`bodyParameters`), not by inference. Companion to [N8N_DATABASE_MAPPING.md](N8N_DATABASE_MAPPING.md), which explains _why_ each issue below matters — this document is the flat lookup table for Module 12B.
+
+Non-Supabase nodes (Gmail, PDF.co, Anthropic/Gemini API calls, Google Sheets) are listed in a separate section at the bottom for completeness, since they're relevant to understanding data flow even though they don't touch the schema this phase modified.
+
+---
+
+## Workflow: `Transactions Workflow C Parser - Experimentation`
+
+| n8n Node                         | Table/RPC         | Operation                                               | Columns Written / Selected                                                                                                                                                                                                                                                                                |
+| -------------------------------- | ----------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Load categories`                | `categories`      | SELECT                                                  | `name` (filtered by `user_id IS NULL OR user_id = :user_id`)                                                                                                                                                                                                                                              |
+| `Supabase Insert (transactions)` | `transactions`    | INSERT                                                  | Passthrough of whatever `Build row (from AI)` output: `user_id, amount, currency, transaction_date, merchant, category, card_last4, bank_name, transaction_type, raw_email` ⚠️ _invalid column — table has `raw_email_subject`, not `raw_email`_, `confidence, is_manually_entered, status, processed_at` |
+| `Lookup Merchant Memory`         | `merchant_memory` | SELECT                                                  | `category, display_name, confidence` (filtered by `user_id`, `normalized_merchant`, `limit=1`)                                                                                                                                                                                                            |
+| `Dedupe check`                   | `transactions`    | SELECT                                                  | `id, source_message_id` (filtered by `user_id`, `source_message_id`, and dynamically either `card_last4` or `account_last4`)                                                                                                                                                                              |
+| `Save Merchant Memory`           | `merchant_memory` | UPSERT (`POST` + `Prefer: resolution=merge-duplicates`) | `user_id, normalized_merchant, display_name, category, confidence`                                                                                                                                                                                                                                        |
+| `Save Transactions`              | `transactions`    | INSERT                                                  | `user_id, source_message_id, transaction_date, amount, currency, merchant, merchant_raw, category, card_last4, account_last4, bank_name, transaction_type, confidence, category_source, raw_email_subject, is_manually_entered, status, processed_at`                                                     |
+
+**Feeder nodes** (build the payload consumed by the row above, listed for traceability — these do not themselves touch Supabase):
+
+- `Build row (from AI)` → feeds `Supabase Insert (transactions)`
+- `Build Final Transaction Row` + `Confidence & Status` + `Restore Dedupe Context` → feed `Save Transactions`
+
+**Columns this workflow never writes to `transactions`** (confirmed by reading every INSERT node's field list above, not inferred): `account_id`, `client_id`, `statement_id`, `merchant_id`, `category_id`, `owner_type`, `duplicate_of_id`, `payment_mode`, `review_status`, `ai_confidence`, `is_recurring`, `is_duplicate`, `tags`.
+
+---
+
+## Workflow: `Workflow D Bank Statement Processing -Experimentation.json`
+
+| n8n Node               | Table/RPC                    | Operation                                      | Columns Written / Selected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | ---------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Load Merchant Memory` | `merchant_memory`            | SELECT (bulk cache load)                       | `normalized_merchant, display_name, category, confidence` (filtered by `user_id`, no `limit` — loads the whole table for that user)                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `Merchant Lookup RPC`  | `rpc/lookup_merchant`        | RPC (SELECT-equivalent)                        | Params: `p_user_id, p_normalized_merchant`. Returns `found, merchant_id, category, display_name, confidence`.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `Save Merchant Memory` | `rpc/upsert_merchant_memory` | RPC (UPSERT-equivalent)                        | Params: `p_user_id, p_normalized_merchant, p_display_name, p_category, p_confidence`                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `Create a row`         | `statement_transactions`     | INSERT (native `n8n-nodes-base.supabase` node) | `user_id, bank_name, card_last4, card_type, transaction_date, merchant, normalized_merchant, raw_description, amount, currency, category, statement_month, source_file, transaction_type, confidence, account_last4, account_type, payment_mode, reference_number, status` ⚠️ _mapped from `category_source`, not the `status` field `Build Final Transaction Row` actually computes_, `note, metadata, parser_version, extraction_method, statement_id` ⚠️ _synthetic non-UUID string, cannot resolve to a real `statements.id`_, `page_number` |
+
+**Feeder nodes:**
+
+- `Build Final Transaction Row` → feeds `Create a row`
+- `Build Statement Metadata` → generates the (invalid) `statement_id` value consumed above
+- `Normalize Merchant`, `Enrich Transaction` → feed `Merchant Lookup RPC` / `AI Categorize1`
+
+**Missing node:** no node in this workflow's 40-node graph inserts into `statements`. The `statement_id` written above is generated (`Build Statement Metadata`) but never used to create the parent row it names.
+
+**Legacy/unconfirmed branch** (writes to Google Sheets, not Supabase — see "Non-Supabase nodes" below): `Build Statement Row` → `Append to Transactions`, `Log to ProcessedLog` → `Write ProcessedLog`.
+
+---
+
+## Combined table → node index
+
+The reverse lookup — which nodes touch each table, across both workflows:
+
+| Table/RPC                    | Nodes (workflow)                                                                                                                                                         | Operations present                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `transactions`               | `Supabase Insert (transactions)`, `Save Transactions`, `Dedupe check` (Workflow C Parser)                                                                                | INSERT ×2, SELECT ×1                                                                                                           |
+| `merchant_memory`            | `Lookup Merchant Memory`, `Save Merchant Memory` (Workflow C Parser); `Load Merchant Memory`, `Merchant Lookup RPC` (→ RPC), `Save Merchant Memory` (→ RPC) (Workflow D) | SELECT ×2, UPSERT ×2 (one direct, one via RPC), RPC-read ×1                                                                    |
+| `categories`                 | `Load categories` (Workflow C Parser)                                                                                                                                    | SELECT only — no workflow node ever writes to `categories`                                                                     |
+| `statement_transactions`     | `Create a row` (Workflow D)                                                                                                                                              | INSERT ×1                                                                                                                      |
+| `statements`                 | _(none)_                                                                                                                                                                 | Not written by either workflow — see "Missing node" above                                                                      |
+| `accounts`                   | _(none)_                                                                                                                                                                 | Not written by either workflow — confirmed by scanning both files for any `/accounts` URL or `tableId: "accounts"`; found none |
+| `clients`                    | _(none)_                                                                                                                                                                 | Not written by either workflow                                                                                                 |
+| `rpc/lookup_merchant`        | `Merchant Lookup RPC` (Workflow D)                                                                                                                                       | Not called by Workflow C Parser, which queries `merchant_memory` directly instead                                              |
+| `rpc/upsert_merchant_memory` | `Save Merchant Memory` (Workflow D)                                                                                                                                      | Not called by Workflow C Parser, which POSTs to `merchant_memory` directly instead                                             |
+
+This confirms the schema-compatibility conclusion in `BACKWARD_COMPATIBILITY.md`: neither workflow touches `accounts`, `clients`, or `statements` at all, so any schema change scoped to those three tables cannot break either workflow by construction.
+
+---
+
+## Non-Supabase nodes (context only, not part of the dependency map proper)
+
+| Node(s)                                                                                                                                                        | External system                | Notes                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1. Gmail Trigger`, `Get many messages`, `Get a message`, `Fetch Gmail RAW`, `Remove label from message`, `Add label to thread`, `Gmail - Watch Banking Label` | Gmail API                      | Email ingestion/labeling, no DB interaction                                                                                                     |
+| `Claude Haiku categorize`, `AI Categorize`, `AI Categorize1`, `Anthropic Chat Model`, `Google Gemini Chat Model`, `Basic LLM Chain`                            | Anthropic / Google Gemini APIs | Categorization inference only                                                                                                                   |
+| `PDF.co Upload File`, `PDF.co Unlock PDF`, `PDF.co Extract Text`                                                                                               | PDF.co API                     | Statement PDF text extraction                                                                                                                   |
+| `Build Statement Row`, `Append to Transactions`, `Log to ProcessedLog`, `Write ProcessedLog`                                                                   | Google Sheets                  | Apparent legacy/parallel logging path — see `N8N_DATABASE_MAPPING.md` for the caveat that this branch's active/inactive status wasn't confirmed |
