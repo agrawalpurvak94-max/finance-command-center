@@ -9,7 +9,7 @@ import type { Category } from '@/domain/Category'
  * `repositories/mock-data/reference-data.ts`), plus (below) the full
  * master-data row Module 9 (Credit Cards) reads and writes.
  */
-export const KNOWN_CARD_NETWORKS = ['VISA', 'Mastercard', 'AMEX'] as const
+export const KNOWN_CARD_NETWORKS = ['VISA', 'Mastercard', 'AMEX', 'RuPay'] as const
 
 export type CardNetwork = (typeof KNOWN_CARD_NETWORKS)[number]
 
@@ -97,4 +97,6 @@ export interface CreditCardUpdateInput {
   readonly nickname: string | null
   readonly status: CreditCardRecordStatus
   readonly notes: string | null
+  /** Editable because issuers raise/lower limits as the cardholder's credit score changes. */
+  readonly creditLimit: number
 }

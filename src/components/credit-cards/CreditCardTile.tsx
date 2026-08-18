@@ -10,6 +10,7 @@ const networkClassName: Record<CardNetwork, string> = {
   VISA: 'bg-blue-500/10 text-blue-400',
   Mastercard: 'bg-amber-500/10 text-amber-400',
   AMEX: 'bg-emerald-500/10 text-emerald-400',
+  RuPay: 'bg-violet-500/10 text-violet-400',
 }
 
 function utilizationBarClassName(utilizationPercent: number): string {

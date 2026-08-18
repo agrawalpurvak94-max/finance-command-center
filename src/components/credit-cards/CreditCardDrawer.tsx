@@ -19,6 +19,7 @@ import { useTransactionsList } from '@/hooks/useTransactions'
 import { useStatementsList } from '@/hooks/useStatements'
 import { useUpdateCreditCard } from '@/hooks/useCreditCards'
 import { formatINR } from '@/utils/currency'
+import { cn } from '@/lib/utils'
 import type { CreditCardRecord, CreditCardRecordStatus } from '@/domain/CreditCard'
 
 interface CreditCardDrawerProps {
@@ -79,8 +80,15 @@ function DrawerBody({
   const [nickname, setNickname] = useState(card.nickname ?? '')
   const [status, setStatus] = useState<CreditCardRecordStatus>(card.status)
   const [notes, setNotes] = useState(card.notes ?? '')
+  const [creditLimitInput, setCreditLimitInput] = useState(String(card.creditLimit))
+  const [submitted, setSubmitted] = useState(false)
 
   const updateCard = useUpdateCreditCard()
+
+  const creditLimitError =
+    !creditLimitInput.trim() || Number(creditLimitInput) <= 0
+      ? 'Enter a credit limit greater than 0.'
+      : null
 
   const recentTxnsQuery = useTransactionsList({
     page: 1,
@@ -96,10 +104,17 @@ function DrawerBody({
   })
 
   function handleSave() {
+    setSubmitted(true)
+    if (creditLimitError) return
     updateCard.mutate(
       {
         id: card.id,
-        input: { nickname: nickname.trim() || null, status, notes: notes.trim() || null },
+        input: {
+          nickname: nickname.trim() || null,
+          status,
+          notes: notes.trim() || null,
+          creditLimit: Number(creditLimitInput),
+        },
       },
       {
         onSuccess: () => {
@@ -186,9 +201,24 @@ function DrawerBody({
         </h3>
         <div className="grid grid-cols-2 gap-md">
           <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Credit Limit</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(card.creditLimit)}
+            <Label htmlFor="credit-card-review-limit">Credit Limit</Label>
+            <Input
+              id="credit-card-review-limit"
+              type="number"
+              value={creditLimitInput}
+              onChange={(e) => setCreditLimitInput(e.target.value)}
+              placeholder="e.g. 500000"
+              aria-required="true"
+              aria-invalid={submitted && !!creditLimitError}
+              className={cn(submitted && creditLimitError && 'border-destructive')}
+            />
+            {submitted && creditLimitError && (
+              <p role="alert" className="mt-xs text-[11px] text-destructive">
+                {creditLimitError}
+              </p>
+            )}
+            <p className="mt-xs text-[11px] text-muted-foreground">
+              Adjust as your issuer raises or lowers this limit with your credit score.
             </p>
           </div>
           <div>

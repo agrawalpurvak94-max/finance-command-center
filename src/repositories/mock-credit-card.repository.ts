@@ -135,11 +135,34 @@ export class MockCreditCardRepository implements CreditCardRepository {
     const index = this.cards.findIndex((c) => c.id === id)
     if (index === -1) throw new Error(`Credit card ${id} not found`)
 
+    const existing = this.cards[index]
+    const creditLimit = input.creditLimit
+    const availableCredit = Math.max(
+      0,
+      Math.round((creditLimit - existing.outstanding) * 100) / 100,
+    )
+    const utilizationPercent =
+      creditLimit > 0
+        ? Math.round((existing.outstanding / creditLimit) * 1000) / 10
+        : existing.utilizationPercent
+    // Utilization is the only health signal that moves with the limit itself —
+    // due_soon/payment_overdue are date-driven and stay untouched by a limit change.
+    const health =
+      existing.health === 'healthy' || existing.health === 'high_utilization'
+        ? utilizationPercent >= 75
+          ? 'high_utilization'
+          : 'healthy'
+        : existing.health
+
     const updated: CreditCardRecord = {
-      ...this.cards[index],
+      ...existing,
       nickname: input.nickname,
       status: input.status,
       notes: input.notes,
+      creditLimit,
+      availableCredit,
+      utilizationPercent,
+      health,
     }
     this.cards[index] = updated
     return withLatency(updated, 300)
