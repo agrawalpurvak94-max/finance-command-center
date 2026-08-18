@@ -1,6 +1,6 @@
 # Finance Command Center
 
-Frontend for the Finance Command Center — see [CLAUDE.md](./CLAUDE.md) for the full architecture and engineering playbook, and [PROJECT_STATUS.md](./PROJECT_STATUS.md) for current build status.
+Frontend for the Finance Command Center — see [CLAUDE.md](./CLAUDE.md) for the full architecture and engineering playbook, [docs/README.md](./docs/README.md) for the documentation index, and [docs/project/PROJECT_STATUS.md](./docs/project/PROJECT_STATUS.md) for current build status.
 
 ## Getting started
 
