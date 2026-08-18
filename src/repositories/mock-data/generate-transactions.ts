@@ -109,7 +109,11 @@ function generateTransaction(index: number): Transaction {
 
 const TRANSACTION_COUNT = 320
 
-export const mockTransactions: readonly Transaction[] = Array.from(
-  { length: TRANSACTION_COUNT },
-  (_, i) => generateTransaction(i + 1),
+// Mutable (not `readonly`): MockTransactionRepository mutates this array in
+// place on create/update/delete so every other mock repository that reads
+// it (analytics, categories, merchants) sees edits immediately — there is
+// exactly one shared in-memory transaction store, not a private copy per
+// repository. See mock-transaction.repository.ts.
+export const mockTransactions: Transaction[] = Array.from({ length: TRANSACTION_COUNT }, (_, i) =>
+  generateTransaction(i + 1),
 ).sort((a, b) => b.date.localeCompare(a.date))

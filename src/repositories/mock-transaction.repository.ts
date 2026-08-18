@@ -75,11 +75,17 @@ function compareTransactions(
   return sort.desc ? -result : result
 }
 
+/**
+ * Operates directly on the shared `mockTransactions` array (in place, via
+ * index assignment / splice / unshift — never reassignment) rather than a
+ * private copy, so mock-analytics.repository.ts, mock-category.repository.ts,
+ * and mock-merchant.repository.ts — which all read `mockTransactions` live —
+ * see every create/update/delete immediately. A private copy here previously
+ * caused edits (e.g. re-categorizing a transaction) to never reach Analytics.
+ */
 export class MockTransactionRepository implements TransactionRepository {
-  private transactions: Transaction[] = [...mockTransactions]
-
   async list(params: TransactionListParams): Promise<TransactionListResult> {
-    const filtered = this.transactions
+    const filtered = mockTransactions
       .filter((txn) => matchesFilters(txn, params))
       .sort((a, b) => compareTransactions(a, b, params.sort))
 
@@ -90,7 +96,7 @@ export class MockTransactionRepository implements TransactionRepository {
   }
 
   async getById(id: string): Promise<Transaction | null> {
-    return withLatency(this.transactions.find((txn) => txn.id === id) ?? null, 150)
+    return withLatency(mockTransactions.find((txn) => txn.id === id) ?? null, 150)
   }
 
   async create(input: TransactionCreateInput): Promise<Transaction> {
@@ -112,15 +118,15 @@ export class MockTransactionRepository implements TransactionRepository {
       notes: null,
       duplicateOfId: null,
     }
-    this.transactions = [transaction, ...this.transactions]
+    mockTransactions.unshift(transaction)
     return withLatency(transaction, 250)
   }
 
   async update(id: string, patch: TransactionPatch): Promise<Transaction> {
-    const index = this.transactions.findIndex((txn) => txn.id === id)
+    const index = mockTransactions.findIndex((txn) => txn.id === id)
     if (index === -1) throw new Error(`Transaction ${id} not found`)
 
-    const current = this.transactions[index]
+    const current = mockTransactions[index]
     const updated: Transaction = {
       ...current,
       category:
@@ -138,7 +144,7 @@ export class MockTransactionRepository implements TransactionRepository {
       status: patch.status ?? current.status,
       notes: patch.notes !== undefined ? patch.notes : current.notes,
     }
-    this.transactions[index] = updated
+    mockTransactions[index] = updated
     return withLatency(updated, 200)
   }
 
@@ -149,13 +155,16 @@ export class MockTransactionRepository implements TransactionRepository {
   }
 
   async delete(id: string): Promise<void> {
-    this.transactions = this.transactions.filter((txn) => txn.id !== id)
+    const index = mockTransactions.findIndex((txn) => txn.id === id)
+    if (index !== -1) mockTransactions.splice(index, 1)
     return withLatency(undefined, 200)
   }
 
   async bulkDelete(ids: readonly string[]): Promise<void> {
     const idSet = new Set(ids)
-    this.transactions = this.transactions.filter((txn) => !idSet.has(txn.id))
+    for (let i = mockTransactions.length - 1; i >= 0; i--) {
+      if (idSet.has(mockTransactions[i].id)) mockTransactions.splice(i, 1)
+    }
     return withLatency(undefined, 200)
   }
 
