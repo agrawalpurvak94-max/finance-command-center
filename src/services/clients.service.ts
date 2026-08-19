@@ -1,7 +1,6 @@
 import type { ClientRepository } from '@/repositories/client.repository'
-import { MockClientRepository } from '@/repositories/mock-client.repository'
+import { SupabaseClientRepository } from '@/repositories/supabase-client.repository'
+import { supabase } from '@/lib/supabase'
 
-// Swap point for real backend integration — construct a
-// SupabaseClientRepository here instead when that's scheduled (Module 12A).
-// No other file in this module needs to change.
-export const clientRepository: ClientRepository = new MockClientRepository()
+// Module 12A swap point. No other file in this module needed to change.
+export const clientRepository: ClientRepository = new SupabaseClientRepository(supabase)

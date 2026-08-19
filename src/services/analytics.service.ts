@@ -1,7 +1,8 @@
-import { MockAnalyticsRepository } from '@/repositories/mock-analytics.repository'
+import { SupabaseAnalyticsRepository } from '@/repositories/supabase-analytics.repository'
+import { supabase } from '@/lib/supabase'
 
-// Module 12A's single swap point: replace with `new SupabaseAnalyticsRepository()`.
-const repository = new MockAnalyticsRepository()
+// Module 12A swap point.
+const repository = new SupabaseAnalyticsRepository(supabase)
 
 export const analyticsService = {
   getSummary: repository.getSummary.bind(repository),

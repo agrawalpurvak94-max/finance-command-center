@@ -1,7 +1,8 @@
 import type { BankAccountRepository } from '@/repositories/bank-account.repository'
-import { MockBankAccountRepository } from '@/repositories/mock-bank-account.repository'
+import { SupabaseBankAccountRepository } from '@/repositories/supabase-bank-account.repository'
+import { supabase } from '@/lib/supabase'
 
-// Swap point for real backend integration — construct a
-// SupabaseBankAccountRepository here instead when that's scheduled (Module
-// 12A). No other file in this module needs to change.
-export const bankAccountRepository: BankAccountRepository = new MockBankAccountRepository()
+// Module 12A swap point. No other file in this module needed to change.
+export const bankAccountRepository: BankAccountRepository = new SupabaseBankAccountRepository(
+  supabase,
+)

@@ -1,7 +1,6 @@
 import type { StatementRepository } from '@/repositories/statement.repository'
-import { MockStatementRepository } from '@/repositories/mock-statement.repository'
+import { SupabaseStatementRepository } from '@/repositories/supabase-statement.repository'
+import { supabase } from '@/lib/supabase'
 
-// Swap point for real backend integration — construct a
-// SupabaseStatementRepository here instead when that's scheduled. No other
-// file in this module needs to change.
-export const statementRepository: StatementRepository = new MockStatementRepository()
+// Module 12A swap point. No other file in this module needed to change.
+export const statementRepository: StatementRepository = new SupabaseStatementRepository(supabase)

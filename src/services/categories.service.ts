@@ -1,7 +1,6 @@
 import type { CategoryRepository } from '@/repositories/category.repository'
-import { MockCategoryRepository } from '@/repositories/mock-category.repository'
+import { SupabaseCategoryRepository } from '@/repositories/supabase-category.repository'
+import { supabase } from '@/lib/supabase'
 
-// Swap point for real backend integration — construct a
-// SupabaseCategoryRepository here instead when that's scheduled. No other
-// file in this module needs to change.
-export const categoryRepository: CategoryRepository = new MockCategoryRepository()
+// Module 12A swap point. No other file in this module needed to change.
+export const categoryRepository: CategoryRepository = new SupabaseCategoryRepository(supabase)
