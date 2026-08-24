@@ -191,8 +191,13 @@ export function CreditCards() {
       >
         {() => (
           <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTiles.map((tile) => (
-              <AccountStatementTileCard key={tile.id} tile={tile} onOpen={handleOpenTile} />
+            {filteredTiles.map((tile, index) => (
+              <AccountStatementTileCard
+                key={tile.id}
+                tile={tile}
+                onOpen={handleOpenTile}
+                index={index}
+              />
             ))}
           </div>
         )}
