@@ -3,9 +3,12 @@ import { Outlet } from 'react-router'
 import { Sidebar } from '@/layouts/Sidebar'
 import { TopNav } from '@/layouts/TopNav'
 import { useThemeStore } from '@/stores/theme.store'
+import { useSidebarStore } from '@/stores/sidebar.store'
 
 export function AppShell() {
   const mode = useThemeStore((state) => state.mode)
+  const collapsed = useSidebarStore((state) => state.collapsed)
+  const toggleCollapsed = useSidebarStore((state) => state.toggleCollapsed)
 
   // Guarantees the .dark class is applied on first paint even if the
   // persisted store hasn't finished rehydrating yet.
@@ -25,7 +28,11 @@ export function AppShell() {
         Skip to main content
       </a>
 
-      <Sidebar className="hidden md:flex" />
+      <Sidebar
+        className="hidden md:flex"
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+      />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <TopNav />
