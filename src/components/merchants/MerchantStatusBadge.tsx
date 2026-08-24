@@ -1,16 +1,11 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { semanticToneBadgeClassName, type SemanticTone } from '@/lib/semanticTone'
 import type { MerchantStatus } from '@/domain/Merchant'
 
-const statusConfig: Record<MerchantStatus, { label: string; className: string }> = {
-  active: {
-    label: 'Active',
-    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  },
-  inactive: {
-    label: 'Inactive',
-    className: 'border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground',
-  },
+const statusConfig: Record<MerchantStatus, { label: string; tone: SemanticTone }> = {
+  active: { label: 'Active', tone: 'success' },
+  inactive: { label: 'Inactive', tone: 'neutral' },
 }
 
 interface MerchantStatusBadgeProps {
@@ -22,7 +17,10 @@ export function MerchantStatusBadge({ status }: MerchantStatusBadgeProps) {
   return (
     <Badge
       variant="outline"
-      className={cn('text-label-caps font-semibold uppercase tracking-wide', config.className)}
+      className={cn(
+        'text-label-caps font-semibold uppercase tracking-wide',
+        semanticToneBadgeClassName(config.tone),
+      )}
     >
       {config.label}
     </Badge>

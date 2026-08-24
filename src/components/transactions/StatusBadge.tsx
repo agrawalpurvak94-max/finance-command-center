@@ -1,26 +1,15 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { semanticToneBadgeClassName, type SemanticTone } from '@/lib/semanticTone'
 import type { TransactionStatus } from '@/domain/Transaction'
 
-const statusConfig: Record<TransactionStatus, { label: string; className: string }> = {
-  reviewed: {
-    label: 'Reviewed',
-    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  },
-  verified: { label: 'Verified', className: 'border-primary/30 bg-primary/10 text-primary' },
-  uncategorized: {
-    label: 'Uncategorized',
-    className: 'border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground',
-  },
-  pending_review: {
-    label: 'Pending Review',
-    className: 'border-tertiary/30 bg-tertiary/10 text-tertiary',
-  },
-  flagged: { label: 'Flagged', className: 'border-tertiary/30 bg-tertiary/10 text-tertiary' },
-  duplicate: {
-    label: 'Duplicate',
-    className: 'border-destructive/30 bg-destructive/10 text-destructive',
-  },
+const statusConfig: Record<TransactionStatus, { label: string; tone: SemanticTone }> = {
+  reviewed: { label: 'Reviewed', tone: 'success' },
+  verified: { label: 'Verified', tone: 'info' },
+  uncategorized: { label: 'Uncategorized', tone: 'neutral' },
+  pending_review: { label: 'Pending Review', tone: 'attention' },
+  flagged: { label: 'Flagged', tone: 'attention' },
+  duplicate: { label: 'Duplicate', tone: 'danger' },
 }
 
 interface StatusBadgeProps {
@@ -32,7 +21,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <Badge
       variant="outline"
-      className={cn('text-label-caps font-semibold uppercase tracking-wide', config.className)}
+      className={cn(
+        'text-label-caps font-semibold uppercase tracking-wide',
+        semanticToneBadgeClassName(config.tone),
+      )}
     >
       {config.label}
     </Badge>

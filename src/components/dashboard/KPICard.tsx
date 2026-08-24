@@ -1,19 +1,8 @@
-import { TrendingDown, TrendingUp, Minus, TriangleAlert } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
+import { TrendPill } from '@/components/ui/trend-pill'
 import type { FinancialSnapshotMetric } from '@/domain/Dashboard'
-
-const trendIcon = {
-  up: TrendingUp,
-  down: TrendingDown,
-  flat: Minus,
-}
-
-const trendToneClass = {
-  positive: 'text-secondary',
-  negative: 'text-destructive',
-  neutral: 'text-muted-foreground',
-}
 
 interface KPICardProps {
   metric: FinancialSnapshotMetric
@@ -48,10 +37,9 @@ export function KPICard({
   ariaLabel,
   caption,
 }: KPICardProps) {
-  const TrendIcon = metric.trend ? trendIcon[metric.trend.direction] : null
   const className = cn(
     'flex w-full flex-col justify-between rounded-lg border border-border bg-card p-md text-left',
-    onClick && 'transition-colors hover:border-primary',
+    onClick && 'transition-colors hover:border-primary hover:bg-surface-hover',
     metric.warningLabel && 'border-l-4 border-l-destructive',
   )
 
@@ -70,15 +58,9 @@ export function KPICard({
         </div>
         {caption && <p className="mt-xs text-[11px] text-muted-foreground">{caption}</p>}
       </div>
-      {metric.trend && TrendIcon && (
-        <div
-          className={cn(
-            'mt-md flex items-center gap-xs text-table-mono',
-            trendToneClass[metric.trend.tone],
-          )}
-        >
-          <TrendIcon className="size-4" aria-hidden="true" />
-          <span>{metric.trend.label}</span>
+      {metric.trend && (
+        <div className="mt-md">
+          <TrendPill trend={metric.trend} />
         </div>
       )}
       {metric.warningLabel && (
