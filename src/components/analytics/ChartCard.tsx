@@ -10,6 +10,8 @@ interface ChartCardProps {
   legend?: ReactNode
   /** Omitted when this chart has no natural single-dimension drill target. */
   onViewTransactions?: () => void
+  /** Overrides the drill-down button's label — e.g. Statement Analytics uses "View in Statement Explorer" so it never reads as a link to the real-time Transactions page. Defaults to "View Transactions". */
+  viewLabel?: string
   className?: string
   children: ReactNode
 }
@@ -22,6 +24,7 @@ export function ChartCard({
   subtitle,
   legend,
   onViewTransactions,
+  viewLabel = 'View Transactions',
   className,
   children,
 }: ChartCardProps) {
@@ -52,7 +55,7 @@ export function ChartCard({
               className="gap-xs text-primary hover:text-primary"
               onClick={onViewTransactions}
             >
-              View Transactions
+              {viewLabel}
               <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </Button>
           )}

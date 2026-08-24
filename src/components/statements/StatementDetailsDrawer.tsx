@@ -64,7 +64,7 @@ function DrawerBody({ statement }: { statement: Statement }) {
           <div>
             <p className="mb-xs text-label-caps uppercase text-muted-foreground">Account</p>
             <p className="text-[11px] tabular-nums text-muted-foreground">
-              {account.kind === 'credit_card'
+              {account.kind === 'credit_card' && account.cardNetwork
                 ? `${account.cardNetwork} •••• ${account.last4}`
                 : `•••• ${account.last4}`}
             </p>

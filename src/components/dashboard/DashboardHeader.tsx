@@ -27,9 +27,9 @@ export function DashboardHeader({ onRefresh, isRefreshing }: DashboardHeaderProp
   return (
     <div className="mb-xl flex items-end justify-between gap-md">
       <div>
-        <h1 className="text-headline-lg text-foreground">Operational Command Center</h1>
+        <h1 className="text-headline-lg text-foreground">Financial Pulse</h1>
         <p className="mt-xs text-body-md text-muted-foreground">
-          Real-time fiscal monitoring and processing queue for all connected accounts.
+          Live spend &amp; inflow across your connected accounts.
         </p>
       </div>
       <div className="flex items-center gap-sm">
@@ -39,7 +39,7 @@ export function DashboardHeader({ onRefresh, isRefreshing }: DashboardHeaderProp
         <Button
           variant="outline"
           size="icon"
-          aria-label="Refresh dashboard data"
+          aria-label="Refresh Financial Pulse data"
           onClick={onRefresh}
           disabled={isRefreshing}
         >

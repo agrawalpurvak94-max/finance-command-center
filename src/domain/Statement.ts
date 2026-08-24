@@ -15,12 +15,34 @@ export interface Statement {
   readonly account: TransactionAccount
   readonly client: Client | null
   readonly statementDate: string
+  /**
+   * The statement cycle's closing date (`statements.statement_period_end`).
+   * Added for Financial Pulse's credit-card period logic — `statementDate`
+   * (`statements.statement_date`) is never populated by Workflow D on live
+   * data, confirmed empirically; this field is. Null when the statement
+   * genuinely doesn't have one.
+   */
+  readonly statementPeriodEnd: string | null
   readonly statementPeriodLabel: string
   readonly fileName: string
   readonly transactionsExtracted: number
   readonly status: StatementStatus
   readonly importedAt: string
   readonly notes: string | null
+  /**
+   * Statement-level financial fields for Account Statements (Module 12B
+   * follow-up) — all direct reads of `statements` columns, never derived.
+   * `dueDate`/`totalDebits`/`totalCredits`/etc. are null when the parser
+   * genuinely didn't populate them (e.g. no due date on a savings
+   * statement) — never fabricated or defaulted to 0/today.
+   */
+  readonly dueDate: string | null
+  readonly totalDebits: number | null
+  readonly totalCredits: number | null
+  readonly openingBalance: number | null
+  readonly closingBalance: number | null
+  readonly minimumDue: number | null
+  readonly statementTotalAmountDue: number | null
 }
 
 export interface StatementFilters {
@@ -35,7 +57,7 @@ export interface StatementFilters {
 }
 
 export interface StatementSort {
-  readonly id: 'statementDate' | 'importedAt' | 'transactionsExtracted'
+  readonly id: 'statementDate' | 'statementPeriodEnd' | 'importedAt' | 'transactionsExtracted'
   readonly desc: boolean
 }
 

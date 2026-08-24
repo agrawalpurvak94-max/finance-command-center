@@ -20,7 +20,7 @@ export interface TransactionAccount {
   readonly last4: string
 }
 
-/** Richer account summary shape used by the Dashboard's account/credit-card cards. */
+/** Richer account summary shape used by the Financial Pulse account/credit-card cards. */
 export interface ConnectedAccount {
   readonly id: string
   readonly kind: AccountKind
@@ -29,11 +29,21 @@ export interface ConnectedAccount {
   readonly balance: number
   readonly status: AccountStatus
   readonly lastSyncedLabel?: string
+  /** Current-period inflow/outflow (spend), per `getFinancialPulsePeriod()` — see `lib/financialPulsePeriod.ts`. */
   readonly inflow?: number
   readonly outflow?: number
   readonly dueDate?: string
   readonly dueAmount?: number
   readonly dailyAverage?: number
+  /** Human-readable current-period label, e.g. "1 Aug – 22 Aug" or "23 Aug – Today". Undefined when not yet computed. */
+  readonly periodLabel?: string
+  /** False when a credit card has no statement to derive its period from — never fabricate a date in that case. */
+  readonly periodAvailable?: boolean
+  readonly transactionCount?: number
+  /** Bank/institution name, for the account drawer header — distinct from `name` (nickname/account label). */
+  readonly institutionName?: string
+  /** Human-readable account type, e.g. "Credit Card" / "Savings" / "Current" / "Overdraft", for the account drawer header. */
+  readonly accountTypeLabel?: string
 }
 
 /**

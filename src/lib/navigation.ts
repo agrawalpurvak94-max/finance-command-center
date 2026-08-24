@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  Landmark,
   CreditCard,
   Receipt,
   FileText,
@@ -19,12 +18,16 @@ import type { NavItem } from '@/types/nav'
  * the confirmed design. Credit Cards was promoted from a tab (inside
  * Financial Accounts) to a dedicated nav item per the Module 2 product
  * decisions (2026-08-01).
+ *
+ * "Financial Accounts" was removed as a separate sidebar item (Module 12B
+ * follow-up) — it's been folded into "Account Statements" (still the
+ * `/credit-cards` route/file internally), which now covers Credit Cards,
+ * Savings, Current, and OD as one unified statement-analysis area.
  */
 export const primaryNavItems: readonly NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { label: 'Financial Pulse', href: '/', icon: LayoutDashboard },
   { label: 'Clients', href: '/clients', icon: Users },
-  { label: 'Financial Accounts', href: '/accounts', icon: Landmark },
-  { label: 'Credit Cards', href: '/credit-cards', icon: CreditCard },
+  { label: 'Account Statements', href: '/credit-cards', icon: CreditCard },
   { label: 'Transactions', href: '/transactions', icon: Receipt },
   { label: 'Statements', href: '/statements', icon: FileText },
   { label: 'Categories', href: '/categories', icon: Tags },

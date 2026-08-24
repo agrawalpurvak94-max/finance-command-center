@@ -38,6 +38,8 @@ export type RecentTransactionStatus = 'processed' | 'pending' | 'flagged'
 export interface RecentTransaction {
   readonly id: string
   readonly dateLabel: string
+  readonly account: string
+  readonly type: 'debit' | 'credit'
   readonly merchant: string
   readonly category: string
   readonly amount: number

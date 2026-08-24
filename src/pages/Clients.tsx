@@ -98,7 +98,8 @@ export function Clients() {
 
   const handleViewAccounts = useCallback(
     (client: ClientRecord) => {
-      navigate(`/accounts?clientId=${encodeURIComponent(client.id)}`)
+      // /accounts was folded into the unified Account Statements page.
+      navigate(`/credit-cards?clientId=${encodeURIComponent(client.id)}`)
     },
     [navigate],
   )

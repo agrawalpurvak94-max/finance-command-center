@@ -19,6 +19,7 @@ const PERSONAL_COLOR = 'var(--viz-3)'
 
 interface BizPersonalSpendChartProps extends AnalyticsWidgetHandlers {
   data: readonly AnalyticsOwnerTypePoint[]
+  viewLabel?: string
 }
 
 export function BizPersonalSpendChart({
@@ -26,6 +27,7 @@ export function BizPersonalSpendChart({
   onHover,
   onCrossFilter,
   onDrillDown,
+  viewLabel,
 }: BizPersonalSpendChartProps) {
   function handleBarClick(ownerType: 'business' | 'personal', item: BarRectangleItem) {
     const point = item.payload as AnalyticsOwnerTypePoint
@@ -54,6 +56,7 @@ export function BizPersonalSpendChart({
         </div>
       }
       onViewTransactions={data.length ? () => onDrillDown({}) : undefined}
+      viewLabel={viewLabel}
     >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { Search, FileText } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Pagination } from '@/components/Pagination'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { StatementsHeader } from '@/components/statements/StatementsHeader'
+import { StatementsTabBar } from '@/components/statements/StatementsTabBar'
 import { StatementFilters } from '@/components/statements/StatementFilters'
 import { StatementSummaryWidget } from '@/components/statements/StatementSummaryWidget'
 import { StatementTable } from '@/components/statements/StatementTable'
@@ -65,6 +66,7 @@ function accountDrillDownLabel(accounts: readonly TransactionAccount[], id: stri
 }
 
 export function Statements() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   // Captured once on mount so clearing it doesn't reappear if the user then
   // edits filters by hand — same pattern as Transactions.tsx's drillDown.
@@ -155,6 +157,8 @@ export function Statements() {
         isRefreshing={listQuery.isFetching || summaryQuery.isFetching}
       />
 
+      <StatementsTabBar active="control" explorerHref="/statements/explorer" />
+
       {drillDown && (
         <ActiveFilterBanner
           label={`Filtered by ${DRILL_DOWN_PARAMS[drillDown.param].label}: ${drillDownLabel}`}
@@ -242,6 +246,7 @@ export function Statements() {
               onOpenDetails={handleOpenDetails}
               onReprocess={handleReprocess}
               onDelete={(statement) => setDeleteTarget(statement)}
+              onOpenExplorer={(statement) => navigate(`/statements/${statement.id}`)}
               reprocessingId={reprocessingId}
             />
           )}

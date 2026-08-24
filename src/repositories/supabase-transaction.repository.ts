@@ -98,6 +98,28 @@ function toStatus(rawStatus: string | null, duplicateFlag: string | null): Trans
   return rawStatus ? (STATUS_DB_TO_DOMAIN[rawStatus] ?? 'uncategorized') : 'uncategorized'
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * merchant/category/client ids are only real UUIDs when the FK resolved;
+ * otherwise `resolvedMerchant`/`resolvedCategory`/`resolvedClient` (below)
+ * synthesize the id as the free-text name instead (merchant_id/category_id
+ * are unbackfilled on every live Workflow C row today). Filtering by that
+ * synthesized value must therefore target the matching *_name column, not
+ * the id column — `.eq('category_id', 'Shopping')` throws a Postgres
+ * "invalid input syntax for type uuid" error, which is what was surfacing
+ * as "Couldn't load this data" when navigating here from a Merchant
+ * Center/Categories link.
+ */
+function applyIdOrNameFilter<Q extends { eq: (col: string, val: string) => Q }>(
+  query: Q,
+  idColumn: string,
+  nameColumn: string,
+  value: string,
+): Q {
+  return UUID_RE.test(value) ? query.eq(idColumn, value) : query.eq(nameColumn, value)
+}
+
 // `transactions` has no `account_type` column (that's an `accounts`-table
 // column) — the free-text fallback can only use bank_name/card_last4/
 // account_last4, so its kind can't be determined and defaults to 'bank'.
@@ -236,9 +258,12 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     let query = this.client.from('vw_transactions').select('*', { count: 'exact' })
     if (filters?.dateFrom) query = query.gte('transaction_date', filters.dateFrom)
     if (filters?.dateTo) query = query.lte('transaction_date', filters.dateTo)
-    if (filters?.categoryId) query = query.eq('category_id', filters.categoryId)
-    if (filters?.clientId) query = query.eq('client_id', filters.clientId)
-    if (filters?.merchantId) query = query.eq('merchant_id', filters.merchantId)
+    if (filters?.categoryId)
+      query = applyIdOrNameFilter(query, 'category_id', 'category_name', filters.categoryId)
+    if (filters?.clientId)
+      query = applyIdOrNameFilter(query, 'client_id', 'client_name', filters.clientId)
+    if (filters?.merchantId)
+      query = applyIdOrNameFilter(query, 'merchant_id', 'merchant_name', filters.merchantId)
     if (filters?.bankAccountId) query = query.eq('account_id', filters.bankAccountId)
     if (filters?.creditCardId) query = query.eq('account_id', filters.creditCardId)
     if (filters?.ownerType) query = query.eq('raw_type', filters.ownerType)

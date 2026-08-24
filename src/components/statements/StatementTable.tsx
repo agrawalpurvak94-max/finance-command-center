@@ -13,6 +13,8 @@ interface StatementTableProps {
   onOpenDetails: (statement: Statement) => void
   onReprocess: (statement: Statement) => void
   onDelete: (statement: Statement) => void
+  /** Opens Statement Explorer for this row — the row's primary click target. */
+  onOpenExplorer: (statement: Statement) => void
   reprocessingId?: string | null
 }
 
@@ -29,6 +31,7 @@ export function StatementTable({
   onOpenDetails,
   onReprocess,
   onDelete,
+  onOpenExplorer,
   reprocessingId,
 }: StatementTableProps) {
   const columns = useMemo<ColumnDef<Statement>[]>(
@@ -60,9 +63,12 @@ export function StatementTable({
         header: 'Account/Card',
         cell: ({ row }) => {
           const { account } = row.original
+          // account.cardNetwork is genuinely null on every live card today
+          // (unpopulated in Supabase) -- interpolating it directly rendered
+          // the literal string "null" in this column; omit it instead.
           return (
             <span className="text-[11px] tabular-nums text-muted-foreground">
-              {account.kind === 'credit_card'
+              {account.kind === 'credit_card' && account.cardNetwork
                 ? `${account.cardNetwork} •••• ${account.last4}`
                 : `•••• ${account.last4}`}
             </span>
@@ -117,13 +123,21 @@ export function StatementTable({
         header: '',
         size: 48,
         cell: ({ row }) => (
-          <StatementRowActionsMenu
-            statement={row.original}
-            onOpenDetails={onOpenDetails}
-            onReprocess={onReprocess}
-            onDelete={onDelete}
-            isReprocessing={reprocessingId === row.original.id}
-          />
+          // stopPropagation only: this div isn't itself interactive (its
+          // child button already has full keyboard/mouse support) — it just
+          // stops the click from bubbling to the row's onOpenExplorer, since
+          // this cell sits inside a row whose own click opens Statement
+          // Explorer and the actions menu is a distinct interaction.
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div onClick={(e) => e.stopPropagation()}>
+            <StatementRowActionsMenu
+              statement={row.original}
+              onOpenDetails={onOpenDetails}
+              onReprocess={onReprocess}
+              onDelete={onDelete}
+              isReprocessing={reprocessingId === row.original.id}
+            />
+          </div>
         ),
       },
     ],
@@ -184,7 +198,20 @@ export function StatementTable({
         </thead>
         <tbody className="divide-y divide-border">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="transition-colors hover:bg-accent/40">
+            <tr
+              key={row.id}
+              onClick={() => onOpenExplorer(row.original)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onOpenExplorer(row.original)
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open Statement Explorer for ${row.original.fileName}`}
+              className="cursor-pointer transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="p-md align-middle">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

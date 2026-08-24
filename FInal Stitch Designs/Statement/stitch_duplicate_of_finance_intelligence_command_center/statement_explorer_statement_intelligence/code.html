@@ -1,0 +1,434 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Finance Command Center - Statement Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#313032",
+                      "on-error": "#690005",
+                      "on-primary-container": "#eeefff",
+                      "on-error-container": "#ffdad6",
+                      "secondary-container": "#3a4a5f",
+                      "on-tertiary": "#581e00",
+                      "surface-container-low": "#1c1b1d",
+                      "inverse-primary": "#0053db",
+                      "secondary": "#b7c8e1",
+                      "surface": "#131315",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-container": "#ffede6",
+                      "on-primary": "#002a78",
+                      "on-secondary-container": "#a9bad3",
+                      "surface-container-high": "#2a2a2c",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "error": "#ffb4ab",
+                      "primary": "#b4c5ff",
+                      "error-container": "#93000a",
+                      "inverse-surface": "#e5e1e4",
+                      "outline": "#8d90a0",
+                      "background": "#131315",
+                      "tertiary-fixed": "#ffdbcd",
+                      "on-background": "#e5e1e4",
+                      "surface-container-lowest": "#0e0e10",
+                      "tertiary": "#ffb596",
+                      "tertiary-container": "#bc4800",
+                      "on-tertiary-fixed": "#360f00",
+                      "secondary-fixed": "#d3e4fe",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "surface-container": "#201f22",
+                      "on-secondary": "#213145",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "outline-variant": "#434655",
+                      "surface-container-highest": "#353437",
+                      "on-primary-fixed": "#00174b",
+                      "surface-dim": "#131315",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-surface": "#e5e1e4",
+                      "surface-variant": "#353437",
+                      "surface-bright": "#39393b",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "surface-tint": "#b4c5ff",
+                      "primary-fixed": "#dbe1ff",
+                      "primary-fixed-dim": "#b4c5ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "lg": "24px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "32px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "body-md": [
+                              "Geist"
+                      ],
+                      "table-mono": [
+                              "Geist"
+                      ],
+                      "label-caps": [
+                              "Geist"
+                      ],
+                      "body-sm": [
+                              "Geist"
+                      ],
+                      "headline-sm": [
+                              "Geist"
+                      ],
+                      "display-kpi": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "table-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-kpi": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body { font-family: 'Geist', sans-serif; }
+      </style>
+</head>
+<body class="bg-surface-dim text-on-surface flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="w-[240px] h-screen fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col gap-sm p-md hidden md:flex z-50">
+<div class="mb-lg">
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface">Finance Command Center</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">FY 2024-25</p>
+</div>
+<nav class="flex-1 flex flex-col gap-sm">
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="">Clients</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span class="">Financial Accounts</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="">Transactions</span>
+</a>
+<a class="flex items-center gap-md p-sm text-primary bg-secondary-container rounded-lg font-bold font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="">Statements</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="category">category</span>
+<span class="">Categories</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="">Merchant Center</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="">AI Review</span>
+</a>
+</nav>
+<div class="mt-auto">
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-[240px] h-14 bg-surface-dim border-b border-outline-variant flex justify-between items-center px-lg z-40 hidden md:flex">
+<div class="flex items-center gap-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Finance Command Center</h2>
+<nav class="flex gap-md">
+<a class="text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-opacity duration-150" href="#">Workspaces</a>
+<a class="text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-opacity duration-150" href="#">Clients</a>
+</nav>
+</div>
+<div class="flex items-center gap-md text-primary font-body-sm text-body-sm">
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface transition-opacity duration-150" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface transition-opacity duration-150" data-icon="help_outline">help_outline</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A macro shot of a sleek metallic avatar icon, set against a dark futuristic background with subtle blue neon accents. The lighting is low-key, creating an atmosphere of high-end cybersecurity and precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoJHMqEdr1fz5l23AUM-jqy4so-atic7U_Uf6kOCU21w_uJaXcZdUySd5EQeXNhXMREXwkHw7JIsIiG-5lg3sKAsvgjLFDu15WaKMxXzQQGIxUtzkZzJd_6QcEP7xWpNyKglmK64t_2NXXYp_XXCQGdl2OYaZFkDW2UEQDTK-Ed97k6pLNbO7m-VPY0Jwa1f6p6_aldHUtDECxpCUIWoN1b5DX6EQOH7oEbQrGteITMIfXFD9D88_B">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-[240px] mt-14 p-lg overflow-y-auto">
+<div class="max-w-7xl mx-auto space-y-xl">
+<!-- Header Section -->
+<div class="flex justify-between items-start">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Statement Intelligence</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm">Explore every transaction extracted from this statement.</p>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-high border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface pl-md pr-xl py-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container cursor-pointer transition-colors hover:bg-surface-container-highest">
+<option>AU Bank Credit Card •••• 2723 — 19 Jul–18 Aug 2026</option>
+<option>HDFC Debit Card •••• 1928 — 01 Aug–31 Aug 2026</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<!-- Tab Bar -->
+<div class="border-b border-outline-variant flex gap-lg">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface pb-sm px-xs transition-colors" href="#">Statement Control&nbsp;</a>
+<a class="font-body-md text-body-md text-primary border-b-2 border-primary-container pb-sm px-xs font-bold" href="#">Statement Explorer</a>
+
+</div>
+<!-- Selected Statement Header Panel -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Total Spend</p>
+<p class="font-display-kpi text-display-kpi text-on-surface mt-xs">₹2,841</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Total Credits</p>
+<p class="font-display-kpi text-display-kpi text-emerald-400 mt-xs">₹3,392</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Total Amount Due</p>
+<p class="font-display-kpi text-display-kpi text-on-surface mt-xs">₹42,190.00</p>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Transactions</span>
+<span class="font-body-md text-body-md text-on-surface font-bold">12</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Status</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800">Processed</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Credit Limit</span>
+<span class="font-body-md text-body-md text-on-surface">₹1,50,000</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Available Credit</span>
+<span class="font-body-md text-body-md text-on-surface">₹1,07,810</span>
+</div>
+</div>
+</div>
+<!-- Compact KPI Row -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-sm">
+<div class="bg-surface-container-high border border-outline-variant rounded p-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">TRANSACTIONS</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface">12</span>
+</div>
+<div class="bg-surface-container-high border border-outline-variant rounded p-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">DEBITS</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface">10</span>
+</div>
+<div class="bg-surface-container-high border border-outline-variant rounded p-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">CREDITS</span>
+<span class="font-body-sm text-body-sm font-bold text-emerald-400">2</span>
+</div>
+<div class="bg-surface-container-high border border-outline-variant rounded p-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">TOP CATEGORY</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface truncate ml-xs">Shopping</span>
+</div>
+<div class="bg-surface-container-high border border-outline-variant rounded p-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">TOP MERCHANT</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface truncate ml-xs">DECATHLON</span>
+</div>
+</div>
+<!-- Filter Bar -->
+<div class="flex gap-sm items-center flex-wrap">
+<div class="relative flex-1 min-w-[200px]">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface pl-xl pr-md py-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search transactions..." type="text">
+</div>
+<button class="bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-on-surface-variant rounded-lg px-md py-sm font-body-sm text-body-sm transition-colors flex items-center gap-xs">
+                    Category <span class="material-symbols-outlined text-xs" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-on-surface-variant rounded-lg px-md py-sm font-body-sm text-body-sm transition-colors flex items-center gap-xs">
+                    Debit/Credit <span class="material-symbols-outlined text-xs" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-on-surface-variant rounded-lg px-md py-sm font-body-sm text-body-sm transition-colors flex items-center gap-xs">
+                    Type <span class="material-symbols-outlined text-xs" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-on-surface-variant rounded-lg px-md py-sm font-body-sm text-body-sm transition-colors flex items-center gap-xs">
+                    Status <span class="material-symbols-outlined text-xs" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="bg-surface-container-low border border-outline-variant hover:bg-surface-container-high text-on-surface-variant rounded-lg px-md py-sm font-body-sm text-body-sm transition-colors flex items-center gap-xs">
+                    Confidence <span class="material-symbols-outlined text-xs" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+</div>
+<!-- Statement Transactions Table -->
+<div class="bg-surface-container border border-outline-variant rounded-lg overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left whitespace-nowrap">
+<thead class="bg-surface-container-high border-b border-outline-variant sticky top-0">
+<tr>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase">Date</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase">Merchant</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase max-w-[200px]">Description</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase">Category</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase text-right">Debit</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase text-right">Credit</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase">Transaction Type</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase text-center">Confidence</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface">21 Aug</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary-container transition-colors">Amazon Now</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface-variant truncate max-w-[200px]" title="AMAZON NOW ON 21 AUG...">AMAZON NOW ON 21 AUG...</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Groceries</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-right">₹154</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant text-right">—</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Debit</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-center">
+<span class="inline-flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 95%</span>
+</td>
+<td class="px-md py-sm font-body-sm text-body-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800">Processed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface">20 Aug</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary-container transition-colors">Decathlon Sports</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface-variant truncate max-w-[200px]">DECATHLON SPORTS INDIA BANGALORE</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Shopping</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-right">₹1,249</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant text-right">—</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Debit</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-center">
+<span class="inline-flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 98%</span>
+</td>
+<td class="px-md py-sm font-body-sm text-body-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800">Processed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface">19 Aug</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary-container transition-colors">Swiggy</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface-variant truncate max-w-[200px]">SWIGGY BUNDL TECH PRIVAT</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Dining</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-right">₹340</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant text-right">—</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Debit</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-center">
+<span class="inline-flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 99%</span>
+</td>
+<td class="px-md py-sm font-body-sm text-body-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800">Processed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface">18 Aug</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary-container transition-colors">Payment Received</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface-variant truncate max-w-[200px]">NEFT CR-HDFC BANK-PAYMENT</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Payment</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant text-right">—</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-emerald-400 text-right font-medium">₹3,392</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Credit</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-center">
+<span class="inline-flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 100%</span>
+</td>
+<td class="px-md py-sm font-body-sm text-body-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800">Processed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer group bg-error-container/10 border-l-2 border-l-error">
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface">15 Aug</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary-container transition-colors">Unknown Merchant</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface-variant truncate max-w-[200px]">POS REF *98374928374</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-error">Uncategorized</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-right">₹1,098</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface-variant text-right">—</td>
+<td class="px-md py-sm font-body-sm text-body-sm text-on-surface">Debit</td>
+<td class="px-md py-sm font-table-mono text-table-mono text-on-surface text-center">
+<span class="inline-flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-error"></span> 42%</span>
+</td>
+<td class="px-md py-sm font-body-sm text-body-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-error-container text-on-error-container border border-error">Needs Review</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

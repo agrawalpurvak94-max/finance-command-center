@@ -1,0 +1,1589 @@
+{
+  "name": "Workflow D Bank Statement Processing -Experimentation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": ["Label_6936570521063439212"]
+        },
+        "options": {}
+      },
+      "id": "d1e3d64d-46b2-438d-b22c-821d46d0906d",
+      "name": "Gmail - Watch Banking Label",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [-1536, 1088],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "c0CjUU1NE8psIMuj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = $json;\n\n// --- UTILITY FUNCTIONS ---\nfunction stripPrefix(value, prefix) {\n  if (typeof value !== 'string') return value;\n  return value.replace(new RegExp('^' + prefix + '\\\\s*:\\\\s*', 'i'), '').trim();\n}\n\nfunction extractAddress(field) {\n  if (!field) return null;\n  const item = Array.isArray(field) ? field[0] : field;\n  if (!item) return null;\n  if (typeof item === 'object' && item.address) return item.address;\n  if (typeof item === 'string' && item.trim()) return item;\n  return null;\n}\n\nfunction firstNonEmpty(candidates) {\n  for (const c of candidates) {\n    const addr = extractAddress(c);\n    if (addr) return addr;\n  }\n  return null;\n}\n\nfunction parseEmailTimestamp(msg) {\n  // 1. Try Gmail internalDate (epoch timestamp in ms)\n  if (msg.internalDate) {\n    const epochMs = Number(msg.internalDate);\n    if (!isNaN(epochMs)) return new Date(epochMs).toISOString();\n  }\n  // 2. Try standard email Date header\n  const dateHeader = msg.Date || msg.date || msg.headers?.date || msg.headers?.Date;\n  if (dateHeader) {\n    const parsedDate = new Date(dateHeader);\n    if (!isNaN(parsedDate.getTime())) return parsedDate.toISOString();\n  }\n  // 3. Fallback to current time if email timestamp is completely missing\n  return new Date().toISOString();\n}\n\n// --- FIELD EXTRACTION ---\nconst rawSubject = firstNonEmpty([\n  message.Subject,\n  message.subject,\n  message.headers?.subject,\n  message.headers?.Subject\n]);\n\nconst rawFrom = firstNonEmpty([\n  message.From,\n  message.from,\n  message.headers?.from,\n  message.headers?.From\n]);\n\nconst subject = stripPrefix(rawSubject || 'Statement', 'Subject');\nconst senderEmail = stripPrefix(rawFrom || 'unknown', 'From');\nconst snippet = message.snippet || '';\n\nconst messageId = message.id || 'unknown';\nconst emailTimestamp = parseEmailTimestamp(message);\n\n// --- BANK REGISTRY & CONFIGURATION ---\nconst BANK_REGISTRY = {\n  American_Express: {\n    sender: ['americanexpress.com', 'aexp.com', 'amex'],\n    subject: ['american express', 'smartearn', 'membership rewards', 'platinum travel', 'centurion'],\n    snippet: ['american express', 'amex']\n  },\n  HDFC: {\n    sender: ['hdfcbank.net', 'hdfcbank.com', 'hdfcbank'],\n    subject: ['hdfc bank', 'diners club', 'regalia', 'millennia', 'infinia'],\n    snippet: ['hdfc bank']\n  },\n  ICICI: {\n    sender: ['icicibank.com', 'icicibank.org', 'icicibank'],\n    subject: ['icici bank', 'rubyx', 'saphiro', 'amazon pay icici'],\n    snippet: ['icici bank']\n  },\n  Axis: {\n    sender: ['axisbank.com', 'axisbank'],\n    subject: ['axis bank', 'burgundy', 'magnus', 'vistaracard', 'flipkart axis'],\n    snippet: ['axis bank']\n  },\n  AU_Small_Finance: {\n    sender: ['aubank.in', 'aubank.org', 'aubank'],\n    subject: ['au small finance', 'zenith', 'vetta', 'altura'],\n    snippet: ['au small finance', 'aubank']\n  },\n  Kotak: {\n    sender: ['kotak.com', 'kotakbank'],\n    subject: ['kotak mahindra', 'kotak bank'],\n    snippet: ['kotak bank']\n  },\n  YES_Bank: {\n    sender: ['yesbank.in', 'yesbank','yes.bank.in'],\n    subject: ['yes bank', 'yes prosperity'],\n    snippet: ['yes bank']\n  },\n  IndusInd: {\n    sender: ['indusind.com', 'indusind'],\n    subject: ['indusind bank'],\n    snippet: ['indusind']\n  },\n  RBL: {\n    sender: ['rblbank.com', 'rblbank'],\n    subject: ['rbl bank', 'ratnakar bank'],\n    snippet: ['rbl bank']\n  },\n  IDFC_First: {\n    sender: ['idfcfirstbank.com', 'idfcbank'],\n    subject: ['idfc first bank', 'idfc first'],\n    snippet: ['idfc first']\n  },\n  SBI_Card: {\n    sender: ['sbicard.com', 'sbi.co.in'],\n    subject: ['sbi card', 'simplyclick', 'simplysave'],\n    snippet: ['sbi card']\n  },\n  Bank_of_Baroda: {\n    sender: ['bobcard.co.in', 'bankofbaroda.com'],\n    subject: ['bobcard', 'bank of baroda'],\n    snippet: ['bobcard']\n  }\n};\n\n// --- PRE-COMPILED REGEX REGISTRY ---\nconst COMPILED_REGISTRY = Object.entries(BANK_REGISTRY).map(([bankKey, rules]) => {\n  const compile = (patterns = []) =>\n    patterns.map(p => new RegExp('\\\\b' + p.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\\\b', 'i'));\n\n  return {\n    bankKey,\n    senderRegexes: compile(rules.sender),\n    subjectRegexes: compile(rules.subject),\n    snippetRegexes: compile(rules.snippet),\n    rawSenderPatterns: rules.sender,\n    rawSubjectPatterns: rules.subject,\n    rawSnippetPatterns: rules.snippet\n  };\n});\n\n// --- WEIGHTS ---\nconst WEIGHTS = {\n  sender: 100, // Dominant authority\n  subject: 20,\n  snippet: 3\n};\n\n/**\n * RESOLUTION ENGINE\n */\nfunction resolveBankWithObservability(sender, subj, snip) {\n  let bestMatch = {\n    bank_name: 'Unknown',\n    confidence: 0,\n    detected_from: 'none',\n    matched_patterns: {\n      sender: null,\n      subject: null,\n      snippet: null\n    }\n  };\n\n  for (const entry of COMPILED_REGISTRY) {\n    let score = 0;\n    let detectedFrom = [];\n    let matchedSender = null;\n    let matchedSubject = null;\n    let matchedSnippet = null;\n\n    // 1. Check Sender (Tier 1 Authority)\n    for (let i = 0; i < entry.senderRegexes.length; i++) {\n      if (entry.senderRegexes[i].test(sender)) {\n        score += WEIGHTS.sender;\n        matchedSender = entry.rawSenderPatterns[i];\n        detectedFrom.push('sender');\n        break; // Match once per category\n      }\n    }\n\n    // EARLY EXIT SHORTCUT: If sender matched, it is 100% authoritative. Stop checking other banks.\n    if (matchedSender) {\n      // Still quickly check subject/snippet of THIS bank for observability enrichment\n      for (let i = 0; i < entry.subjectRegexes.length; i++) {\n        if (entry.subjectRegexes[i].test(subj)) {\n          score += WEIGHTS.subject;\n          matchedSubject = entry.rawSubjectPatterns[i];\n          detectedFrom.push('subject');\n          break;\n        }\n      }\n      for (let i = 0; i < entry.snippetRegexes.length; i++) {\n        if (entry.snippetRegexes[i].test(snip)) {\n          score += WEIGHTS.snippet;\n          matchedSnippet = entry.rawSnippetPatterns[i];\n          detectedFrom.push('snippet');\n          break;\n        }\n      }\n\n      return {\n        bank_name: entry.bankKey,\n        confidence: score,\n        detected_from: detectedFrom.join('+'),\n        matched_patterns: {\n          sender: matchedSender,\n          subject: matchedSubject,\n          snippet: matchedSnippet\n        }\n      };\n    }\n\n    // 2. Check Subject\n    for (let i = 0; i < entry.subjectRegexes.length; i++) {\n      if (entry.subjectRegexes[i].test(subj)) {\n        score += WEIGHTS.subject;\n        matchedSubject = entry.rawSubjectPatterns[i];\n        detectedFrom.push('subject');\n        break;\n      }\n    }\n\n    // 3. Check Snippet\n    for (let i = 0; i < entry.snippetRegexes.length; i++) {\n      if (entry.snippetRegexes[i].test(snip)) {\n        score += WEIGHTS.snippet;\n        matchedSnippet = entry.rawSnippetPatterns[i];\n        detectedFrom.push('snippet');\n        break;\n      }\n    }\n\n    if (score > bestMatch.confidence) {\n      bestMatch = {\n        bank_name: entry.bankKey,\n        confidence: score,\n        detected_from: detectedFrom.join('+') || 'none',\n        matched_patterns: {\n          sender: matchedSender,\n          subject: matchedSubject,\n          snippet: matchedSnippet\n        }\n      };\n    }\n  }\n\n  // Minimum threshold: Must reach at least subject level score (>= 20) if sender missed\n  if (bestMatch.confidence < WEIGHTS.subject) {\n    bestMatch.bank_name = 'Unknown';\n  }\n\n  return bestMatch;\n}\n\nconst detection = resolveBankWithObservability(senderEmail, subject, snippet);\n\nreturn {\n  json: {\n    message_id: messageId,\n    bank_name: detection.bank_name,\n    sender_email: senderEmail,\n    subject: subject,\n    timestamp: emailTimestamp,\n    detection: {\n      confidence: detection.confidence,\n      detected_from: detection.detected_from,\n      matched_patterns: detection.matched_patterns,\n      needs_manual_review: detection.confidence < 20 || detection.bank_name === 'Unknown'\n    }\n  },\n  binary: $binary\n};"
+      },
+      "id": "e5528ccc-c4c6-479e-97b1-2cf20264ae2d",
+      "name": "Extract Email Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-896, 560]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bankName = $json.bank_name;\n\nif (!bankName) {\n  throw new Error('Bank name is required');\n}\n\nconst bankData = {\n  'YES_Bank': {\n    password: 'PURV3105',\n    card_last4: '7736',\n    business_personal: 'Personal'\n  },\n  'AU_Small_Finance': {\n    password: 'PURV3105',\n    card_last4: '2723',\n    business_personal: 'Business'\n  }\n};\n\nconst data = bankData[bankName];\n\nif (!data) {\n  throw new Error(\n    `No password found for bank: ${bankName}. Available: ${Object.keys(bankData).join(', ')}`\n  );\n}\n\nreturn {\n  json: {\n    bank_name: bankName,\n    password: data.password,\n    card_last4: data.card_last4,\n    business_personal: data.business_personal,\n    message_id: $json.message_id,\n    subject: $json.subject,\n    timestamp: $json.timestamp\n  },\n  binary: $binary\n};"
+      },
+      "id": "bc42c4dc-3a60-44ed-8f6e-d22e5c6981ac",
+      "name": "Extract Password for Bank",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-576, 416]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');\n  return { module_allowed: true, module: 'pdfjs-dist' };\n} catch (e) {\n  return { module_allowed: false, error: e.message };\n}\n"
+      },
+      "id": "96cecf8b-ba17-4283-b075-b4e9fe7c054a",
+      "name": "Extract PDF Text from Attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-768, 2064]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const parsed = JSON.parse($json.text);\n\nreturn {\n  json: parsed\n};"
+      },
+      "id": "80ebb165-bc00-4330-b600-3f8c54132d0a",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [544, 464]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY",
+          "mode": "list",
+          "cachedResultName": "Master sheet New",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1183941529,
+          "mode": "list",
+          "cachedResultName": "Transactions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY/edit#gid=1183941529"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "Date": "={{ $today }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Card Last4",
+              "displayName": "Card Last4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Card Type",
+              "displayName": "Card Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Merchant",
+              "displayName": "Merchant",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Raw Description",
+              "displayName": "Raw Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Statement Month",
+              "displayName": "Statement Month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source File",
+              "displayName": "Source File",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4df78f6a-4743-4515-9a5c-98143fc277d4",
+      "name": "Append to Transactions",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-416, 2128],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "hm7hF5aQVbQyXKjb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date().toISOString();\nconst data = $input.first().json;\nconst statementMonth = new Date().toISOString().split('-').slice(0, 2).join('-');\n\nreturn [{\n  Timestamp: now,\n  Bank: data.bank_name,\n  'Card Last4': data.card_last_4,\n  'Statement Month': statementMonth,\n  'Transactions Appended': data.transactions?.length || 0,\n  'Duplicates Skipped': 0,\n  Status: 'SUCCESS'\n}];"
+      },
+      "id": "3b78b3b9-2608-4c94-b3c8-4b6713129a9a",
+      "name": "Log to ProcessedLog",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-144, 2128]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY",
+          "mode": "list",
+          "cachedResultName": "Master sheet New",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1718610866,
+          "mode": "list",
+          "cachedResultName": "ProcessedLog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QLPWUYegcbFaqumf4A5SFoj9po8jAA7gLmSeUkruBgY/edit#gid=1718610866"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message ID",
+              "displayName": "Message ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Attachment Name",
+              "displayName": "Attachment Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Card Last4",
+              "displayName": "Card Last4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Statement Month",
+              "displayName": "Statement Month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Transactions Appended",
+              "displayName": "Transactions Appended",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duplicates Skipped",
+              "displayName": "Duplicates Skipped",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "2e56185f-f462-42ed-8aa7-461701a952f2",
+      "name": "Write ProcessedLog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [96, 2128],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn {\n  status: 'success',\n  message: 'Bank statement processed successfully',\n  bank: data.bank_name,\n  transactions_count: data.transactions?.length || 0,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "8550b463-c0bf-4b80-9085-5db05f9d6db0",
+      "name": "Success - Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 2128]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-5",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {
+          "maxTokensToSample": 16384
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [96, 512],
+      "id": "31657bca-f82a-4d73-aed0-bc8f6cc71129",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "WN0vwdMEvgjYovyx",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$json.url}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "agrawalpurvak94@gmail.com_sbRG8zsbKZgoaRgkox7aeqEL3siJJoXpIf2gB1QX0Sl3DWAz1qH7Ct7MVtrYydJZ"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [736, 0],
+      "id": "0684c3cd-c98f-4d9f-bbea-3679681074b4",
+      "name": "Remove Password1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 1,
+        "simple": false,
+        "filters": {
+          "labelIds": ["Label_6936570521063439212"]
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [-1152, 560],
+      "id": "01281372-56f6-44e4-aa57-4a58ec8ac3b9",
+      "name": "Get many messages",
+      "webhookId": "53e6be5b-138a-4429-98d4-2373e5987a7d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "c0CjUU1NE8psIMuj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/file/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "agrawalpurvak94@gmail.com_sbRG8zsbKZgoaRgkox7aeqEL3siJJoXpIf2gB1QX0Sl3DWAz1qH7Ct7MVtrYydJZ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [0, 0],
+      "id": "9961f509-ebae-480c-b322-d423b5b8c74b",
+      "name": "PDF.co Upload File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/security/remove",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "agrawalpurvak94@gmail.com_sbRG8zsbKZgoaRgkox7aeqEL3siJJoXpIf2gB1QX0Sl3DWAz1qH7Ct7MVtrYydJZ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [{}]
+        },
+        "jsonBody": "={\n  \"url\": \"{{$json.url}}\",\n  \"password\": \"{{$('Extract Password for Bank').item.json.password}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [240, 0],
+      "id": "0a871c79-c5e9-452a-917a-5b5bfe2cc19a",
+      "name": "PDF.co Unlock PDF"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "agrawalpurvak94@gmail.com_sbRG8zsbKZgoaRgkox7aeqEL3siJJoXpIf2gB1QX0Sl3DWAz1qH7Ct7MVtrYydJZ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{$json.url}}"
+            },
+            {
+              "name": "password",
+              "value": "={{$('Extract Password for Bank').item.json.password}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [496, 0],
+      "id": "d1c61877-531e-4901-9e34-d5d707f6ae64",
+      "name": "PDF.co Extract Text"
+    },
+    {
+      "parameters": {
+        "tableId": "statement_transactions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{$json.user_id}}"
+            },
+            {
+              "fieldId": "bank_name",
+              "fieldValue": "={{$json.bank_name}}"
+            },
+            {
+              "fieldId": "card_last4",
+              "fieldValue": "={{$json.card_last4}}"
+            },
+            {
+              "fieldId": "card_type",
+              "fieldValue": "={{$json.card_type}}"
+            },
+            {
+              "fieldId": "transaction_date",
+              "fieldValue": "={{$json.transaction_date}}"
+            },
+            {
+              "fieldId": "merchant",
+              "fieldValue": "={{$json.merchant}}"
+            },
+            {
+              "fieldId": "normalized_merchant",
+              "fieldValue": "={{$json.merchant_normalized}}"
+            },
+            {
+              "fieldId": "raw_description",
+              "fieldValue": "={{$json.raw_description}}"
+            },
+            {
+              "fieldId": "amount",
+              "fieldValue": "={{$json.amount}}"
+            },
+            {
+              "fieldId": "currency",
+              "fieldValue": "={{$json.currency}}"
+            },
+            {
+              "fieldId": "category",
+              "fieldValue": "={{$json.category}}"
+            },
+            {
+              "fieldId": "statement_month",
+              "fieldValue": "={{$json.statement_month}}"
+            },
+            {
+              "fieldId": "source_file",
+              "fieldValue": "={{$json.source_file}}"
+            },
+            {
+              "fieldId": "transaction_type",
+              "fieldValue": "={{$json.transaction_type}}"
+            },
+            {
+              "fieldId": "confidence",
+              "fieldValue": "={{$json.confidence}}"
+            },
+            {
+              "fieldId": "account_last4",
+              "fieldValue": "={{$json.account_last4}}"
+            },
+            {
+              "fieldId": "account_type",
+              "fieldValue": "={{$json.account_type}}"
+            },
+            {
+              "fieldId": "payment_mode",
+              "fieldValue": "={{$json.payment_mode}}"
+            },
+            {
+              "fieldId": "reference_number",
+              "fieldValue": "={{$json.reference_number}}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.category_source }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "={{$json.note}}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{$json.metadata}}"
+            },
+            {
+              "fieldId": "parser_version",
+              "fieldValue": "={{$json.parser_version}}"
+            },
+            {
+              "fieldId": "extraction_method",
+              "fieldValue": "={{$json.extraction_method}}"
+            },
+            {
+              "fieldId": "statement_id",
+              "fieldValue": "={{$json.statement_id}}"
+            },
+            {
+              "fieldId": "page_number",
+              "fieldValue": "={{$json.page_number}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3536, 64],
+      "id": "63c48005-6c70-4131-a926-ad5f6441b5f4",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tHzosrSGYSYIwoDH",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst output = [];\n\nfor (const item of items) {\n  const txns = item.json.transactions || [];\n\n  const statementMonth = new Date()\n    .toISOString()\n    .split('-')\n    .slice(0, 2)\n    .join('-');\n\n  for (const txn of txns) {\n output.push({\n  json: {\n    user_id: \"2f324f4d-1dc3-4ec5-8c23-93da480842c7\",\n\n    Date: txn.transaction_date,\n    Bank: item.json.bank_name,\n    'Card Last4': item.json.card_last4,\n    'Card Type': 'Credit',\n\n    Merchant: txn.merchant,\n    Merchant_Normalized: txn.merchant.toUpperCase(),\n\n    Amount: txn.amount,\n    Currency: txn.currency,\n\n    Category: 'Uncategorized',\n\n    'Raw Description': txn.description,\n\n    'Statement Month': statementMonth,\n\n    'Source File': item.json.subject,\n\n    transaction_type: txn.debit_credit,\n\n    confidence: 95\n  }\n});\n  }\n}\n\nreturn output;"
+      },
+      "id": "55381aa7-86a2-4a68-a30b-916e9d81ba0c",
+      "name": "Build Statement Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1504, 2368]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1728, 2368],
+      "id": "a3c0d4b2-bece-442f-a66c-b4fb0496d93e",
+      "name": "Preserve Merchant Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "14ae43ff-fe55-4ad8-84c2-39bf41aa0e14",
+              "leftValue": "={{ $json.merchant_found }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1760, 352],
+      "id": "fda29da4-723f-41fc-8c1b-c6607660260d",
+      "name": "IF Merchant Known",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"generationConfig\": {\n    \"temperature\": 0,\n    \"topP\": 0.1,\n    \"topK\": 1,\n    \"responseMimeType\": \"application/json\",\n    \"responseSchema\": {\n      \"type\": \"OBJECT\",\n      \"properties\": {\n        \"display_name\": {\n          \"type\": \"STRING\"\n        },\n        \"category\": {\n          \"type\": \"STRING\",\n          \"enum\": [\n            \"Food\",\n            \"Groceries\",\n            \"Shopping\",\n            \"Travel\",\n            \"Transport\",\n            \"Fuel\",\n            \"Entertainment\",\n            \"Utilities\",\n            \"Medical\",\n            \"Education\",\n            \"Insurance\",\n            \"Rent\",\n            \"Subscriptions\",\n            \"Personal Care\",\n            \"Business\",\n            \"Fees & Charges\",\n            \"Transfer\",\n            \"Investment\",\n            \"Uncategorized\"\n          ]\n        },\n        \"confidence\": {\n          \"type\": \"NUMBER\"\n        }\n      },\n      \"required\": [\n        \"display_name\",\n        \"category\",\n        \"confidence\"\n      ]\n    }\n  },\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are an expert financial transaction categorization engine.\\n\\nThis merchant was not found in the Merchant Memory database.\\nYour task is to classify it for permanent storage.\\n\\nTransaction Information\\n----------------------\\nMerchant (Original): {{$json.merchant}}\\nMerchant (Normalized): {{$json.normalized_merchant}}\\nDescription: {{$json.description}}\\nAmount: {{$json.amount}} INR\\nTransaction Type: {{$json.debit_credit}}\\nBank: {{$json.bank_name}}\\nBusiness/Personal: {{$json.business_personal}}\\n\\nRules\\n-----\\n1. Identify the real merchant brand.\\n2. Ignore terminal IDs, reference numbers, authorization codes, dates, cities, store numbers and payment processor text.\\n3. display_name must be customer-friendly in Title Case.\\n4. DO NOT change the normalized merchant supplied above.\\n5. Choose exactly one category from the supplied enum.\\n6. Confidence:\\n   - 95-100 = Certain\\n   - 80-94 = Very likely\\n   - 60-79 = Reasonably inferred\\n   - Below 60 = Return category 'Uncategorized'\\n7. Never invent merchant names.\\n8. If unsure, use category 'Uncategorized'.\\n9. Return ONLY JSON matching the schema.\\n\\nExamples:\\nAMAZON SELLER SERVICES → display_name: Amazon, category: Shopping\\nMYNTRA DESIGNS PRIVATE → Myntra, category: Shopping\\nSWIGGY LIMITED → Swiggy, category: Food\\nUBER TRIP → Uber, category: Transport\\nBIGBASKET INTERNET → BigBasket, category: Groceries\\nDAISO BA06 CUPERTINO → Daiso, category: Shopping\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1280, 1216],
+      "id": "e6aac49c-9784-4757-8afb-ac9da97f3c15",
+      "name": "AI Categorize",
+      "credentials": {
+        "anthropicApi": {
+          "id": "WN0vwdMEvgjYovyx",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const response = $json;\n\nconst text = response.candidates?.[0]?.content?.parts?.[0]?.text;\n\nif (!text) {\n  throw new Error(\"Gemini returned no text.\");\n}\n\nlet ai;\n\ntry {\n  ai = JSON.parse(text);\n} catch (e) {\n  throw new Error(`Invalid Gemini JSON:\\n${text}`);\n}\n\nconst original = $(\"IF Merchant Known\").item.json;\n\nreturn {\n  json: {\n    ...original,\n\n    display_name:\n      ai.display_name ||\n      original.display_name ||\n      original.merchant,\n\n    normalized_merchant:\n      original.normalized_merchant,\n\n    category:\n      ai.category ||\n      original.category ||\n      \"Other\",\n\n    confidence:\n      Number(ai.confidence ?? 50),\n\n    category_source: \"ai\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2416, 672],
+      "id": "aa057b5a-614a-4964-a3c6-1e3d34087f06",
+      "name": "Normalize AI Category Output"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://cnxfrlirhycbqnwfxvpm.supabase.co/rest/v1/rpc/upsert_merchant_memory",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{}]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_user_id\": \"2f324f4d-1dc3-4ec5-8c23-93da480842c7\",\n  \"p_normalized_merchant\": \"{{$json.normalized_merchant}}\",\n  \"p_display_name\": \"{{$json.display_name}}\",\n  \"p_category\": \"{{$json.category}}\",\n  \"p_confidence\": {{ Math.round(Number($json.confidence)) }}\n}",
+        "options": {}
+      },
+      "id": "9ded8c1d-c94d-4393-853f-3c076172d986",
+      "name": "Save Merchant Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2656, 672]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2896, 368],
+      "id": "27aa54c1-b2eb-410d-97df-1998387566ad",
+      "name": "Preserve Saved Merchant Context"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [3072, 64],
+      "id": "eaaf3380-6c49-4a67-8241-7edb37ea7aed",
+      "name": "Merge Categorized Transaction."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\n\n// ----------------------------\n// Validation\n// ----------------------------\n\nif (j.amount == null) {\n  throw new Error('Missing amount');\n}\n\nif (!j.transaction_date) {\n  throw new Error('Missing transaction_date');\n}\n\nif (!j.category) {\n  throw new Error('Missing category');\n}\n\n// ----------------------------\n// Build final transaction row\n// ----------------------------\n\nreturn {\n  json: {\n\n    // Required\n    user_id: \"2f324f4d-1dc3-4ec5-8c23-93da480842c7\",\n\n    statement_id: j.statement_id || null,\n    statement_month: j.statement_month || null,\n\n    bank_name: j.bank_name || null,\n\n    source_file: j.source_file || null,\n\n    page_number: j.page_number || null,\n\n    parser_version: \"v2\",\n\n    extraction_method:\n      j.extraction_method || \"ai\",\n\n    card_last4:\n      j.card_last4 || null,\n\n    account_last4:\n      j.account_last4 || null,\n\n    card_type:\n      j.card_type || null,\n\n    account_type:\n      j.account_type || null,\n\n    transaction_date:\n      j.transaction_date,\n\n    amount:\n      Number(j.amount),\n\n    currency:\n      j.currency || \"INR\",\n\n    merchant:\n      j.display_name ||\n      j.merchant ||\n      null,\n\n    merchant_normalized:\n      j.normalized_merchant || null,\n\n    raw_description:\n      j.description || null,\n\n    payment_mode:\n      j.payment_mode ||\n      j.debit_credit ||\n      null,\n\n    transaction_type:\n      j.transaction_type ||\n      null,\n\n    reference_number:\n      j.reference_number ||\n      null,\n\n    category:\n      j.category,\n\n    category_source:\n      j.category_source ||\n      \"merchant_memory\",\n\n    confidence:\n      Number(j.confidence),\n\n    status:\n      \"processed\",\n\n    note:\n      null,\n\n    metadata: {\n      message_id:\n        j.message_id || null,\n\n      email_subject:\n        j.subject || null,\n\n      merchant_id:\n        j.merchant_id || null,\n\n      parser:\n        \"Gemini + Merchant Memory\"\n    }\n\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3312, 64],
+      "id": "76f97418-da65-4004-8c03-c0ad570c470b",
+      "name": "Build Final Transaction Row"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "message_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1312, 2368],
+      "id": "6cb939dd-b8ed-47aa-8f27-f4930c2666f9",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\n\n// Get input raw merchant or description\nconst raw = String(\n  j.merchant ??\n  j.merchant_raw ??\n  j.description ??\n  \"\"\n).trim();\n\n// --------------------------------------------------\n// 1. Canonical Merchant Aliases\n// --------------------------------------------------\nconst aliases = [\n  [/AMAZON/i, \"AMAZON\"],\n  [/DECATHLON/i, \"DECATHLON\"],\n  [/BIGBASKET/i, \"BIGBASKET\"],\n  [/MYNTRA/i, \"MYNTRA\"],\n  [/ZERODHA/i, \"ZERODHA\"],\n  [/HPCL/i, \"HPCL\"],\n  [/INDIAN\\s*OIL|IOCL/i, \"IOCL\"],\n  [/BHARAT\\s*PETROLEUM|BPCL/i, \"BPCL\"],\n  [/ULTA/i, \"ULTA\"],\n  [/GAP/i, \"GAP\"],\n  [/MACY/i, \"MACYS\"],\n  [/LYFT/i, \"LYFT\"],\n  [/BATH\\s*&\\s*BODY|BATH\\s*AND\\s*BODY/i, \"BATHBODYWORKS\"],\n  [/H&M|H\\s*&\\s*M/i, \"HM\"],\n  [/DAISO/i, \"DAISO\"],\n  [/COACH/i, \"COACH\"],\n  [/NJTRANSIT|NJ\\s*TRANSIT/i, \"NJTRANSIT\"],\n  [/ALASKA\\s*AIR|ALASKA\\s*A/i, \"ALASKAAIR\"],\n  [/LADERACH/i, \"LADERACH\"],\n  [/SOCIAL/i, \"SOCIAL\"],\n  [/SWIGGY/i, \"SWIGGY\"],\n  [/ZOMATO/i, \"ZOMATO\"],\n  [/STARBUCKS/i, \"STARBUCKS\"],\n  [/DOMINO/i, \"DOMINOS\"],\n  [/UBER/i, \"UBER\"],\n];\n\n// --------------------------------------------------\n// 2. Basic cleaning for normalized_merchant\n// --------------------------------------------------\nfunction getNormalizedMerchant(value) {\n  if (!value) return \"UNKNOWN\";\n\n  const upper = value.toUpperCase();\n\n  // First check aliases\n  for (const [regex, canonical] of aliases) {\n    if (regex.test(upper)) {\n      return canonical;\n    }\n  }\n\n  let m = upper;\n\n  // Remove company suffixes\n  m = m\n    .replace(/\\bPRIVATE\\s+LIMITED\\b/g, \" \")\n    .replace(/\\bPVT\\.?\\s*LTD\\.?\\b/g, \" \")\n    .replace(/\\bLIMITED\\b/g, \" \")\n    .replace(/\\bLTD\\.?\\b/g, \" \")\n    .replace(/\\bLLP\\b/g, \" \")\n    .replace(/\\bINDIA\\b/g, \" \");\n\n  // Remove payment noise\n  m = m\n    .replace(/\\bUPI\\b/g, \" \")\n    .replace(/\\bPOS\\b/g, \" \")\n    .replace(/\\bECOM\\b/g, \" \")\n    .replace(/\\bONLINE\\b/g, \" \")\n    .replace(/\\bPAYMENT\\b/g, \" \");\n\n  // Remove store IDs / terminal IDs\n  m = m\n    .replace(/#\\d+/g, \" \")\n    .replace(/\\b\\d{3,}\\b/g, \" \");\n\n  // Remove punctuation\n  m = m.replace(/[^A-Z0-9 ]/g, \" \");\n\n  // Collapse spaces\n  m = m.replace(/\\s+/g, \" \").trim();\n\n  // Stable lookup key\n  m = m.replace(/\\s/g, \"\");\n\n  return m || \"UNKNOWN\";\n}\n\n// --------------------------------------------------\n// 3. Extract clean canonical display_name\n// --------------------------------------------------\nfunction getDisplayName(rawText, normalizedText) {\n\n  if (!rawText || normalizedText === \"UNKNOWN\") {\n    return \"Unknown Merchant\";\n  }\n\n  const upper = rawText.toUpperCase();\n\n  const displayAliases = [\n    [/AMAZON/i, \"Amazon\"],\n    [/DECATHLON/i, \"Decathlon\"],\n    [/BIGBASKET/i, \"BigBasket\"],\n    [/MYNTRA/i, \"Myntra\"],\n    [/ZERODHA/i, \"Zerodha\"],\n    [/HPCL/i, \"HPCL\"],\n    [/INDIAN\\s*OIL|IOCL/i, \"Indian Oil\"],\n    [/BHARAT\\s*PETROLEUM|BPCL/i, \"Bharat Petroleum\"],\n    [/ULTA/i, \"Ulta Beauty\"],\n    [/GAP/i, \"Gap\"],\n    [/MACY/i, \"Macy's\"],\n    [/LYFT/i, \"Lyft\"],\n    [/BATH\\s*&\\s*BODY|BATH\\s*AND\\s*BODY/i, \"Bath & Body Works\"],\n    [/H&M|H\\s*&\\s*M/i, \"H&M\"],\n    [/DAISO/i, \"Daiso\"],\n    [/COACH/i, \"Coach\"],\n    [/NJTRANSIT|NJ\\s*TRANSIT/i, \"NJ Transit Rail\"],\n    [/ALASKA\\s*AIR|ALASKA\\s*A/i, \"Alaska Airlines\"],\n    [/LADERACH/i, \"Läderach\"],\n    [/SOCIAL/i, \"Social\"],\n    [/SWIGGY/i, \"Swiggy\"],\n    [/ZOMATO/i, \"Zomato\"],\n    [/STARBUCKS/i, \"Starbucks\"],\n    [/DOMINO/i, \"Domino's\"],\n    [/UBER/i, \"Uber\"],\n  ];\n\n  for (const [regex, display] of displayAliases) {\n    if (regex.test(upper)) {\n      return display;\n    }\n  }\n\n  return normalizedText\n    .replace(/([A-Z])/g, \" $1\")\n    .trim()\n    .replace(/\\b\\w/g, c => c.toUpperCase());\n}\n\nconst normalized = getNormalizedMerchant(raw);\nconst displayName = getDisplayName(raw, normalized);\n\n// Return structure matching your target database schema\nreturn {\n  json: {\n    ...j,\n    normalized_merchant: normalized,\n    display_name: displayName,\n    category: j.category || \"Uncategorized\",\n    confidence: normalized === \"UNKNOWN\" ? 20 : 90\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1168, 368],
+      "id": "ad8e0921-5345-4ad3-9c44-b94054a2b304",
+      "name": "Normalize Merchant"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "transactions",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [768, 560],
+      "id": "8cc73bbc-113c-44dd-b6ad-f39b7d2e70a8",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    pdf_text: $json.data || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0],
+      "id": "879e52b5-ef0a-4b7a-9d8b-77de82e1d71e",
+      "name": "Prepare PDF Text"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    message_id: $json.message_id,\n    bank_name: $json.bank_name,\n    password: $json.password,\n    card_last4: $json.card_last4,\n    business_personal: $json.business_personal,\n    subject: $json.subject,\n    timestamp: $json.timestamp\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-224, -256],
+      "id": "a46779d3-39a1-4d0a-8d03-d52b4f427ee7",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1552, -240],
+      "id": "572f3228-e99c-497b-9947-86b023e5bdab",
+      "name": "Merge Statement + PDF"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert bank statement parser.\n\nReturn ONLY valid JSON.\n\nNever return markdown.\n\nNever explain anything.\n\nNever omit transactions.\n\nmessage_id:\n{{$json.message_id}}\n\nbank_name:\n{{$json.bank_name}}\n\nsubject:\n{{$json.subject}}\n\npdf_text:\n{{$json.pdf_text}}\n\n===========================\nSTATEMENT TEXT\n===========================\n\n{{$json.pdf_text}}\n\n===========================\nTASK\n===========================\n\nEach transaction MUST contain:\n\n{\n  \"transaction_date\":\"YYYY-MM-DD\",\n  \"message_id\":\"{{$json.message_id}}\",\n  \"merchant\":\"\",\n  \"description\":\"\",\n  \"amount\":0,\n  \"debit_credit\":\"debit|credit\"\n}\n\nIMPORTANT:\n\nEvery transaction MUST copy the EXACT message_id below.\n\nDo NOT change it.\nDo NOT omit it.\nDo NOT generate a new value.\n\nThe message_id for THIS statement is:\n\n{{$json.message_id}}\n\nRules\n\n- Return every transaction.\n- Never skip transactions.\n- Amount must always be positive.\n- merchant should be normalized.\n- description should match the statement.\n\n\nReturn EXACTLY this JSON:\n\n{\n \n  \"statement_total\":0,\n  \"statement_txn_count\":0,\n\n  \"transactions\":[]\n}\n\nReturn ONLY a single JSON object.\n\nDo NOT wrap it in quotes.\n\nDo NOT escape quotation marks.\n\nDo NOT use markdown.\n\nThe first character of your response must be {\n\nThe last character of your response must be }\n\nNever return two JSON objects.\n\nNever append additional text after the closing }.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a deterministic financial statement parser.  Never chat.  Never explain.  Never summarize.  Never wrap JSON in markdown.  Return only valid JSON.  Never merge two statements.  Treat every input independently."
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [208, 272],
+      "id": "67b29bb3-d4b7-44c7-8d94-c515e5588763",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Current transaction\nconst txn = $json;\n\n// Validate required fields\nif (!txn.message_id) {\n  throw new Error(\"message_id is missing from transaction.\");\n}\n\n// Find the matching statement metadata using message_id\nconst meta = $('Merge Statement + PDF')\n  .all()\n  .find(item => item.json.message_id === txn.message_id);\n\nif (!meta) {\n  throw new Error(`No statement metadata found for message_id: ${txn.message_id}`);\n}\n\nreturn {\n  json: {\n    ...txn,\n\n    // Statement metadata\n    bank_name: meta.json.bank_name ?? null,\n    card_last4: meta.json.card_last4 ?? null,\n    business_personal: meta.json.business_personal ?? null,\n    password: meta.json.password ?? null,\n    sender_email: meta.json.sender_email ?? null,\n    subject: meta.json.subject ?? null,\n    timestamp: meta.json.timestamp ?? null,\n\n    // Statement metadata (optional)\n    statement_id: meta.json.statement_id ?? null,\n    statement_month: meta.json.statement_month ?? null,\n    source_file: meta.json.source_file ?? null,\n\n    // Processing metadata\n    parser_version: \"v2\",\n    extraction_method: \"ai\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [976, 560],
+      "id": "68014844-2bb7-4503-a1df-087d0452ec8a",
+      "name": "Attach Metadata"
+    },
+    {
+      "parameters": {
+        "jsCode": "const merchantCache = {};\n\nfor (const item of $input.all()) {\n\n    const merchant = item.json.normalized_merchant;\n\n    if (!merchant) continue;\n\n    const key = merchant.trim().toUpperCase();\n\n    merchantCache[key] = {\n        normalized_merchant: merchant,\n        display_name: item.json.display_name,\n        category: item.json.category,\n        confidence: item.json.confidence\n    };\n\n}\n\nreturn [{\n    json: {\n        merchant_cache: merchantCache,\n        merchant_count: Object.keys(merchantCache).length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1104, 2112],
+      "id": "a64c304f-aebd-4801-ab74-3369fd7d5707",
+      "name": "Build Merchant Cache"
+    },
+    {
+      "parameters": {
+        "url": "https://cnxfrlirhycbqnwfxvpm.supabase.co/rest/v1/merchant_memory",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "normalized_merchant,display_name,category,confidence"
+            },
+            {
+              "name": "user_id",
+              "value": "=eq.2f324f4d-1dc3-4ec5-8c23-93da480842c7"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [880, 2112],
+      "id": "b2b3c956-956d-40db-a767-e822230ea16f",
+      "name": "Load Merchant Memory",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Current transaction\nconst txn = $input.item.json;\n\n// Merchant cache built earlier\nconst cache = $(\"Build Merchant Cache\").first().json.merchant_cache || {};\n\n// Normalize lookup key\nconst key = (txn.normalized_merchant || \"\")\n    .trim()\n    .toUpperCase();\n\n// Lookup merchant\nconst merchant = cache[key];\n\nif (merchant) {\n\n    return {\n        json: {\n\n            ...txn,\n\n            merchant_found: true,\n\n            display_name: merchant.display_name,\n            category: merchant.category,\n            confidence: merchant.confidence,\n\n            category_source: \"merchant_memory\"\n\n        }\n    };\n\n}\n\n// Merchant not found\nreturn {\n    json: {\n\n        ...txn,\n\n        merchant_found: false,\n\n        category_source: \"ai\"\n\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2016, 2384],
+      "id": "e0e4229e-5220-45c8-b13a-d86fef64d520",
+      "name": "Lookup Merchant Cache"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1312, 2112],
+      "id": "29cef16e-2b79-4e3e-982a-e360ffeb8d0b",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cnxfrlirhycbqnwfxvpm.supabase.co/rest/v1/rpc/lookup_merchant",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNueGZybGlyaHljYnFud2Z4dnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODQ3MywiZXhwIjoyMDk4MzE0NDczfQ.FLgWq0-8xgVd9mNuhXXr7OMqJaJJwqmQ7VnGiTHAbPo"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_user_id",
+              "value": "2f324f4d-1dc3-4ec5-8c23-93da480842c7"
+            },
+            {
+              "name": "p_normalized_merchant",
+              "value": "={{$json.normalized_merchant}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1360, 624],
+      "id": "1fa642a5-49ac-4f09-9d18-58fc4ac336b3",
+      "name": "Merchant Lookup RPC",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const txn = $('Normalize Merchant').item.json;\n\n// HTTP node returns:\n// {\n//   body: [ { found:true ... } ],\n//   headers:{},\n//   statusCode:200\n// }\n\nconst lookup =\n    $json.body && $json.body.length\n        ? $json.body[0]\n        : null;\n\nreturn {\n  json: {\n\n    ...txn,\n\n    merchant_found: Boolean(lookup?.found),\n\n    merchant_id: lookup?.merchant_id ?? null,\n\n    category:\n      lookup?.found\n        ? lookup.category\n        : txn.category,\n\n    display_name:\n      lookup?.found\n        ? lookup.display_name\n        : txn.display_name,\n\n    confidence:\n      lookup?.found\n        ? lookup.confidence\n        : txn.confidence,\n\n    category_source:\n      lookup?.found\n        ? \"merchant_memory\"\n        : \"ai\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1568, 608],
+      "id": "18ea2fc8-ad1f-4aab-bd2a-10aa3c9c3e92",
+      "name": "Enrich Transaction"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "REDACTED_GCP_API_KEY"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": \"You are an expert financial transaction categorization engine. Your task is to identify the actual merchant brand and assign the most appropriate spending category. You are NOT responsible for normalizing merchant names. A normalized merchant identifier is already provided. Return ONLY valid JSON. Do not include markdown, explanations, or additional fields. The response schema must be: {\\\"display_name\\\":\\\"string\\\",\\\"category\\\":\\\"string\\\",\\\"confidence\\\":95}\"\n      }\n    ]\n  },\n  \"generationConfig\": {\n    \"temperature\": 0,\n    \"topP\": 0.1,\n    \"topK\": 1,\n    \"maxOutputTokens\": 200,\n    \"responseMimeType\": \"application/json\"\n  },\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Categorize the following financial transaction.\\n\\nMerchant Information\\n\\nOriginal Merchant:\\n{{$json.merchant}}\\n\\nNormalized Merchant:\\n{{$json.normalized_merchant}}\\n\\nTransaction Description:\\n{{$json.description}}\\n\\nAmount:\\n{{$json.amount}}\\n\\nDebit/Credit:\\n{{$json.debit_credit}}\\n\\nBank:\\n{{$json.bank_name}}\\n\\nBusiness or Personal:\\n{{$json.business_personal}}\\n\\nRules:\\n1. Use the normalized merchant as the primary identifier.\\n2. Determine the customer-facing merchant brand.\\n3. Ignore store numbers, city names, reference numbers, terminal IDs, authorization codes, dates, and random suffixes.\\n4. Choose ONLY one of these categories:\\nGroceries, Dining, Food Delivery, Fuel, Travel, Airlines, Hotels, Taxi, Shopping, Electronics, Healthcare, Medical, Insurance, Utilities, Internet, Mobile, Entertainment, Subscriptions, Education, Government, Investment, Bank Charges, Cash Withdrawal, Transfer, Income, EMI, Rent, Business Expense, Office Supplies, Software, Taxes, Other.\\n5. Confidence: 100 = certain, 90 = highly likely, 75 = reasonable inference, 50 = uncertain.\\n6. If unsure, return category 'Other' with confidence 50.\\n\\nExamples:\\nDAISO BA06 CUPERTINO → DAISO\\nAMZN Mktp US*AB12C → Amazon\\nUBER *TRIP HELP → Uber\\nSWIGGY LIMITED → Swiggy\\nBIGBASKET ONLINE → BigBasket\\nPAYTM PG → Paytm\\n\\nReturn ONLY valid JSON in this exact format:\\n{\\n  \\\"display_name\\\": \\\"...\\\",\\n  \\\"category\\\": \\\"...\\\",\\n  \\\"confidence\\\": 95\\n}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2208, 672],
+      "id": "68ad0dd9-a30f-4007-b504-565eba48db90",
+      "name": "AI Categorize1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hxC5eQfDfNSSmrF3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1776, 1360],
+      "id": "ac22978b-9a48-4bb0-816a-ad2007aae8c2",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1600, 1312],
+      "id": "cde1daa0-7469-4317-92be-78572e5d3272",
+      "name": "Wait",
+      "webhookId": "1662f682-6940-46c4-ab72-7bba23bec87a"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\n\nconst statementDate = new Date(\n  j.timestamp || new Date().toISOString()\n);\n\nconst statementMonth =\n  `${statementDate.getFullYear()}-${String(statementDate.getMonth() + 1).padStart(2, '0')}-01`;\n\nconst statementId =\n  `${j.message_id}_${statementMonth}`;\n\nreturn {\n  json: {\n    message_id: j.message_id,\n\n    bank_name: j.bank_name,\n    card_last4: j.card_last4,\n    business_personal: j.business_personal,\n\n    sender_email: j.sender_email,\n    subject: j.subject,\n    timestamp: j.timestamp,\n\n    statement_id: statementId,\n    statement_month: statementMonth,\n\n    source_file:\n      j.filename ||\n      j.file_name ||\n      j.attachment_name ||\n      null,\n\n    parser_version: \"v2\",\n    extraction_method: \"ai\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2048, -288],
+      "id": "7b55e99d-4ec5-4c03-8dc9-54a1be8aef9a",
+      "name": "Build Statement Metadata"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1472, 304],
+      "id": "c2fe66f8-1943-4d5f-a2ee-ce96fe336b5e",
+      "name": "Preserving Transactions"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [224, 640],
+      "id": "7b0e78fd-d743-4201-bb44-126b45e036e6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hxC5eQfDfNSSmrF3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-1344, 560],
+      "id": "cb4ecea5-1b0b-4a5c-9811-c7924af9da44",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail - Watch Banking Label": {
+      "main": [[]]
+    },
+    "Extract Email Metadata": {
+      "main": [
+        [
+          {
+            "node": "Extract Password for Bank",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Password for Bank": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PDF.co Upload File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Transactions": {
+      "main": [
+        [
+          {
+            "node": "Log to ProcessedLog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to ProcessedLog": {
+      "main": [
+        [
+          {
+            "node": "Write ProcessedLog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write ProcessedLog": {
+      "main": [
+        [
+          {
+            "node": "Success - Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [[]]
+    },
+    "Remove Password1": {
+      "main": [
+        [
+          {
+            "node": "Prepare PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Extract Email Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF.co Upload File": {
+      "main": [
+        [
+          {
+            "node": "PDF.co Unlock PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF.co Unlock PDF": {
+      "main": [
+        [
+          {
+            "node": "PDF.co Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF.co Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Remove Password1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Statement Row": {
+      "main": [[]]
+    },
+    "Preserve Merchant Context": {
+      "main": [[]]
+    },
+    "IF Merchant Known": {
+      "main": [
+        [
+          {
+            "node": "Merge Categorized Transaction.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Categorize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Categorize": {
+      "main": [[]]
+    },
+    "Normalize AI Category Output": {
+      "main": [
+        [
+          {
+            "node": "Save Merchant Memory",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preserve Saved Merchant Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Merchant Memory": {
+      "main": [
+        [
+          {
+            "node": "Preserve Saved Merchant Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Preserve Saved Merchant Context": {
+      "main": [
+        [
+          {
+            "node": "Merge Categorized Transaction.",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Categorized Transaction.": {
+      "main": [
+        [
+          {
+            "node": "Build Final Transaction Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [[]]
+    },
+    "Normalize Merchant": {
+      "main": [
+        [
+          {
+            "node": "Merchant Lookup RPC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Attach Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Merge Statement + PDF",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge Statement + PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Statement + PDF": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Metadata": {
+      "main": [
+        [
+          {
+            "node": "Normalize Merchant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Merchant Memory": {
+      "main": [
+        [
+          {
+            "node": "Build Merchant Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Merchant Cache": {
+      "main": [[]]
+    },
+    "Build Merchant Cache": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merchant Lookup RPC": {
+      "main": [
+        [
+          {
+            "node": "Enrich Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Transaction": {
+      "main": [
+        [
+          {
+            "node": "IF Merchant Known",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Categorize1": {
+      "main": [
+        [
+          {
+            "node": "Normalize AI Category Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [[], []]
+    },
+    "Wait": {
+      "main": [[]]
+    },
+    "Build Final Transaction Row": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Statement Metadata": {
+      "main": [[]]
+    },
+    "Preserving Transactions": {
+      "main": [[]]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f8a084da-36a1-4238-a198-2a03b7827c3b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5271b53d513b1fcf4a8d0b9c42fba915a60987b1fd465020820e52c2e77490d2"
+  },
+  "nodeGroups": [],
+  "id": "uQfsX6oQMSo9IzUJ",
+  "tags": []
+}

@@ -29,6 +29,12 @@ export const queryKeys = {
     list: (params: StatementListParams) => ['statements', 'list', params] as const,
     summary: ['statements', 'summary'] as const,
   },
+  statementExplorer: {
+    detail: (statementId: string) => ['statement-explorer', 'detail', statementId] as const,
+    transactions: (statementId: string) =>
+      ['statement-explorer', 'transactions', statementId] as const,
+    selectorOptions: ['statement-explorer', 'selector-options'] as const,
+  },
   categories: {
     all: ['categories'] as const,
     list: (params: CategoryListParams) => ['categories', 'list', params] as const,

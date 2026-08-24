@@ -2,6 +2,7 @@ import type {
   CreditCardCreateInput,
   CreditCardListParams,
   CreditCardListResult,
+  CreditCardPosition,
   CreditCardRecord,
   CreditCardSummary,
   CreditCardUpdateInput,
@@ -99,6 +100,41 @@ export class MockCreditCardRepository implements CreditCardRepository {
         statementsImportedThisMonth,
       },
       250,
+    )
+  }
+
+  async getCreditPosition(id: string): Promise<CreditCardPosition> {
+    const card = this.cards.find((c) => c.id === id)
+    if (!card) throw new Error(`Credit card ${id} not found`)
+
+    return withLatency(
+      {
+        creditLimit: card.creditLimit,
+        availableCredit: card.availableCredit,
+        utilizationPercent: card.utilizationPercent,
+        cardNetwork: card.network,
+      },
+      200,
+    )
+  }
+
+  async updateCreditLimit(id: string, creditLimit: number): Promise<CreditCardPosition> {
+    const index = this.cards.findIndex((c) => c.id === id)
+    if (index === -1) throw new Error(`Credit card ${id} not found`)
+
+    const existing = this.cards[index]
+    const availableCredit = Math.max(
+      0,
+      Math.round((creditLimit - existing.outstanding) * 100) / 100,
+    )
+    const utilizationPercent =
+      creditLimit > 0 ? Math.round((existing.outstanding / creditLimit) * 1000) / 10 : 0
+
+    this.cards[index] = { ...existing, creditLimit, availableCredit, utilizationPercent }
+
+    return withLatency(
+      { creditLimit, availableCredit, utilizationPercent, cardNetwork: existing.network },
+      300,
     )
   }
 

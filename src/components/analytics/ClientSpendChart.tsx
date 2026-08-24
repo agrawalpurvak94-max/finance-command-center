@@ -17,6 +17,7 @@ import type { AnalyticsRankedRow } from '@/domain/Analytics'
 
 interface ClientSpendChartProps extends AnalyticsWidgetHandlers {
   data: readonly AnalyticsRankedRow[]
+  viewLabel?: string
 }
 
 export function ClientSpendChart({
@@ -25,12 +26,14 @@ export function ClientSpendChart({
   onHover,
   onCrossFilter,
   onDrillDown,
+  viewLabel,
 }: ClientSpendChartProps) {
   return (
     <ChartCard
       title="Client Spend"
       subtitle="Who your spend is attributed to"
       onViewTransactions={data.length ? () => onDrillDown({}) : undefined}
+      viewLabel={viewLabel}
     >
       <ResponsiveContainer width="100%" height={280}>
         <BarChart

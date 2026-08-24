@@ -37,15 +37,19 @@ import { getCurrentUserId } from '@/lib/supabaseAuth'
  *   `statement_period_start`/`statement_period_end` if present, else
  *   `statement_name`, else empty string.
  * - `importedAt` maps to `created_at` (no dedicated "imported" timestamp).
- * - `status`: DB `processing_status` is free text; only 'Processed' /
- *   'Processing' / 'Failed' / 'Pending Review' are recognized (best-guess
- *   vocabulary per vw_statement_summary's own comment, unconfirmed against
- *   real data since the table is empty) — anything else, including null,
- *   maps to 'imported'.
+ * - `status`: DB `processing_status` is free text. Originally mapped only
+ *   'Processed'/'Processing'/'Failed'/'Pending Review' as a best-guess
+ *   vocabulary (the table was empty when that guess was made). Confirmed
+ *   live once real Workflow D data existed: the actual value written is
+ *   lowercase `'completed'`, not `'Processed'` — added below (Statement
+ *   Explorer surfaced this: every real statement showed "Imported" instead
+ *   of "Processed"). Anything still unrecognized, including null, maps to
+ *   'imported'.
  */
 
 const STATUS_DB_TO_DOMAIN: Record<string, StatementStatus> = {
   Processed: 'processed',
+  completed: 'processed',
   Processing: 'processing',
   Failed: 'failed',
   'Pending Review': 'pending_review',
@@ -78,11 +82,32 @@ type StatementRow = {
   statement_period_start: string | null
   statement_period_end: string | null
   statement_date: string | null
+  due_date: string | null
+  opening_balance: number | string | null
+  closing_balance: number | string | null
+  total_debits: number | string | null
+  total_credits: number | string | null
+  minimum_due: number | string | null
+  statement_total_amount_due: number | string | null
   pdf_filename: string | null
   processing_status: string | null
   notes: string | null
   created_at: string | null
   transactions_extracted: number | string | null
+}
+
+/**
+ * `undefined` reaches here (despite the declared `number | string | null`
+ * type) when a column is genuinely absent from the `vw_statements` row —
+ * e.g. `statement_total_amount_due` before the Phase 13 view re-creation in
+ * DATABASE_MIGRATIONS.sql has actually been run against the live database.
+ * `Number(undefined)` is `NaN`, which must never leak into the UI as
+ * "₹NaN" — treated the same as a genuinely-null value instead.
+ */
+function toNullableNumber(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined) return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
 }
 
 type AccountLookupRow = {
@@ -114,12 +139,38 @@ function buildAccount(
 }
 
 function mapRow(row: StatementRow, lookup: Map<string, AccountLookupRow>): Statement {
+  const account = buildAccount(row.account_id, lookup)
+
+  // Credit cards: statement_date and statement_period_end both name the same
+  // statement cycle's closing date, but CC Parser sometimes only captures
+  // one of the two for a given statement. Per explicit instruction, treat
+  // them as interchangeable for credit cards and auto-fill whichever one is
+  // missing from the other, rather than showing a blank the other field
+  // could have answered. Bank statements are left as-is (not reported as
+  // needing this, and Workflow B's date reliability wasn't verified here).
+  const statementDate =
+    account.kind === 'credit_card'
+      ? (row.statement_date ?? row.statement_period_end ?? '')
+      : (row.statement_date ?? '')
+  const statementPeriodEnd =
+    account.kind === 'credit_card'
+      ? (row.statement_period_end ?? row.statement_date)
+      : row.statement_period_end
+
   return {
     id: row.id,
-    account: buildAccount(row.account_id, lookup),
+    account,
     client: row.client_id && row.client_name ? { id: row.client_id, name: row.client_name } : null,
-    statementDate: row.statement_date ?? '',
+    statementDate,
+    statementPeriodEnd,
     statementPeriodLabel: periodLabel(row),
+    dueDate: row.due_date,
+    totalDebits: toNullableNumber(row.total_debits),
+    totalCredits: toNullableNumber(row.total_credits),
+    openingBalance: toNullableNumber(row.opening_balance),
+    closingBalance: toNullableNumber(row.closing_balance),
+    minimumDue: toNullableNumber(row.minimum_due),
+    statementTotalAmountDue: toNullableNumber(row.statement_total_amount_due),
     fileName: row.pdf_filename ?? '',
     transactionsExtracted: Number(row.transactions_extracted ?? 0),
     status: toStatus(row.processing_status),
@@ -146,6 +197,7 @@ async function fetchAccountLookup(
 
 const SORT_COLUMN: Record<NonNullable<StatementListParams['sort']>['id'], string> = {
   statementDate: 'statement_date',
+  statementPeriodEnd: 'statement_period_end',
   importedAt: 'created_at',
   transactionsExtracted: 'transactions_extracted',
 }
@@ -186,7 +238,13 @@ export class SupabaseStatementRepository implements StatementRepository {
     }
 
     const sortColumn = sort ? SORT_COLUMN[sort.id] : 'statement_date'
-    query = query.order(sortColumn, { ascending: sort ? !sort.desc : false })
+    const sortAscending = sort ? !sort.desc : false
+    // Postgres defaults to NULLS FIRST on a DESC sort, which would put
+    // statements with no statementPeriodEnd/statementDate ahead of real
+    // dated ones — always push nulls last so "most recent" queries (e.g.
+    // Financial Pulse's per-account latest statement) get a real date back
+    // when one exists.
+    query = query.order(sortColumn, { ascending: sortAscending, nullsFirst: sortAscending })
 
     const start = (page - 1) * pageSize
     query = query.range(start, start + pageSize - 1)
@@ -266,6 +324,13 @@ export class SupabaseStatementRepository implements StatementRepository {
         statement_period_start: data.statement_period_start,
         statement_period_end: data.statement_period_end,
         statement_date: data.statement_date,
+        due_date: data.due_date,
+        opening_balance: data.opening_balance,
+        closing_balance: data.closing_balance,
+        total_debits: data.total_debits,
+        total_credits: data.total_credits,
+        minimum_due: data.minimum_due,
+        statement_total_amount_due: data.statement_total_amount_due,
         pdf_filename: data.pdf_filename,
         processing_status: data.processing_status,
         notes: data.notes,

@@ -27,6 +27,7 @@ interface SpendTrendChartProps extends AnalyticsWidgetHandlers {
   data: readonly AnalyticsTrendPoint[]
   granularity: AnalyticsGranularity
   onGranularityChange: (granularity: AnalyticsGranularity) => void
+  viewLabel?: string
 }
 
 const SPEND_COLOR = 'var(--viz-1)'
@@ -38,6 +39,7 @@ export function SpendTrendChart({
   onHover,
   onCrossFilter,
   onDrillDown,
+  viewLabel,
 }: SpendTrendChartProps) {
   const handleClick = (state: MouseHandlerDataParam) => {
     if (!state?.activeLabel) return
@@ -58,6 +60,7 @@ export function SpendTrendChart({
       title="Financial Performance Overview"
       subtitle="Spend over time"
       onViewTransactions={() => onDrillDown({})}
+      viewLabel={viewLabel}
     >
       <div className="mb-sm flex justify-end gap-xs">
         {GRANULARITIES.map((g) => (

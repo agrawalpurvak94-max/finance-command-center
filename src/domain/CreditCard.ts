@@ -93,6 +93,22 @@ export interface CreditCardCreateInput {
   readonly status: CreditCardRecordStatus
 }
 
+/**
+ * Genuinely-nullable variant of the credit-position fields for the
+ * Financial Pulse Credit Card drawer. `CreditCardRecord` above intentionally
+ * collapses NULL credit_limit/available_credit/card_network to 0/'VISA' as
+ * a disclosed display fallback for the Account Statements-style list/tile
+ * views — but Financial Pulse's drawer must show "—" for a genuinely
+ * unknown value rather than a fabricated ₹0 or a made-up network, so it
+ * reads the raw nullable columns instead of reusing that fallback.
+ */
+export interface CreditCardPosition {
+  readonly creditLimit: number | null
+  readonly availableCredit: number | null
+  readonly utilizationPercent: number | null
+  readonly cardNetwork: CardNetwork | null
+}
+
 export interface CreditCardUpdateInput {
   readonly nickname: string | null
   readonly status: CreditCardRecordStatus

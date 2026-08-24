@@ -17,6 +17,7 @@ import type { AnalyticsRankedRow } from '@/domain/Analytics'
 
 interface MerchantSpendChartProps extends AnalyticsWidgetHandlers {
   data: readonly AnalyticsRankedRow[]
+  viewLabel?: string
 }
 
 export function MerchantSpendChart({
@@ -25,12 +26,14 @@ export function MerchantSpendChart({
   onHover,
   onCrossFilter,
   onDrillDown,
+  viewLabel,
 }: MerchantSpendChartProps) {
   return (
     <ChartCard
       title="Merchant Spend"
       subtitle="Top merchants by spend volume"
       onViewTransactions={data.length ? () => onDrillDown({}) : undefined}
+      viewLabel={viewLabel}
     >
       <ResponsiveContainer width="100%" height={280}>
         <BarChart

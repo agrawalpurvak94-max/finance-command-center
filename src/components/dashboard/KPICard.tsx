@@ -32,18 +32,31 @@ interface KPICardProps {
    * instead of the default.
    */
   valueClassName?: string
+  /** Makes the whole card a button (e.g. Financial Pulse's Spend/Inflow tiles opening a drawer). Omit for a plain, non-interactive card. */
+  onClick?: () => void
+  /** Accessible name for the button variant — the visible label text alone is ambiguous (account tiles reuse the same "Spend"/"Inflow" wording). */
+  ariaLabel?: string
+  /** Small muted subtitle under the value — e.g. clarifying which accounts a figure is scoped to. Neutral, unlike `trend`/`warningLabel`. */
+  caption?: string
 }
 
-export function KPICard({ metric, formatValue = formatINR, valueClassName }: KPICardProps) {
+export function KPICard({
+  metric,
+  formatValue = formatINR,
+  valueClassName,
+  onClick,
+  ariaLabel,
+  caption,
+}: KPICardProps) {
   const TrendIcon = metric.trend ? trendIcon[metric.trend.direction] : null
+  const className = cn(
+    'flex w-full flex-col justify-between rounded-lg border border-border bg-card p-md text-left',
+    onClick && 'transition-colors hover:border-primary',
+    metric.warningLabel && 'border-l-4 border-l-destructive',
+  )
 
-  return (
-    <div
-      className={cn(
-        'flex flex-col justify-between rounded-lg border border-border bg-card p-md',
-        metric.warningLabel && 'border-l-4 border-l-destructive',
-      )}
-    >
+  const content = (
+    <>
       <div className="min-w-0">
         <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
         <div
@@ -55,6 +68,7 @@ export function KPICard({ metric, formatValue = formatINR, valueClassName }: KPI
         >
           {formatValue(metric.value)}
         </div>
+        {caption && <p className="mt-xs text-[11px] text-muted-foreground">{caption}</p>}
       </div>
       {metric.trend && TrendIcon && (
         <div
@@ -73,6 +87,16 @@ export function KPICard({ metric, formatValue = formatINR, valueClassName }: KPI
           <span>{metric.warningLabel}</span>
         </div>
       )}
-    </div>
+    </>
   )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} aria-label={ariaLabel} className={className}>
+        {content}
+      </button>
+    )
+  }
+
+  return <div className={className}>{content}</div>
 }

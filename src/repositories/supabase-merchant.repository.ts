@@ -23,9 +23,21 @@ import { getCurrentUserId } from '@/lib/supabaseAuth'
  * `lookup_merchant` / `upsert_merchant_memory` (Workflow C's production
  * functions) are untouched — this repository only reads/writes the table
  * directly for the UI's own CRUD, per instruction.
+ *
+ * `defaultCategory` fallback: `vw_merchants` only resolves a category via
+ * the `default_category_id` FK (never populated by Workflow C — it writes
+ * the free-text `merchant_memory.category` column only, per its own data
+ * contract, see MODULE12B_N8N_AUDIT.md). Rather than showing "no category"
+ * for every merchant Workflow C has actually categorized, `defaultCategory`
+ * falls back to that free-text value when the FK is unresolved. This is a
+ * display fallback only — no schema change, no fabricated FK, and no write
+ * ever sets `default_category_id` from this fallback. The fallback
+ * category's `id` is synthesized as its own name (same pattern already
+ * used for Clients' topCategories/topMerchants), since there is no real
+ * `categories.id` to point at.
  */
 
-type MerchantRow = {
+export type MerchantRow = {
   id: string
   display_name: string | null
   normalized_merchant: string
@@ -40,17 +52,21 @@ type MerchantRow = {
   last_transaction_at: string | null
 }
 
-function mapRow(row: MerchantRow): MerchantRecord {
+/** Exported for unit testing the category-fallback mapping (see tests/unit/supabase-merchant.repository.test.ts) — not used outside this module otherwise. */
+export function mapRow(row: MerchantRow, fallbackCategoryName?: string | null): MerchantRecord {
   const transactionCount = Number(row.transaction_count ?? 0)
   const totalSpend = Number(row.total_spend ?? 0)
+  const defaultCategory =
+    row.default_category_id && row.default_category_name
+      ? { id: row.default_category_id, name: row.default_category_name }
+      : fallbackCategoryName
+        ? { id: fallbackCategoryName, name: fallbackCategoryName }
+        : null
   return {
     id: row.id,
     name: row.display_name ?? row.normalized_merchant,
     aliases: row.aliases ?? [],
-    defaultCategory:
-      row.default_category_id && row.default_category_name
-        ? { id: row.default_category_id, name: row.default_category_name }
-        : null,
+    defaultCategory,
     status: row.status === 'inactive' ? 'inactive' : 'active',
     notes: row.notes,
     hasRules: row.has_rules ?? false,
@@ -109,7 +125,34 @@ export class SupabaseMerchantRepository implements MerchantRepository {
     const { data, error, count } = await query
     if (error) throw new Error(`Failed to list merchants: ${error.message}`)
 
-    return { rows: (data ?? []).map((row) => mapRow(row as MerchantRow)), total: count ?? 0 }
+    const rows = (data ?? []) as MerchantRow[]
+    const unresolvedIds = rows.filter((r) => !r.default_category_id).map((r) => r.id)
+    const fallbackById = await this.fetchCategoryFallback(unresolvedIds)
+
+    return {
+      rows: rows.map((row) => mapRow(row, fallbackById.get(row.id))),
+      total: count ?? 0,
+    }
+  }
+
+  /**
+   * Free-text `merchant_memory.category` for rows whose `default_category_id`
+   * FK is unresolved — `vw_merchants` doesn't expose this column at all
+   * (only the FK-joined name), so it's fetched separately from the base
+   * table. See the class-level doc comment for why this fallback exists.
+   */
+  private async fetchCategoryFallback(ids: readonly string[]): Promise<Map<string, string>> {
+    const map = new Map<string, string>()
+    if (ids.length === 0) return map
+    const { data, error } = await this.client
+      .from('merchant_memory')
+      .select('id,category')
+      .in('id', ids)
+    if (error) throw new Error(`Failed to load merchant category fallback: ${error.message}`)
+    for (const row of (data ?? []) as Array<{ id: string; category: string | null }>) {
+      if (row.category) map.set(row.id, row.category)
+    }
+    return map
   }
 
   async getSummary(): Promise<MerchantSummary> {
@@ -184,13 +227,16 @@ export class SupabaseMerchantRepository implements MerchantRepository {
 
     if (error) throw new Error(`Failed to create merchant: ${error.message}`)
 
-    return mapRow({
-      ...data,
-      default_category_name:
-        (data as { default_category?: { name: string } | null }).default_category?.name ?? null,
-      transaction_count: 0,
-      total_spend: 0,
-    } as MerchantRow)
+    return mapRow(
+      {
+        ...data,
+        default_category_name:
+          (data as { default_category?: { name: string } | null }).default_category?.name ?? null,
+        transaction_count: 0,
+        total_spend: 0,
+      } as MerchantRow,
+      (data as { category?: string | null }).category,
+    )
   }
 
   async update(id: string, input: MerchantUpdateInput): Promise<MerchantRecord> {
@@ -229,6 +275,7 @@ export class SupabaseMerchantRepository implements MerchantRepository {
         transaction_count: 0,
         total_spend: 0,
       }) as MerchantRow,
+      (data as { category?: string | null }).category,
     )
   }
 

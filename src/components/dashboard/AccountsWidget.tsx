@@ -14,7 +14,7 @@ interface AccountsWidgetProps {
   emptyDescription: string
   emptyActionHref: string
   emptyActionLabel: string
-  onPayNow?: (accountId: string) => void
+  onOpenAccount: (account: ConnectedAccount) => void
 }
 
 export function AccountsWidget({
@@ -25,7 +25,7 @@ export function AccountsWidget({
   emptyDescription,
   emptyActionHref,
   emptyActionLabel,
-  onPayNow,
+  onOpenAccount,
 }: AccountsWidgetProps) {
   return (
     <section className="mb-xl">
@@ -55,7 +55,7 @@ export function AccountsWidget({
         {(accounts) => (
           <div className="grid grid-cols-1 gap-md md:grid-cols-3">
             {accounts.map((account) => (
-              <AccountCard key={account.id} account={account} onPayNow={onPayNow} />
+              <AccountCard key={account.id} account={account} onOpen={onOpenAccount} />
             ))}
           </div>
         )}

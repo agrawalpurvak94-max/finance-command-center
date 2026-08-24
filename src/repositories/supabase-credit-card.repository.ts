@@ -6,6 +6,7 @@ import type {
   CreditCardHealth,
   CreditCardListParams,
   CreditCardListResult,
+  CreditCardPosition,
   CreditCardRecord,
   CreditCardSummary,
   CreditCardUpdateInput,
@@ -72,6 +73,31 @@ function toNetwork(value: string | null): CardNetwork {
   if (value && (KNOWN_CARD_NETWORKS as readonly string[]).includes(value))
     return value as CardNetwork
   return value ? (DB_TO_DOMAIN_NETWORK[value] ?? 'VISA') : 'VISA'
+}
+
+type PositionRow = {
+  credit_limit: number | string | null
+  available_credit: number | string | null
+  current_balance: number | string | null
+  card_network: string | null
+}
+
+function toCreditCardPosition(row: PositionRow | null): CreditCardPosition {
+  const creditLimit = row?.credit_limit != null ? Number(row.credit_limit) : null
+  const availableCredit = row?.available_credit != null ? Number(row.available_credit) : null
+  const outstanding = row?.current_balance != null ? Number(row.current_balance) : null
+  const utilizationPercent =
+    creditLimit !== null && creditLimit > 0 && outstanding !== null
+      ? Math.round((outstanding / creditLimit) * 100)
+      : null
+  const cardNetwork =
+    row?.card_network && (KNOWN_CARD_NETWORKS as readonly string[]).includes(row.card_network)
+      ? (row.card_network as CardNetwork)
+      : row?.card_network
+        ? (DB_TO_DOMAIN_NETWORK[row.card_network] ?? null)
+        : null
+
+  return { creditLimit, availableCredit, utilizationPercent, cardNetwork }
 }
 
 type AccountRow = {
@@ -295,6 +321,52 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
       ),
       total: count ?? rows.length,
     }
+  }
+
+  async getCreditPosition(id: string): Promise<CreditCardPosition> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .select('credit_limit, available_credit, current_balance, card_network')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(`Failed to load credit position for ${id}: ${error.message}`)
+
+    return toCreditCardPosition(data as PositionRow | null)
+  }
+
+  async updateCreditLimit(id: string, creditLimit: number): Promise<CreditCardPosition> {
+    const { data: existing, error: fetchError } = await this.client
+      .from('accounts')
+      .select('current_balance')
+      .eq('id', id)
+      .eq('account_type', 'Credit Card')
+      .maybeSingle()
+    if (fetchError)
+      throw new Error(`Failed to update credit limit for ${id}: ${fetchError.message}`)
+    if (!existing)
+      throw new Error(
+        `Credit card ${id}'s limit could not be updated — it does not exist, or RLS denied the write.`,
+      )
+
+    // Only recompute available credit when the outstanding balance is
+    // actually known — an unknown balance means "unknown available", not 0.
+    const outstanding = existing.current_balance != null ? Number(existing.current_balance) : null
+    const availableCredit = outstanding !== null ? Math.max(0, creditLimit - outstanding) : null
+
+    const { data, error } = await this.client
+      .from('accounts')
+      .update({ credit_limit: creditLimit, available_credit: availableCredit })
+      .eq('id', id)
+      .eq('account_type', 'Credit Card')
+      .select('credit_limit, available_credit, current_balance, card_network')
+      .maybeSingle()
+    if (error) throw new Error(`Failed to update credit limit for ${id}: ${error.message}`)
+    if (!data)
+      throw new Error(
+        `Credit card ${id}'s limit could not be updated — it does not exist, or RLS denied the write.`,
+      )
+
+    return toCreditCardPosition(data as PositionRow)
   }
 
   async getSummary(): Promise<CreditCardSummary> {

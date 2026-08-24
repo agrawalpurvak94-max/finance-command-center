@@ -68,10 +68,16 @@ export function RecentTransactionsWidget({ query }: RecentTransactionsWidgetProp
                       Date
                     </th>
                     <th className="px-md py-sm text-label-caps uppercase text-muted-foreground">
+                      Account
+                    </th>
+                    <th className="px-md py-sm text-label-caps uppercase text-muted-foreground">
                       Merchant
                     </th>
                     <th className="px-md py-sm text-label-caps uppercase text-muted-foreground">
                       Category
+                    </th>
+                    <th className="px-md py-sm text-label-caps uppercase text-muted-foreground">
+                      Type
                     </th>
                     <th className="px-md py-sm text-right text-label-caps uppercase text-muted-foreground">
                       Amount
@@ -87,11 +93,17 @@ export function RecentTransactionsWidget({ query }: RecentTransactionsWidgetProp
                       <td className="px-md py-sm text-table-mono tabular-nums text-muted-foreground">
                         {txn.dateLabel}
                       </td>
+                      <td className="px-md py-sm text-table-mono text-muted-foreground">
+                        {txn.account}
+                      </td>
                       <td className="px-md py-sm text-body-sm text-foreground">{txn.merchant}</td>
                       <td className="px-md py-sm">
                         <span className="rounded bg-muted-foreground/10 px-sm py-0.5 text-[10px] text-muted-foreground">
                           {txn.category}
                         </span>
+                      </td>
+                      <td className="px-md py-sm text-body-sm text-muted-foreground">
+                        {txn.type === 'debit' ? 'Spend' : 'Inflow'}
                       </td>
                       <td className="px-md py-sm text-right text-table-mono tabular-nums text-foreground">
                         {formatINR(txn.amount)}

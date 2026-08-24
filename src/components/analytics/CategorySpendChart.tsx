@@ -36,6 +36,8 @@ function buildDisplaySlices(data: readonly AnalyticsCategorySlice[]): readonly D
 
 interface CategorySpendChartProps extends AnalyticsWidgetHandlers {
   data: readonly AnalyticsCategorySlice[]
+  /** See `ChartCard`'s `viewLabel` — overrides the default "View Transactions" label. */
+  viewLabel?: string
 }
 
 export function CategorySpendChart({
@@ -44,6 +46,7 @@ export function CategorySpendChart({
   onHover,
   onCrossFilter,
   onDrillDown,
+  viewLabel,
 }: CategorySpendChartProps) {
   const total = data.reduce((sum, s) => sum + s.amount, 0)
   const displaySlices = buildDisplaySlices(data)
@@ -53,6 +56,7 @@ export function CategorySpendChart({
       title="Category Split"
       subtitle="Top spending categories"
       onViewTransactions={data.length ? () => onDrillDown({}) : undefined}
+      viewLabel={viewLabel}
     >
       <div className="relative mb-md h-55 w-full" onMouseLeave={() => onHover(null)}>
         <ResponsiveContainer width="100%" height="100%">
