@@ -29,16 +29,16 @@ export function AccountsWidget({
 }: AccountsWidgetProps) {
   return (
     <section className="mb-xl">
-      <h2 className="mb-md flex items-center gap-sm text-headline-sm text-foreground">
+      <h2 className="mb-md flex items-center gap-sm text-headline-sm font-semibold text-foreground">
         {title}
         <span className="h-px flex-1 bg-border" />
       </h2>
       <QueryBoundary
         query={query}
         skeleton={
-          <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-lg" />
+              <Skeleton key={i} className="h-44 w-full rounded-lg" />
             ))}
           </div>
         }
@@ -53,7 +53,7 @@ export function AccountsWidget({
         }
       >
         {(accounts) => (
-          <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-3">
             {accounts.map((account) => (
               <AccountCard key={account.id} account={account} onOpen={onOpenAccount} />
             ))}
