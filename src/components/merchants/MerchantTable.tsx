@@ -1,11 +1,17 @@
 import { useMemo } from 'react'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, ArrowUpDown, Store } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MerchantStatusBadge } from '@/components/merchants/MerchantStatusBadge'
 import { MerchantRowActionsMenu } from '@/components/merchants/MerchantRowActionsMenu'
-import { CategorySelector } from '@/components/transactions/CategorySelector'
+import { MerchantIdentityCell } from '@/components/merchants/MerchantIdentityCell'
+import {
+  MerchantCategoryControl,
+  type CategoryVisual,
+} from '@/components/merchants/MerchantCategoryControl'
 import { formatINR } from '@/utils/currency'
+import type { Category } from '@/domain/Category'
 import type { MerchantRecord, MerchantSort } from '@/domain/Merchant'
 
 interface MerchantTableProps {
@@ -18,6 +24,12 @@ interface MerchantTableProps {
   onChangeCategory: (merchant: MerchantRecord, categoryId: string | null) => void
   onDelete: (merchant: MerchantRecord) => void
   selectedMerchantId?: string | null
+  /** Selectable options — unchanged from the shared CategorySelector's own
+   * data source, just passed down instead of fetched again here. */
+  categories: readonly Category[]
+  /** Read-only icon/color enrichment for display only; never affects which
+   * categories are selectable. */
+  categoryVisualsById: ReadonlyMap<string, CategoryVisual>
 }
 
 const sortableColumns: MerchantSort['id'][] = [
@@ -27,6 +39,15 @@ const sortableColumns: MerchantSort['id'][] = [
   'averageTransaction',
   'lastTransactionAt',
 ]
+
+function formatLastTransaction(iso: string | null): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 export function MerchantTable({
   merchants,
@@ -38,64 +59,68 @@ export function MerchantTable({
   onChangeCategory,
   onDelete,
   selectedMerchantId,
+  categories,
+  categoryVisualsById,
 }: MerchantTableProps) {
+  const shouldReduceMotion = useReducedMotion()
+
   const columns = useMemo<ColumnDef<MerchantRecord>[]>(
     () => [
       {
         id: 'name',
-        header: 'Merchant Name',
+        header: 'Merchant',
         cell: ({ row }) => (
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
-              <Store className="size-4" aria-hidden="true" />
-            </div>
-            <button
-              type="button"
-              data-merchant-row-trigger={row.original.id}
-              onClick={(e) => {
-                e.stopPropagation()
-                onReview(row.original)
-              }}
-              className="text-body-sm font-semibold text-foreground underline-offset-2 hover:underline focus-visible:underline"
-            >
-              {row.original.name}
-            </button>
-          </div>
+          <MerchantIdentityCell
+            merchantId={row.original.id}
+            name={row.original.name}
+            onReview={() => onReview(row.original)}
+          />
         ),
       },
       {
         id: 'defaultCategory',
-        header: 'Default Category',
+        header: 'Category',
         cell: ({ row }) => (
-          <CategorySelector
+          <MerchantCategoryControl
             category={row.original.defaultCategory}
+            categories={categories}
+            categoryVisualsById={categoryVisualsById}
             onChange={(categoryId) => onChangeCategory(row.original, categoryId)}
           />
         ),
       },
       {
         id: 'transactionCount',
-        header: 'Transaction Count',
+        header: 'Activity',
         cell: ({ row }) => (
-          <span className="text-table-mono tabular-nums font-bold text-foreground">
+          <span className="tabular-nums text-body-sm font-semibold text-foreground">
             {row.original.transactionCount.toLocaleString('en-IN')}
+            <span className="ml-1 text-[10px] font-normal text-muted-foreground">txns</span>
           </span>
         ),
       },
       {
         id: 'totalSpend',
         header: 'Total Spend',
-        cell: ({ row }) => (
-          <span className="text-table-mono tabular-nums text-foreground">
-            {formatINR(row.original.totalSpend)}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const isZero = row.original.totalSpend === 0
+          return (
+            <span
+              className={cn(
+                'tabular-nums text-body-sm',
+                isZero ? 'text-muted-foreground' : 'font-bold text-foreground',
+              )}
+            >
+              {formatINR(row.original.totalSpend)}
+            </span>
+          )
+        },
       },
       {
         id: 'averageTransaction',
-        header: 'Average Transaction',
+        header: 'Avg. Transaction',
         cell: ({ row }) => (
-          <span className="text-table-mono tabular-nums text-muted-foreground">
+          <span className="tabular-nums text-body-sm text-muted-foreground">
             {formatINR(row.original.averageTransaction)}
           </span>
         ),
@@ -104,14 +129,8 @@ export function MerchantTable({
         id: 'lastTransactionAt',
         header: 'Last Transaction',
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-table-mono tabular-nums text-body-sm text-muted-foreground">
-            {row.original.lastTransactionAt
-              ? new Date(row.original.lastTransactionAt).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : '—'}
+          <span className="whitespace-nowrap tabular-nums text-body-sm text-muted-foreground">
+            {formatLastTransaction(row.original.lastTransactionAt)}
           </span>
         ),
       },
@@ -123,19 +142,28 @@ export function MerchantTable({
       {
         id: 'actions',
         header: '',
-        size: 48,
         cell: ({ row }) => (
-          <MerchantRowActionsMenu
-            merchant={row.original}
-            onReview={onReview}
-            onViewTransactions={onViewTransactions}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+          <div className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 group-focus-within/row:opacity-100">
+            <MerchantRowActionsMenu
+              merchant={row.original}
+              onReview={onReview}
+              onViewTransactions={onViewTransactions}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </div>
         ),
       },
     ],
-    [onReview, onViewTransactions, onEdit, onChangeCategory, onDelete],
+    [
+      onReview,
+      onViewTransactions,
+      onEdit,
+      onChangeCategory,
+      onDelete,
+      categories,
+      categoryVisualsById,
+    ],
   )
 
   const table = useReactTable({
@@ -144,8 +172,32 @@ export function MerchantTable({
     getCoreRowModel: getCoreRowModel(),
   })
 
+  const columnWidths: Record<string, string> = {
+    name: 'w-64',
+    defaultCategory: 'w-44',
+    transactionCount: 'w-28',
+    totalSpend: 'w-32',
+    averageTransaction: 'w-32',
+    lastTransactionAt: 'w-32',
+    status: 'w-24',
+    actions: 'w-20',
+  }
+
+  const alignRight = new Set([
+    'transactionCount',
+    'totalSpend',
+    'averageTransaction',
+    'lastTransactionAt',
+  ])
+  const alignCenter = new Set(['status', 'actions'])
+
   return (
-    <div className="overflow-x-auto">
+    <motion.div
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="overflow-x-auto"
+    >
       <table className="w-full min-w-240 border-collapse text-left">
         <thead className="sticky top-0 z-10 bg-card">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -157,7 +209,12 @@ export function MerchantTable({
                 return (
                   <th
                     key={header.id}
-                    className="p-md text-label-caps uppercase text-muted-foreground"
+                    className={cn(
+                      'group/header p-md text-label-caps text-muted-foreground uppercase',
+                      columnWidths[header.column.id],
+                      alignRight.has(header.column.id) && 'text-right',
+                      alignCenter.has(header.column.id) && 'text-center',
+                    )}
                   >
                     {isSortable ? (
                       <button
@@ -167,6 +224,7 @@ export function MerchantTable({
                         }
                         className={cn(
                           'flex items-center gap-xs transition-colors hover:text-foreground',
+                          alignRight.has(header.column.id) && 'ml-auto',
                           isActive && 'text-foreground',
                         )}
                       >
@@ -178,7 +236,10 @@ export function MerchantTable({
                             <ArrowUp className="size-3" aria-hidden="true" />
                           )
                         ) : (
-                          <ArrowUpDown className="size-3 opacity-40" aria-hidden="true" />
+                          <ArrowUpDown
+                            className="size-3 opacity-0 transition-opacity group-hover/header:opacity-50"
+                            aria-hidden="true"
+                          />
                         )}
                       </button>
                     ) : (
@@ -207,12 +268,20 @@ export function MerchantTable({
                 onReview(row.original)
               }}
               className={cn(
-                'cursor-pointer transition-colors hover:bg-accent/40',
-                row.original.id === selectedMerchantId && 'bg-accent/60 hover:bg-accent/60',
+                'group/row cursor-pointer transition-colors hover:bg-surface-hover',
+                row.original.id === selectedMerchantId &&
+                  'bg-surface-selected hover:bg-surface-selected',
               )}
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="p-md align-middle">
+                <td
+                  key={cell.id}
+                  className={cn(
+                    'px-md py-sm align-middle',
+                    alignRight.has(cell.column.id) && 'text-right',
+                    alignCenter.has(cell.column.id) && 'text-center',
+                  )}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -220,6 +289,6 @@ export function MerchantTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   )
 }

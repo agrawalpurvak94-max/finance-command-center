@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Search, Store } from 'lucide-react'
 import { PageContainer } from '@/layouts/PageContainer'
@@ -23,6 +23,8 @@ import {
   useUpdateMerchant,
 } from '@/hooks/useMerchants'
 import { useTransactionCategories } from '@/hooks/useTransactions'
+import { useCategoriesList } from '@/hooks/useCategories'
+import type { CategoryVisual } from '@/components/merchants/MerchantCategoryControl'
 import { downloadCsv, merchantsToCsv } from '@/utils/csv'
 import type {
   MerchantFilters as MerchantFiltersType,
@@ -77,6 +79,15 @@ export function Merchants() {
   const scrollPositionRef = useRef<number | null>(null)
 
   const categoriesQuery = useTransactionCategories()
+  // Read-only enrichment (icon/color) for the category control's display —
+  // the selectable options themselves still come from categoriesQuery
+  // above, unchanged. A large pageSize stands in for "all categories";
+  // this module has no dedicated "list all" endpoint.
+  const categoryRecordsQuery = useCategoriesList({ page: 1, pageSize: 200 })
+  const categoryVisualsById = useMemo<ReadonlyMap<string, CategoryVisual>>(() => {
+    const rows = categoryRecordsQuery.data?.rows ?? []
+    return new Map(rows.map((c) => [c.id, { color: c.color, icon: c.icon }]))
+  }, [categoryRecordsQuery.data])
 
   const summaryQuery = useMerchantsSummary()
   const listQuery = useMerchantsList({
@@ -253,6 +264,8 @@ export function Merchants() {
               onChangeCategory={handleChangeCategory}
               onDelete={handleDeleteMerchant}
               selectedMerchantId={reviewOpen ? reviewingMerchant?.id : null}
+              categories={categoriesQuery.data ?? []}
+              categoryVisualsById={categoryVisualsById}
             />
           )}
         </QueryBoundary>
