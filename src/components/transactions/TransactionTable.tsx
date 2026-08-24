@@ -7,6 +7,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { motion, useReducedMotion } from 'motion/react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
@@ -43,11 +44,12 @@ export function TransactionTable({
   onDeleteOne,
   onUpdateOne,
 }: TransactionTableProps) {
+  const shouldReduceMotion = useReducedMotion()
+
   const columns = useMemo<ColumnDef<Transaction>[]>(
     () => [
       {
         id: 'select',
-        size: 40,
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllRowsSelected()}
@@ -68,7 +70,7 @@ export function TransactionTable({
         accessorKey: 'date',
         header: 'Date',
         cell: ({ getValue }) => (
-          <span className="whitespace-nowrap text-table-mono tabular-nums text-body-sm">
+          <span className="whitespace-nowrap text-table-mono tabular-nums text-muted-foreground">
             {new Date(getValue<string>()).toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short',
@@ -121,11 +123,20 @@ export function TransactionTable({
       {
         accessorKey: 'amount',
         header: 'Amount',
-        cell: ({ getValue }) => (
-          <span className="text-table-mono tabular-nums font-bold">
-            {formatINR(getValue<number>())}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const isCredit = row.original.type === 'credit'
+          return (
+            <span
+              className={cn(
+                'whitespace-nowrap tabular-nums text-body-sm font-bold',
+                isCredit ? 'text-secondary' : 'text-foreground',
+              )}
+            >
+              {isCredit ? '+' : '−'}
+              {formatINR(row.original.amount)}
+            </span>
+          )
+        },
       },
       {
         accessorKey: 'status',
@@ -135,13 +146,14 @@ export function TransactionTable({
       {
         id: 'actions',
         header: '',
-        size: 48,
         cell: ({ row }) => (
-          <RowActionsMenu
-            transaction={row.original}
-            onOpenDetails={onOpenDetails}
-            onDelete={onDeleteOne}
-          />
+          <div className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 group-focus-within/row:opacity-100">
+            <RowActionsMenu
+              transaction={row.original}
+              onOpenDetails={onOpenDetails}
+              onDelete={onDeleteOne}
+            />
+          </div>
         ),
       },
     ],
@@ -158,8 +170,29 @@ export function TransactionTable({
     enableRowSelection: true,
   })
 
+  const columnWidths: Record<string, string> = {
+    select: 'w-10',
+    date: 'w-28',
+    merchant: 'w-56',
+    category: 'w-40',
+    client: 'w-36',
+    account: 'w-36',
+    ownerType: 'w-20',
+    amount: 'w-32',
+    status: 'w-28',
+    actions: 'w-14',
+  }
+
+  const alignRight = new Set(['amount'])
+  const alignCenter = new Set(['select', 'ownerType', 'actions'])
+
   return (
-    <div className="overflow-x-auto">
+    <motion.div
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="overflow-x-auto"
+    >
       <table className="w-full min-w-240 border-collapse text-left">
         <thead className="sticky top-0 z-10 bg-card">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -171,7 +204,12 @@ export function TransactionTable({
                 return (
                   <th
                     key={header.id}
-                    className="p-md text-label-caps uppercase text-muted-foreground"
+                    className={cn(
+                      'group/header p-md text-label-caps text-muted-foreground uppercase',
+                      columnWidths[header.column.id],
+                      alignRight.has(header.column.id) && 'text-right',
+                      alignCenter.has(header.column.id) && 'text-center',
+                    )}
                   >
                     {isSortable ? (
                       <button
@@ -181,6 +219,7 @@ export function TransactionTable({
                         }
                         className={cn(
                           'flex items-center gap-xs transition-colors hover:text-foreground',
+                          alignRight.has(header.column.id) && 'ml-auto',
                           isActive && 'text-foreground',
                         )}
                       >
@@ -192,7 +231,10 @@ export function TransactionTable({
                             <ArrowUp className="size-3" aria-hidden="true" />
                           )
                         ) : (
-                          <ArrowUpDown className="size-3 opacity-40" aria-hidden="true" />
+                          <ArrowUpDown
+                            className="size-3 opacity-0 transition-opacity group-hover/header:opacity-50"
+                            aria-hidden="true"
+                          />
                         )}
                       </button>
                     ) : (
@@ -209,10 +251,17 @@ export function TransactionTable({
             <tr
               key={row.id}
               data-state={row.getIsSelected() ? 'selected' : undefined}
-              className="transition-colors hover:bg-accent/40 data-[state=selected]:bg-primary/5"
+              className="group/row transition-colors hover:bg-surface-hover data-[state=selected]:bg-surface-selected data-[state=selected]:hover:bg-surface-selected"
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="p-md align-middle">
+                <td
+                  key={cell.id}
+                  className={cn(
+                    'px-md py-sm align-middle',
+                    alignRight.has(cell.column.id) && 'text-right',
+                    alignCenter.has(cell.column.id) && 'text-center',
+                  )}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -220,6 +269,6 @@ export function TransactionTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   )
 }

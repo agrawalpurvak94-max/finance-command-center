@@ -10,8 +10,8 @@ export function TransactionsHeader({ onExportCsv, onNewTransaction }: Transactio
   return (
     <div className="flex flex-col gap-md sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-headline-lg text-foreground">Transaction Ledger</h1>
-        <p className="text-body-sm text-muted-foreground">
+        <h1 className="text-headline-lg font-semibold text-foreground">Transaction Ledger</h1>
+        <p className="mt-xs text-body-sm text-muted-foreground">
           Manage and audit institutional fiscal movements.
         </p>
       </div>

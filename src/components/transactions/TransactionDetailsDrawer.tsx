@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Paperclip, History } from 'lucide-react'
 import {
   Sheet,
@@ -17,8 +17,13 @@ import { AccountCell } from '@/components/transactions/AccountCell'
 import { CategorySelector } from '@/components/transactions/CategorySelector'
 import { ClientSelector } from '@/components/transactions/ClientSelector'
 import { BizPersonalPill } from '@/components/transactions/BizPersonalPill'
+import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
 import type { Transaction, TransactionPatch } from '@/domain/Transaction'
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <p className="mb-xs text-label-caps text-muted-foreground uppercase">{children}</p>
+}
 
 interface TransactionDetailsDrawerProps {
   transaction: Transaction | null
@@ -67,55 +72,63 @@ function DrawerBody({ transaction, onUpdate }: DrawerBodyProps) {
       </SheetHeader>
 
       <div className="flex flex-col gap-lg px-lg pb-lg">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-sm">
           <MerchantCell merchant={transaction.merchant} />
           <StatusBadge status={transaction.status} />
         </div>
 
-        <div>
-          <p className="text-label-caps uppercase text-muted-foreground">Amount</p>
-          <p className="text-display-kpi tabular-nums text-foreground">
+        <div className="rounded-lg border border-border bg-muted/30 p-md">
+          <FieldLabel>Amount</FieldLabel>
+          <p
+            className={cn(
+              'text-display-kpi tabular-nums',
+              transaction.type === 'credit' ? 'text-secondary' : 'text-foreground',
+            )}
+          >
+            {transaction.type === 'credit' ? '+' : '−'}
             {formatINR(transaction.amount)}
+          </p>
+          <p className="mt-xs text-table-mono tabular-nums text-muted-foreground">
+            {transaction.date}
           </p>
         </div>
 
         <Separator />
 
-        <div className="grid grid-cols-2 gap-md">
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Date</p>
-            <p className="text-body-sm text-foreground">{transaction.date}</p>
+        <div>
+          <p className="mb-sm text-label-caps font-semibold text-muted-foreground uppercase">
+            Account
+          </p>
+          <AccountCell account={transaction.account} />
+        </div>
+
+        <div>
+          <p className="mb-sm text-label-caps font-semibold text-muted-foreground uppercase">
+            Classification
+          </p>
+          <div className="grid grid-cols-2 gap-md">
+            <div>
+              <FieldLabel>Category</FieldLabel>
+              <CategorySelector
+                category={transaction.category}
+                onChange={(categoryId) => onUpdate(transaction.id, { categoryId })}
+              />
+            </div>
+            <div>
+              <FieldLabel>Client</FieldLabel>
+              <ClientSelector
+                client={transaction.client}
+                onChange={(clientId) => onUpdate(transaction.id, { clientId })}
+              />
+            </div>
           </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Business / Personal
-            </p>
+          <div className="mt-md">
+            <FieldLabel>Business / Personal</FieldLabel>
             <BizPersonalPill
               value={transaction.ownerType}
               onChange={(ownerType) => onUpdate(transaction.id, { ownerType })}
             />
           </div>
-        </div>
-
-        <div>
-          <p className="mb-xs text-label-caps uppercase text-muted-foreground">Account</p>
-          <AccountCell account={transaction.account} />
-        </div>
-
-        <div>
-          <p className="mb-xs text-label-caps uppercase text-muted-foreground">Category</p>
-          <CategorySelector
-            category={transaction.category}
-            onChange={(categoryId) => onUpdate(transaction.id, { categoryId })}
-          />
-        </div>
-
-        <div>
-          <p className="mb-xs text-label-caps uppercase text-muted-foreground">Client</p>
-          <ClientSelector
-            client={transaction.client}
-            onChange={(clientId) => onUpdate(transaction.id, { clientId })}
-          />
         </div>
 
         <Separator />
@@ -128,6 +141,7 @@ function DrawerBody({ transaction, onUpdate }: DrawerBodyProps) {
             onChange={(e) => setNotesDraft(e.target.value)}
             rows={3}
             placeholder="Add a note…"
+            className="mt-xs"
           />
           <Button
             size="sm"
@@ -142,23 +156,23 @@ function DrawerBody({ transaction, onUpdate }: DrawerBodyProps) {
         <Separator />
 
         <div>
-          <p className="mb-sm flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
+          <p className="mb-sm flex items-center gap-xs text-label-caps text-muted-foreground uppercase">
             <Paperclip className="size-3.5" aria-hidden="true" />
             Attachments
           </p>
-          <p className="text-body-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 px-md py-sm text-body-sm text-muted-foreground">
             No attachments yet — receipt upload is planned for a future module.
-          </p>
+          </div>
         </div>
 
         <div>
-          <p className="mb-sm flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
+          <p className="mb-sm flex items-center gap-xs text-label-caps text-muted-foreground uppercase">
             <History className="size-3.5" aria-hidden="true" />
             Audit Timeline
           </p>
-          <p className="text-body-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 px-md py-sm text-body-sm text-muted-foreground">
             Change history isn't tracked yet — planned once this module reads from Supabase.
-          </p>
+          </div>
         </div>
       </div>
     </>
