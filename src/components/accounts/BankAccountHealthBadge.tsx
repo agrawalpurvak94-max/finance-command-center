@@ -7,11 +7,10 @@ const healthConfig: Record<BankAccountHealth, { label: string; tone: SemanticTon
   healthy: { label: 'Healthy', tone: 'success' },
   low_balance: { label: 'Low Balance', tone: 'warning' },
   sync_required: { label: 'Sync Required', tone: 'info' },
-  // Previously a one-off `rose` literal, distinct from every other danger
-  // state in the app; consolidated onto the shared `danger` tone (used
-  // elsewhere for suspended/overdue/duplicate) as part of Stage 1's
-  // semantic-color cleanup — same severity, one fewer ad hoc color.
-  needs_review: { label: 'Needs Review', tone: 'danger' },
+  // "Needs review" is an action state (review required), not an error
+  // state — `attention` is the correct tone; `danger` is reserved for
+  // actual failure/problem states (suspended/overdue/duplicate).
+  needs_review: { label: 'Needs Review', tone: 'attention' },
 }
 
 interface BankAccountHealthBadgeProps {
