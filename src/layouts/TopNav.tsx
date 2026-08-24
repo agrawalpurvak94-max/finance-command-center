@@ -49,13 +49,13 @@ export function TopNav() {
 
         <div className="relative hidden w-full max-w-80 sm:block">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             type="search"
             placeholder="Search…"
-            className="rounded-full pl-9"
+            className="h-9 border-transparent bg-muted/60 pl-9 transition-colors hover:bg-muted focus-visible:border-ring focus-visible:bg-background"
             aria-label="Global search"
           />
         </div>

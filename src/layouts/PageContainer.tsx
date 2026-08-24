@@ -7,5 +7,14 @@ interface PageContainerProps {
 }
 
 export function PageContainer({ children, className }: PageContainerProps) {
-  return <section className={cn('min-w-0 flex-1 p-lg', className)}>{children}</section>
+  return (
+    <section
+      className={cn(
+        'mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-md py-lg sm:px-lg lg:px-xl',
+        className,
+      )}
+    >
+      {children}
+    </section>
+  )
 }

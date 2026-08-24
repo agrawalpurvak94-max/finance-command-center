@@ -17,16 +17,33 @@ function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => v
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-md rounded-lg px-md py-sm text-body-md font-medium text-sidebar-foreground/70 transition-colors duration-200',
+          'relative flex items-center gap-sm rounded-md px-md py-sm text-body-md font-medium text-sidebar-foreground/70 transition-colors duration-150',
           'hover:bg-sidebar-accent/40 hover:text-sidebar-foreground',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
           isActive &&
-            'bg-sidebar-accent font-semibold text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            'bg-sidebar-accent/25 font-semibold text-sidebar-foreground hover:bg-sidebar-accent/25',
         )
       }
     >
-      <Icon className="size-5 shrink-0" aria-hidden="true" />
-      <span>{item.label}</span>
+      {({ isActive }: { isActive: boolean }) => (
+        <>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute left-0 top-1/2 h-4 w-0.75 -translate-y-1/2 rounded-full bg-sidebar-primary transition-opacity duration-150',
+              isActive ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <Icon
+            className={cn(
+              'size-4 shrink-0 transition-colors duration-150',
+              isActive && 'text-sidebar-primary',
+            )}
+            aria-hidden="true"
+          />
+          <span>{item.label}</span>
+        </>
+      )}
     </NavLink>
   )
 }
@@ -40,8 +57,14 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
         className,
       )}
     >
-      <div className="mb-lg px-xs">
-        <h1 className="text-headline-sm font-bold text-sidebar-foreground">
+      <div className="mb-lg flex items-center gap-sm px-xs">
+        <div
+          aria-hidden="true"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground"
+        >
+          F
+        </div>
+        <h1 className="text-headline-sm leading-tight font-bold text-sidebar-foreground">
           Finance Command Center
         </h1>
       </div>
