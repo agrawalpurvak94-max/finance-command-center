@@ -301,6 +301,12 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
         )}
       </section>
 
+      {updateMerchant.isError && (
+        <p role="alert" className="text-body-sm text-destructive">
+          Couldn't save changes: {updateMerchant.error.message}
+        </p>
+      )}
+
       <EntityReviewDrawerFooter
         onCancel={onClose}
         onSave={handleSave}
