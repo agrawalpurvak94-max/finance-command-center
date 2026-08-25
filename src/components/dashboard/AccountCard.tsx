@@ -1,7 +1,8 @@
 import { Landmark, CreditCard, FileX, ChevronRight } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { getInstitutionIdentity } from '@/lib/institutionIdentity'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
-import { IconChip } from '@/components/ui/icon-chip'
 import { Badge } from '@/components/ui/badge'
 import { semanticToneBadgeClassName } from '@/lib/semanticTone'
 import type { ConnectedAccount } from '@/domain/Account'
@@ -16,6 +17,11 @@ interface AccountCardProps {
  * Financial Pulse — differentiated only by `account.kind`/`accountTypeLabel`,
  * never by bank name, so the same component works for every current and
  * future bank without one-off per-institution styling.
+ *
+ * Institution identity (avatar color/initials, accent bar, header wash) is
+ * the same data-driven `getInstitutionIdentity` system Account Statements'
+ * tiles already use — reused here rather than a second identity treatment,
+ * so a bank looks the same wherever its tile appears in the app.
  *
  * Clicking opens the account activity drawer (AccountActivityDrawer) —
  * stays on Financial Pulse, no navigation. The drawer itself has the
@@ -34,22 +40,41 @@ export function AccountCard({ account, onOpen }: AccountCardProps) {
   // as "this account had zero activity" instead of "we don't know yet".
   // Show one honest empty notice instead of misleading zeroed figures.
   const hasPeriod = account.periodAvailable !== false
+  const identity = getInstitutionIdentity(account.institutionName || account.name)
 
   return (
     <button
       type="button"
       onClick={() => onOpen(account)}
       className={cn(
-        'group flex w-full flex-col rounded-lg border bg-card p-md text-left transition-colors',
-        'hover:border-primary hover:bg-surface-hover',
-        isUrgent ? 'border-destructive/50' : 'border-border',
+        'group relative flex w-full flex-col overflow-hidden rounded-xl border bg-card p-md text-left shadow-sm ring-0 transition-all duration-200',
+        isUrgent
+          ? 'border-destructive/50 hover:border-destructive'
+          : cn(
+              'border-border hover:border-transparent hover:shadow-lg hover:ring-1',
+              identity.ringClassName,
+            ),
       )}
     >
-      <div className="mb-md flex items-start justify-between gap-sm">
+      <span
+        aria-hidden="true"
+        className={cn('absolute inset-x-0 top-0 h-0.75', identity.barClassName)}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-20 bg-linear-to-br opacity-60',
+          identity.gradientClassName,
+        )}
+      />
+
+      <div className="relative mb-md flex items-start justify-between gap-sm">
         <div className="flex min-w-0 items-center gap-sm">
-          <IconChip tone={isCard ? 'attention' : 'info'}>
-            <Icon className="size-4" aria-hidden="true" />
-          </IconChip>
+          <Avatar className="shrink-0 transition-transform duration-200 group-hover:scale-105">
+            <AvatarFallback className={cn('font-semibold', identity.chipClassName)}>
+              {identity.initials}
+            </AvatarFallback>
+          </Avatar>
           <div className="min-w-0">
             <p className="truncate text-body-sm font-semibold text-foreground">{account.name}</p>
             <p className="truncate text-label-caps text-muted-foreground">
@@ -57,13 +82,16 @@ export function AccountCard({ account, onOpen }: AccountCardProps) {
             </p>
           </div>
         </div>
-        <ChevronRight
-          className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-          aria-hidden="true"
-        />
+        <div className="flex shrink-0 items-center gap-xs">
+          <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+          <ChevronRight
+            className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      <p className="mb-md font-mono text-xs tracking-wider text-muted-foreground">
+      <p className="relative mb-md font-mono text-xs tracking-wider text-muted-foreground">
         {account.maskedNumber}
       </p>
 

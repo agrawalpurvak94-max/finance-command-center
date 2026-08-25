@@ -9,7 +9,15 @@ function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        'inline-flex h-9 w-fit items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1 text-muted-foreground',
+        // overflow-x-auto alone makes browsers compute overflow-y as `auto`
+        // too (a documented CSS quirk: leaving one axis `visible` and the
+        // other non-visible forces the visible one to `auto`) — with this
+        // list's fixed h-9, that could show a native vertical scrollbar
+        // (arrows included) for a 1px overflow that was never meant to
+        // scroll. overflow-y-hidden pins the vertical axis so only
+        // horizontal scrolling (needed when tabs overflow the width) is
+        // ever possible.
+        'inline-flex h-9 w-fit items-center gap-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-muted p-1 text-muted-foreground',
         className,
       )}
       {...props}
