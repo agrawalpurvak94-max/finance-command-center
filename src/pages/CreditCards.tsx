@@ -111,9 +111,9 @@ export function CreditCards() {
     <PageContainer className="flex flex-col gap-md">
       <div className="flex flex-col gap-md sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-headline-lg text-foreground">Account Statements</h1>
+          <h1 className="text-headline-lg text-foreground">Account Intelligence</h1>
           <p className="text-body-sm text-muted-foreground">
-            Statement analysis across your connected accounts and credit cards.
+            A unified view of your accounts, cards and financial activity.
           </p>
         </div>
         <div className="flex gap-sm">

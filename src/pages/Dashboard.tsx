@@ -43,7 +43,7 @@ export function Dashboard() {
         emptyTitle="No accounts connected"
         emptyDescription="Link a bank account to start tracking balances and cash flow."
         emptyActionHref="/credit-cards"
-        emptyActionLabel="Go to Account Statements"
+        emptyActionLabel="Go to Account Intelligence"
         onOpenAccount={setSelectedAccount}
       />
 

@@ -27,7 +27,7 @@ import type { NavItem } from '@/types/nav'
 export const primaryNavItems: readonly NavItem[] = [
   { label: 'Financial Pulse', href: '/', icon: LayoutDashboard },
   { label: 'Clients', href: '/clients', icon: Users },
-  { label: 'Account Statements', href: '/credit-cards', icon: CreditCard },
+  { label: 'Account Intelligence', href: '/credit-cards', icon: CreditCard },
   { label: 'Transactions', href: '/transactions', icon: Receipt },
   { label: 'Statements', href: '/statements', icon: FileText },
   { label: 'Categories', href: '/categories', icon: Tags },
