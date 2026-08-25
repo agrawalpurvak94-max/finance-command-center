@@ -12,6 +12,7 @@ import {
   ALL_STATEMENTS_VALUE,
 } from '@/components/statements/explorer/StatementSelector'
 import { StatementExplorerSummary } from '@/components/statements/explorer/StatementExplorerSummary'
+import { StatementIdentityBar } from '@/components/statements/explorer/StatementIdentityBar'
 import { StatementTransactionFilters } from '@/components/statements/explorer/StatementTransactionFilters'
 import { StatementTransactionTable } from '@/components/statements/explorer/StatementTransactionTable'
 import { StatementTransactionDrawer } from '@/components/statements/explorer/StatementTransactionDrawer'
@@ -25,6 +26,8 @@ import {
   useUpdateStatementTransactionOwnerType,
 } from '@/hooks/useStatementExplorer'
 import { useTransactionCategories, useTransactionClients } from '@/hooks/useTransactions'
+import { useCategoriesList } from '@/hooks/useCategories'
+import type { CategoryVisual } from '@/components/merchants/MerchantCategoryControl'
 import type {
   StatementTransactionFilters as FiltersType,
   StatementTransactionRow,
@@ -125,6 +128,18 @@ export function StatementExplorer() {
   const updateCategory = useUpdateStatementTransactionCategory(statementId)
   const updateClient = useUpdateStatementTransactionClient(statementId)
   const updateOwnerType = useUpdateStatementTransactionOwnerType(statementId)
+
+  // Read-only icon/color enrichment for the Category column's display —
+  // the selectable options themselves still come from masterCategoriesQuery
+  // above, unchanged. Keyed by name (not id) because
+  // StatementTransactionRow.category is free text, not a category
+  // reference — same "large pageSize stands in for all categories" pattern
+  // Merchants.tsx already uses for its own category-visual enrichment.
+  const categoryRecordsQuery = useCategoriesList({ page: 1, pageSize: 200 })
+  const categoryVisualsByName = useMemo<ReadonlyMap<string, CategoryVisual>>(() => {
+    const rows = categoryRecordsQuery.data?.rows ?? []
+    return new Map(rows.map((c) => [c.name, { color: c.color, icon: c.icon }]))
+  }, [categoryRecordsQuery.data])
 
   // In "All Statements" mode the drawer's account/statement context is
   // per-ROW (each row can belong to a different statement), so it's fetched
@@ -246,6 +261,8 @@ export function StatementExplorer() {
 
       <StatementsTabBar active="explorer" explorerHref="/statements/explorer" />
 
+      {!isAllMode && detailQuery.data && <StatementIdentityBar detail={detailQuery.data} />}
+
       {!isAllMode && detailQuery.isLoading && (
         <div className="flex flex-col gap-md">
           <Skeleton className="h-40 w-full rounded-lg" />
@@ -332,6 +349,7 @@ export function StatementExplorer() {
                 isLoading={transactionsQuery.isLoading}
                 onOpenRow={setSelectedRow}
                 categoryOptions={masterCategoriesQuery.data ?? []}
+                categoryVisualsByName={categoryVisualsByName}
                 onUpdateCategory={handleUpdateCategory}
                 clientOptions={masterClientsQuery.data ?? []}
                 onUpdateClient={handleUpdateClient}
