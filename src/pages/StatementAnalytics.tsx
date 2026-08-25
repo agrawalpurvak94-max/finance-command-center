@@ -37,6 +37,7 @@ import {
   useTransactionClients,
   useTransactionMerchants,
 } from '@/hooks/useTransactions'
+import { cn } from '@/lib/utils'
 import type { AnalyticsFilters, AnalyticsGranularity } from '@/domain/Analytics'
 import type { StatementAnalyticsFilters } from '@/domain/StatementAnalytics'
 
@@ -315,11 +316,25 @@ export function StatementAnalytics() {
       </div>
 
       <QueryBoundary query={analytics.summary} skeleton={<Skeleton className="h-40 rounded-xl" />}>
-        {(summary) => <AnalyticsKpiGrid summary={summary} {...handlers} />}
+        {(summary) => (
+          <div
+            className={cn(
+              'transition-opacity duration-300',
+              analytics.summary.isFetching && 'opacity-60',
+            )}
+          >
+            <AnalyticsKpiGrid summary={summary} {...handlers} />
+          </div>
+        )}
       </QueryBoundary>
 
       <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div
+          className={cn(
+            'lg:col-span-2 transition-opacity duration-300',
+            analytics.spendTrend.isFetching && 'opacity-60',
+          )}
+        >
           <QueryBoundary
             query={analytics.spendTrend}
             skeleton={<Skeleton className="h-96 rounded-xl" />}
@@ -335,43 +350,83 @@ export function StatementAnalytics() {
             )}
           </QueryBoundary>
         </div>
-        <QueryBoundary
-          query={analytics.categorySpend}
-          skeleton={<Skeleton className="h-96 rounded-xl" />}
-        >
-          {(data) => (
-            <CategorySpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
+        <div
+          className={cn(
+            'transition-opacity duration-300',
+            analytics.categorySpend.isFetching && 'opacity-60',
           )}
-        </QueryBoundary>
+        >
+          <QueryBoundary
+            query={analytics.categorySpend}
+            skeleton={<Skeleton className="h-96 rounded-xl" />}
+          >
+            {(data) => (
+              <CategorySpendChart
+                data={data}
+                viewLabel="View in Statement Explorer"
+                {...handlers}
+              />
+            )}
+          </QueryBoundary>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-lg lg:grid-cols-2">
-        <QueryBoundary
-          query={analytics.merchantSpend}
-          skeleton={<Skeleton className="h-80 rounded-xl" />}
-        >
-          {(data) => (
-            <MerchantSpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
+        <div
+          className={cn(
+            'transition-opacity duration-300',
+            analytics.merchantSpend.isFetching && 'opacity-60',
           )}
-        </QueryBoundary>
+        >
+          <QueryBoundary
+            query={analytics.merchantSpend}
+            skeleton={<Skeleton className="h-80 rounded-xl" />}
+          >
+            {(data) => (
+              <MerchantSpendChart
+                data={data}
+                viewLabel="View in Statement Explorer"
+                {...handlers}
+              />
+            )}
+          </QueryBoundary>
+        </div>
+        <div
+          className={cn(
+            'transition-opacity duration-300',
+            analytics.clientSpend.isFetching && 'opacity-60',
+          )}
+        >
+          <QueryBoundary
+            query={analytics.clientSpend}
+            skeleton={<Skeleton className="h-80 rounded-xl" />}
+          >
+            {(data) => (
+              <ClientSpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
+            )}
+          </QueryBoundary>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          'transition-opacity duration-300',
+          analytics.ownerTypeSpend.isFetching && 'opacity-60',
+        )}
+      >
         <QueryBoundary
-          query={analytics.clientSpend}
+          query={analytics.ownerTypeSpend}
           skeleton={<Skeleton className="h-80 rounded-xl" />}
         >
           {(data) => (
-            <ClientSpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
+            <BizPersonalSpendChart
+              data={data}
+              viewLabel="View in Statement Explorer"
+              {...handlers}
+            />
           )}
         </QueryBoundary>
       </div>
-
-      <QueryBoundary
-        query={analytics.ownerTypeSpend}
-        skeleton={<Skeleton className="h-80 rounded-xl" />}
-      >
-        {(data) => (
-          <BizPersonalSpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
-        )}
-      </QueryBoundary>
     </PageContainer>
   )
 }
