@@ -12,15 +12,18 @@ export function StatementTableSkeleton({ rows = 10 }: StatementTableSkeletonProp
       aria-label="Loading statements"
     >
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center gap-md p-md">
+        <div key={i} className="flex items-center gap-md px-md py-sm">
           <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-24" />
+          <div className="flex items-center gap-xs">
+            <Skeleton className="size-6 shrink-0 rounded" />
+            <Skeleton className="h-4 w-20" />
+          </div>
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-4 w-12" />
+          <Skeleton className="ml-auto h-4 w-16" />
           <Skeleton className="h-5 w-24 rounded-full" />
-          <Skeleton className="ml-auto h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
         </div>
       ))}
     </div>
