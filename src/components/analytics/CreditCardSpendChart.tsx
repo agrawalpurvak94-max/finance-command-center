@@ -4,6 +4,7 @@ import { ChartCard } from '@/components/analytics/ChartCard'
 import { ChartTooltip } from '@/components/analytics/ChartTooltip'
 import { isHighlighted } from '@/components/analytics/analyticsInteraction'
 import type { AnalyticsWidgetHandlers } from '@/components/analytics/analyticsInteraction'
+import { getInstitutionIdentity } from '@/lib/institutionIdentity'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
 import type { AnalyticsCardSeriesResult } from '@/domain/Analytics'
@@ -32,28 +33,40 @@ export function CreditCardSpendChart({
       subtitle="Spend by card, month over month"
       legend={
         <div className="flex flex-wrap items-center gap-sm">
-          {data.cards.map((card, index) => (
-            <button
-              key={card.id}
-              type="button"
-              className={cn(
-                'flex items-center gap-xs rounded px-1 text-label-caps text-muted-foreground transition-opacity duration-200 hover:text-foreground',
-                isHighlighted(hoveredDimension, { creditCardId: card.id })
-                  ? 'opacity-100'
-                  : 'opacity-40',
-              )}
-              onMouseEnter={() => onHover({ creditCardId: card.id })}
-              onMouseLeave={() => onHover(null)}
-              onClick={() => onCrossFilter({ creditCardId: card.id })}
-            >
-              <span
-                className="size-2 rounded-sm"
-                style={{ backgroundColor: VIZ_COLOR(index) }}
-                aria-hidden="true"
-              />
-              {card.label}
-            </button>
-          ))}
+          {data.cards.map((card, index) => {
+            const identity = getInstitutionIdentity(card.label)
+            return (
+              <button
+                key={card.id}
+                type="button"
+                className={cn(
+                  'flex items-center gap-xs rounded px-1 text-label-caps text-muted-foreground transition-opacity duration-200 hover:text-foreground',
+                  isHighlighted(hoveredDimension, { creditCardId: card.id })
+                    ? 'opacity-100'
+                    : 'opacity-40',
+                )}
+                onMouseEnter={() => onHover({ creditCardId: card.id })}
+                onMouseLeave={() => onHover(null)}
+                onClick={() => onCrossFilter({ creditCardId: card.id })}
+              >
+                <span
+                  className="size-2 rounded-sm"
+                  style={{ backgroundColor: VIZ_COLOR(index) }}
+                  aria-hidden="true"
+                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-[3px] text-[8px] font-semibold',
+                    identity.chipClassName,
+                  )}
+                >
+                  {identity.initials}
+                </span>
+                {card.label}
+              </button>
+            )
+          })}
         </div>
       }
       onViewTransactions={data.cards.length ? () => onDrillDown({}) : undefined}

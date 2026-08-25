@@ -6,6 +6,7 @@ import { Pagination } from '@/components/Pagination'
 import { EmptyState } from '@/components/EmptyState'
 import { isHighlighted } from '@/components/analytics/analyticsInteraction'
 import type { AnalyticsWidgetHandlers } from '@/components/analytics/analyticsInteraction'
+import { getMerchantIdentity } from '@/lib/merchantIdentity'
 import { cn } from '@/lib/utils'
 import { analyticsRowsToCsv, downloadCsv } from '@/utils/csv'
 import type { AnalyticsRankedRow } from '@/domain/Analytics'
@@ -16,6 +17,11 @@ interface AnalyticsTableProps extends AnalyticsWidgetHandlers {
   valueColumnLabel: string
   secondaryColumnLabel?: string
   exportFileName: string
+  /** Purely presentational — selects which identity mark (if any) renders
+   * next to each row's label. Reuses Stage 5's merchant identity system on
+   * `row.label` directly; no new data, no row-shape change. Omit for tabs
+   * whose rows aren't merchants (categories/clients/cards/accounts/etc.). */
+  entityKind?: 'merchant'
 }
 
 export function AnalyticsTable({
@@ -24,6 +30,7 @@ export function AnalyticsTable({
   valueColumnLabel,
   secondaryColumnLabel,
   exportFileName,
+  entityKind,
   hoveredDimension,
   onHover,
   onCrossFilter,
@@ -115,56 +122,82 @@ export function AnalyticsTable({
         <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-border bg-muted text-label-caps text-muted-foreground">
-                <th className="p-sm font-semibold">{title}</th>
-                <th className="p-sm text-right font-semibold">{valueColumnLabel}</th>
+              <tr className="border-b border-border">
+                <th className="p-sm text-label-caps text-muted-foreground uppercase">{title}</th>
+                <th className="p-sm text-right text-label-caps text-muted-foreground uppercase">
+                  {valueColumnLabel}
+                </th>
                 {secondaryColumnLabel && (
-                  <th className="p-sm text-right font-semibold">{secondaryColumnLabel}</th>
+                  <th className="p-sm text-right text-label-caps text-muted-foreground uppercase">
+                    {secondaryColumnLabel}
+                  </th>
                 )}
                 <th className="w-8 p-sm" aria-label="Drill down" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-body-sm">
-              {pageRows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    'cursor-pointer transition-opacity duration-200 hover:bg-accent',
-                    row.drillFilter &&
-                      !isHighlighted(hoveredDimension, row.drillFilter) &&
-                      'opacity-40',
-                  )}
-                  onMouseEnter={() => row.drillFilter && onHover(row.drillFilter)}
-                  onMouseLeave={() => onHover(null)}
-                  onClick={() => handleRowClick(row)}
-                >
-                  <td className="p-sm">
-                    <div className="font-medium text-foreground">{row.label}</div>
-                    {row.sublabel && (
-                      <div className="text-body-sm text-muted-foreground">{row.sublabel}</div>
+              {pageRows.map((row) => {
+                const identity = entityKind === 'merchant' ? getMerchantIdentity(row.label) : null
+                return (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      'group/row cursor-pointer transition-opacity duration-200 hover:bg-surface-hover',
+                      row.drillFilter &&
+                        !isHighlighted(hoveredDimension, row.drillFilter) &&
+                        'opacity-40',
                     )}
-                  </td>
-                  <td className="p-sm text-right tabular-nums text-foreground">{row.valueLabel}</td>
-                  {secondaryColumnLabel && (
-                    <td className="p-sm text-right tabular-nums text-muted-foreground">
-                      {row.secondaryLabel ?? '—'}
+                    onMouseEnter={() => row.drillFilter && onHover(row.drillFilter)}
+                    onMouseLeave={() => onHover(null)}
+                    onClick={() => handleRowClick(row)}
+                  >
+                    <td className="p-sm">
+                      <div className="flex min-w-0 items-center gap-xs">
+                        {identity && (
+                          <div
+                            aria-hidden="true"
+                            className={cn(
+                              'flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-semibold',
+                              identity.chipClassName,
+                            )}
+                          >
+                            {identity.initials}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="truncate font-medium text-foreground">{row.label}</div>
+                          {row.sublabel && (
+                            <div className="truncate text-body-sm text-muted-foreground">
+                              {row.sublabel}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
-                  )}
-                  <td className="p-sm text-right">
-                    <button
-                      type="button"
-                      aria-label={`View transactions for ${row.label}`}
-                      className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-primary"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRowDrillDown(row)
-                      }}
-                    >
-                      <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="p-sm text-right tabular-nums font-semibold text-foreground">
+                      {row.valueLabel}
+                    </td>
+                    {secondaryColumnLabel && (
+                      <td className="p-sm text-right tabular-nums text-muted-foreground">
+                        {row.secondaryLabel ?? '—'}
+                      </td>
+                    )}
+                    <td className="p-sm text-right">
+                      <button
+                        type="button"
+                        aria-label={`View transactions for ${row.label}`}
+                        className="rounded p-1 text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 group-focus-within/row:opacity-100 hover:bg-accent hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRowDrillDown(row)
+                        }}
+                      >
+                        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

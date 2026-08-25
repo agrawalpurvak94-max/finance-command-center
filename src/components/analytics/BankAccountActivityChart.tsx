@@ -12,6 +12,7 @@ import { ChartCard } from '@/components/analytics/ChartCard'
 import { ChartTooltip } from '@/components/analytics/ChartTooltip'
 import { isHighlighted } from '@/components/analytics/analyticsInteraction'
 import type { AnalyticsWidgetHandlers } from '@/components/analytics/analyticsInteraction'
+import { getInstitutionIdentity } from '@/lib/institutionIdentity'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
 import type { AnalyticsAccountActivityResult } from '@/domain/Analytics'
@@ -142,24 +143,38 @@ export function BankAccountActivityChart({
 
       <div className="mt-md flex flex-col gap-xs border-t border-border pt-md">
         <span className="text-label-caps text-muted-foreground">By Account</span>
-        {data.byAccount.map((row) => (
-          <button
-            key={row.id}
-            type="button"
-            className={cn(
-              'flex items-center justify-between gap-md rounded-md px-xs py-1 text-left text-body-sm transition-opacity duration-200 hover:bg-accent',
-              isHighlighted(hoveredDimension, row.drillFilter) ? 'opacity-100' : 'opacity-40',
-            )}
-            onMouseEnter={() => row.drillFilter && onHover(row.drillFilter)}
-            onMouseLeave={() => onHover(null)}
-            onClick={() => row.drillFilter && onCrossFilter(row.drillFilter)}
-          >
-            <span className="text-foreground">{row.label}</span>
-            <span className="tabular-nums text-muted-foreground">
-              {row.valueLabel} debits · {row.secondaryLabel}
-            </span>
-          </button>
-        ))}
+        {data.byAccount.map((row) => {
+          const identity = getInstitutionIdentity(row.label)
+          return (
+            <button
+              key={row.id}
+              type="button"
+              className={cn(
+                'flex items-center justify-between gap-md rounded-md px-xs py-1 text-left text-body-sm transition-opacity duration-200 hover:bg-accent',
+                isHighlighted(hoveredDimension, row.drillFilter) ? 'opacity-100' : 'opacity-40',
+              )}
+              onMouseEnter={() => row.drillFilter && onHover(row.drillFilter)}
+              onMouseLeave={() => onHover(null)}
+              onClick={() => row.drillFilter && onCrossFilter(row.drillFilter)}
+            >
+              <span className="flex min-w-0 items-center gap-xs">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex size-5 shrink-0 items-center justify-center rounded text-[9px] font-semibold',
+                    identity.chipClassName,
+                  )}
+                >
+                  {identity.initials}
+                </span>
+                <span className="truncate text-foreground">{row.label}</span>
+              </span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {row.valueLabel} debits · {row.secondaryLabel}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </ChartCard>
   )

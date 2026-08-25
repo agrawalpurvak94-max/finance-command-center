@@ -114,6 +114,64 @@ function buildMetrics(summary: AnalyticsSummary): {
   ]
 }
 
+/** The first 6 metrics are the headline financial figures (Total Spend
+ * through Net Cash Flow); the remaining 4 are entity-based supporting
+ * context (highest category/merchant, most-used card/account) — the same
+ * distinction `buildMetrics` already encodes via ordering, just rendered as
+ * two visual tiers instead of one uniform grid. No metric added, removed,
+ * reordered, or recalculated. */
+const PRIMARY_METRIC_COUNT = 6
+
+function KpiTile({
+  metric,
+  formatValue,
+  index,
+  valueClassName,
+  hoveredDimension,
+  onHover,
+  onCrossFilter,
+}: {
+  metric: AnalyticsKpiMetric
+  formatValue?: (v: number) => string
+  index: number
+  valueClassName: string
+} & Pick<AnalyticsWidgetHandlers, 'hoveredDimension' | 'onHover' | 'onCrossFilter'>) {
+  const clickable = Boolean(metric.drillFilter)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: index * 0.02, ease: 'easeOut' }}
+      className={cn(
+        'transition-opacity duration-200',
+        clickable && !isHighlighted(hoveredDimension, metric.drillFilter) && 'opacity-40',
+      )}
+    >
+      {clickable ? (
+        <button
+          type="button"
+          className="w-full cursor-pointer rounded-lg border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onMouseEnter={() => onHover(metric.drillFilter ?? null)}
+          onMouseLeave={() => onHover(null)}
+          onClick={() => metric.drillFilter && onCrossFilter(metric.drillFilter)}
+        >
+          <KPICard
+            metric={metric}
+            formatValue={formatValue ?? formatINR}
+            valueClassName={valueClassName}
+          />
+        </button>
+      ) : (
+        <KPICard
+          metric={metric}
+          formatValue={formatValue ?? formatINR}
+          valueClassName={valueClassName}
+        />
+      )}
+    </motion.div>
+  )
+}
+
 export function AnalyticsKpiGrid({
   summary,
   hoveredDimension,
@@ -121,46 +179,42 @@ export function AnalyticsKpiGrid({
   onCrossFilter,
 }: AnalyticsKpiGridProps) {
   const items = buildMetrics(summary)
+  const primary = items.slice(0, PRIMARY_METRIC_COUNT)
+  const secondary = items.slice(PRIMARY_METRIC_COUNT)
 
   return (
-    <div className="mb-lg grid grid-cols-2 gap-sm sm:grid-cols-3 lg:grid-cols-5">
-      {items.map(({ metric, formatValue }, index) => {
-        const clickable = Boolean(metric.drillFilter)
-        return (
-          <motion.div
+    <div className="mb-lg flex flex-col gap-sm">
+      <div className="grid grid-cols-2 gap-sm sm:grid-cols-3 lg:grid-cols-6">
+        {primary.map(({ metric, formatValue }, index) => (
+          <KpiTile
             key={metric.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.02, ease: 'easeOut' }}
-            className={cn(
-              'transition-opacity duration-200',
-              clickable && !isHighlighted(hoveredDimension, metric.drillFilter) && 'opacity-40',
-            )}
-          >
-            {clickable ? (
-              <button
-                type="button"
-                className="w-full cursor-pointer rounded-lg border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onMouseEnter={() => onHover(metric.drillFilter ?? null)}
-                onMouseLeave={() => onHover(null)}
-                onClick={() => metric.drillFilter && onCrossFilter(metric.drillFilter)}
-              >
-                <KPICard
-                  metric={metric}
-                  formatValue={formatValue ?? formatINR}
-                  valueClassName="text-headline-lg sm:text-2xl"
-                />
-              </button>
-            ) : (
-              <KPICard
-                metric={metric}
-                formatValue={formatValue ?? formatINR}
-                valueClassName="text-headline-lg sm:text-2xl"
-              />
-            )}
-          </motion.div>
-        )
-      })}
+            metric={metric}
+            formatValue={formatValue}
+            index={index}
+            valueClassName="text-headline-lg sm:text-2xl"
+            hoveredDimension={hoveredDimension}
+            onHover={onHover}
+            onCrossFilter={onCrossFilter}
+          />
+        ))}
+      </div>
+      <div>
+        <p className="mb-xs text-label-caps text-muted-foreground uppercase">Supporting Context</p>
+        <div className="grid grid-cols-2 gap-sm sm:grid-cols-4">
+          {secondary.map(({ metric, formatValue }, index) => (
+            <KpiTile
+              key={metric.id}
+              metric={metric}
+              formatValue={formatValue}
+              index={PRIMARY_METRIC_COUNT + index}
+              valueClassName="text-headline-sm sm:text-headline-lg"
+              hoveredDimension={hoveredDimension}
+              onHover={onHover}
+              onCrossFilter={onCrossFilter}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

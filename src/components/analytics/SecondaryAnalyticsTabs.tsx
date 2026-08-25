@@ -34,6 +34,8 @@ interface TabDef {
   readonly label: string
   readonly valueColumnLabel: string
   readonly secondaryColumnLabel?: string
+  /** Passed straight through to AnalyticsTable — see its own doc comment. */
+  readonly entityKind?: 'merchant'
 }
 
 const TAB_DEFS: readonly TabDef[] = [
@@ -48,6 +50,7 @@ const TAB_DEFS: readonly TabDef[] = [
     label: 'Top Merchants',
     valueColumnLabel: 'Spend',
     secondaryColumnLabel: 'Transactions',
+    entityKind: 'merchant',
   },
   {
     id: 'clients',
@@ -73,6 +76,7 @@ const TAB_DEFS: readonly TabDef[] = [
     label: 'Recurring Merchants',
     valueColumnLabel: 'Spend',
     secondaryColumnLabel: 'Transactions',
+    entityKind: 'merchant',
   },
   {
     id: 'largest',
@@ -133,6 +137,7 @@ export function SecondaryAnalyticsTabs({
               rows={rowsByTab[tab.id]}
               valueColumnLabel={tab.valueColumnLabel}
               secondaryColumnLabel={tab.secondaryColumnLabel}
+              entityKind={tab.entityKind}
               exportFileName={`analytics-${tab.id}.csv`}
               hoveredDimension={hoveredDimension}
               onHover={onHover}
