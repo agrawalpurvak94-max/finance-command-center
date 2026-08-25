@@ -1,4 +1,4 @@
-import { NotebookPen, Clock, ScrollText } from 'lucide-react'
+import { FileText, NotebookPen, Clock, ScrollText } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -7,6 +7,8 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
+import { IconChip } from '@/components/ui/icon-chip'
+import { DrawerSectionHeader, DrawerStat } from '@/components/EntityReviewDrawer'
 import { StatementStatusBadge } from '@/components/statements/StatementStatusBadge'
 import type { Statement } from '@/domain/Statement'
 
@@ -38,99 +40,82 @@ function DrawerBody({ statement }: { statement: Statement }) {
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>Statement Details</SheetTitle>
-        <SheetDescription className="sr-only">
-          Full details for the selected statement.
-        </SheetDescription>
+      <SheetHeader className="sr-only">
+        <SheetTitle>{statement.fileName}</SheetTitle>
+        <SheetDescription>Full details for the selected statement.</SheetDescription>
       </SheetHeader>
 
       <div className="flex flex-col gap-lg px-lg pb-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-body-sm font-medium text-foreground">{statement.fileName}</p>
-            <p className="text-[11px] text-muted-foreground">{statement.statementPeriodLabel}</p>
+        <div className="flex items-start gap-md">
+          <IconChip size="lg" tone="info">
+            <FileText className="size-6" aria-hidden="true" />
+          </IconChip>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-sm">
+              <p className="truncate text-headline-sm text-foreground">{statement.fileName}</p>
+              <StatementStatusBadge status={statement.status} />
+            </div>
+            <p className="text-body-sm text-muted-foreground">{statement.statementPeriodLabel}</p>
           </div>
-          <StatementStatusBadge status={statement.status} />
         </div>
 
         <Separator />
 
         <div className="grid grid-cols-2 gap-md">
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Bank</p>
-            <p className="text-body-sm text-foreground">{account.bankName}</p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Account</p>
-            <p className="text-[11px] tabular-nums text-muted-foreground">
-              {account.kind === 'credit_card' && account.cardNetwork
+          <DrawerStat label="Bank" value={account.bankName} valueClassName="font-normal" />
+          <DrawerStat
+            label="Account"
+            value={
+              account.kind === 'credit_card' && account.cardNetwork
                 ? `${account.cardNetwork} •••• ${account.last4}`
-                : `•••• ${account.last4}`}
-            </p>
-          </div>
+                : `•••• ${account.last4}`
+            }
+            valueClassName="font-mono text-[13px] font-normal"
+          />
+          <DrawerStat
+            label="Statement Period"
+            value={statement.statementPeriodLabel}
+            valueClassName="font-normal"
+          />
+          <DrawerStat
+            label="Uploaded Date"
+            value={statement.importedAt}
+            valueClassName="font-normal"
+          />
+          {statement.client && (
+            <DrawerStat label="Client" value={statement.client.name} valueClassName="font-normal" />
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-md">
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Statement Period
-            </p>
-            <p className="text-body-sm text-foreground">{statement.statementPeriodLabel}</p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Uploaded Date</p>
-            <p className="text-body-sm text-foreground">{statement.importedAt}</p>
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-            Transactions Extracted
-          </p>
+        <div className="rounded-lg border border-border bg-muted/30 p-md">
+          <p className="text-label-caps text-muted-foreground uppercase">Transactions Extracted</p>
           <p className="text-display-kpi tabular-nums text-foreground">
             {statement.transactionsExtracted}
           </p>
         </div>
 
-        {statement.client && (
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Client</p>
-            <p className="text-body-sm text-foreground">{statement.client.name}</p>
-          </div>
-        )}
-
         <Separator />
 
         <div>
-          <p className="mb-sm flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <NotebookPen className="size-3.5" aria-hidden="true" />
-            Notes
-          </p>
-          <p className="text-body-sm text-muted-foreground">
+          <DrawerSectionHeader icon={NotebookPen}>Notes</DrawerSectionHeader>
+          <p className="mt-sm text-body-sm text-muted-foreground">
             {statement.notes ?? 'No notes on this statement yet.'}
           </p>
         </div>
 
         <div>
-          <p className="mb-sm flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <Clock className="size-3.5" aria-hidden="true" />
-            Processing Timeline
-          </p>
-          <p className="text-body-sm text-muted-foreground">
+          <DrawerSectionHeader icon={Clock}>Processing Timeline</DrawerSectionHeader>
+          <div className="mt-sm rounded-lg border border-dashed border-border bg-muted/20 px-md py-sm text-body-sm text-muted-foreground">
             A step-by-step processing timeline isn't tracked yet — planned once this module reads
             from Supabase.
-          </p>
+          </div>
         </div>
 
         <div>
-          <p className="mb-sm flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <ScrollText className="size-3.5" aria-hidden="true" />
-            Import Logs
-          </p>
-          <p className="text-body-sm text-muted-foreground">
+          <DrawerSectionHeader icon={ScrollText}>Import Logs</DrawerSectionHeader>
+          <div className="mt-sm rounded-lg border border-dashed border-border bg-muted/20 px-md py-sm text-body-sm text-muted-foreground">
             Import logs aren't captured yet — planned once this module reads from Supabase.
-          </p>
+          </div>
         </div>
       </div>
     </>

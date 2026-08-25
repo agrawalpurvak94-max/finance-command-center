@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { CreditCard as CreditCardIcon, Pencil, Check, X } from 'lucide-react'
+import {
+  CreditCard as CreditCardIcon,
+  Pencil,
+  Check,
+  X,
+  Wallet,
+  FileText,
+  History,
+} from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -12,6 +20,8 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { IconChip } from '@/components/ui/icon-chip'
+import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
 import { TransactionListRows } from '@/components/dashboard/TransactionListRows'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
@@ -218,10 +228,9 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
           <div className="flex flex-col gap-lg px-lg pb-lg">
             {/* Card Identity */}
             <div className="flex items-start gap-sm">
-              <CreditCardIcon
-                className="mt-0.5 size-6 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
+              <IconChip size="md" tone="attention">
+                <CreditCardIcon className="size-4" aria-hidden="true" />
+              </IconChip>
               <div className="min-w-0">
                 <p className="truncate text-headline-sm text-foreground">{account.name}</p>
                 <p className="truncate text-body-sm text-muted-foreground">
@@ -238,7 +247,7 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
 
             {/* Credit Position */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Credit Position</p>
+              <DrawerSectionHeader icon={Wallet}>Credit Position</DrawerSectionHeader>
               {positionQuery.isLoading ? (
                 <Skeleton className="h-24 w-full rounded-lg" />
               ) : (
@@ -300,7 +309,7 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
 
             {/* Last Statement */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Last Statement</p>
+              <DrawerSectionHeader icon={FileText}>Last Statement</DrawerSectionHeader>
               {statementQuery.isLoading ? (
                 <Skeleton className="h-24 w-full rounded-lg" />
               ) : !statement ? (
@@ -308,7 +317,7 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
                   No statement on file for this card yet.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 gap-sm rounded-lg bg-muted/40 p-sm text-table-mono text-xs">
+                <div className="grid grid-cols-2 gap-sm rounded-lg bg-muted/40 p-sm text-table-mono">
                   <div className="min-w-0">
                     <p className="text-muted-foreground">Statement Period</p>
                     <p className="truncate font-semibold text-foreground">
@@ -353,7 +362,7 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
 
             {/* Real-Time Activity */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Recent Transactions</p>
+              <DrawerSectionHeader icon={History}>Recent Transactions</DrawerSectionHeader>
               <TransactionListRows
                 transactions={recentQuery.data}
                 isLoading={recentQuery.isLoading}

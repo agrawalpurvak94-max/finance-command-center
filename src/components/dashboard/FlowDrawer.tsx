@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { ArrowUpRight, ArrowDownLeft, History } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -8,6 +9,8 @@ import {
 } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/ui/icon-chip'
+import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
 import { TransactionListRows } from '@/components/dashboard/TransactionListRows'
 import { formatINR } from '@/utils/currency'
 import { useSpendTransactions, useInflowTransactions } from '@/hooks/useDashboard'
@@ -55,15 +58,26 @@ export function FlowDrawer({ kind, totalValue, onOpenChange }: FlowDrawerProps) 
         </SheetHeader>
 
         <div className="flex flex-col gap-lg px-lg pb-lg">
-          <div>
-            <p className="text-label-caps uppercase text-muted-foreground">{summaryLabel}</p>
-            <p className="text-display-kpi tabular-nums text-foreground">{formatINR(totalValue)}</p>
+          <div className="flex items-center gap-sm">
+            <IconChip size="md" tone={kind === 'spend' ? 'danger' : 'info'}>
+              {kind === 'spend' ? (
+                <ArrowUpRight className="size-4" aria-hidden="true" />
+              ) : (
+                <ArrowDownLeft className="size-4" aria-hidden="true" />
+              )}
+            </IconChip>
+            <div>
+              <p className="text-label-caps text-muted-foreground uppercase">{summaryLabel}</p>
+              <p className="text-display-kpi tabular-nums text-foreground">
+                {formatINR(totalValue)}
+              </p>
+            </div>
           </div>
 
           <Separator />
 
           <div className="flex flex-col gap-sm">
-            <p className="text-label-caps uppercase text-muted-foreground">{listLabel}</p>
+            <DrawerSectionHeader icon={History}>{listLabel}</DrawerSectionHeader>
             <TransactionListRows
               transactions={query.data}
               isLoading={query.isLoading}

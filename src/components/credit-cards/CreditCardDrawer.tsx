@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { CreditCard as CreditCardIcon, Wallet, History, FileText, StickyNote } from 'lucide-react'
-import { EntityReviewDrawer, EntityReviewDrawerFooter } from '@/components/EntityReviewDrawer'
+import {
+  EntityReviewDrawer,
+  EntityReviewDrawerFooter,
+  DrawerSectionHeader,
+  DrawerStat,
+  DrawerHero,
+} from '@/components/EntityReviewDrawer'
+import { IconChip } from '@/components/ui/icon-chip'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -70,6 +77,12 @@ interface DrawerBodyProps {
   onSaved: (message: string) => void
 }
 
+function utilizationBarClassName(utilizationPercent: number): string {
+  if (utilizationPercent >= 80) return 'bg-destructive'
+  if (utilizationPercent >= 50) return 'bg-amber-400'
+  return 'bg-secondary'
+}
+
 function DrawerBody({
   card,
   onClose,
@@ -130,9 +143,9 @@ function DrawerBody({
       {/* Section 1 — Card Summary */}
       <section className="flex flex-col gap-md">
         <div className="flex items-center gap-md">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <IconChip size="lg" tone="attention">
             <CreditCardIcon className="size-6" aria-hidden="true" />
-          </div>
+          </IconChip>
           <div className="min-w-0 flex-1">
             <Label htmlFor="credit-card-review-nickname">Nickname</Label>
             <Input
@@ -159,7 +172,7 @@ function DrawerBody({
           </div>
           <div>
             <Label>Last 4 Digits</Label>
-            <p className="flex h-9 items-center text-table-mono text-body-md text-foreground">
+            <p className="flex h-9 items-center font-mono text-body-md text-foreground">
               {card.maskedNumber}
             </p>
           </div>
@@ -195,66 +208,60 @@ function DrawerBody({
 
       {/* Section 2 — Financial Overview */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Wallet className="size-3.5" aria-hidden="true" />
-          Financial Overview
-        </h3>
-        <div className="grid grid-cols-2 gap-md">
-          <div>
-            <Label htmlFor="credit-card-review-limit">Credit Limit</Label>
-            <Input
-              id="credit-card-review-limit"
-              type="number"
-              value={creditLimitInput}
-              onChange={(e) => setCreditLimitInput(e.target.value)}
-              placeholder="e.g. 500000"
-              aria-required="true"
-              aria-invalid={submitted && !!creditLimitError}
-              className={cn(submitted && creditLimitError && 'border-destructive')}
+        <DrawerSectionHeader icon={Wallet}>Financial Overview</DrawerSectionHeader>
+
+        <DrawerHero
+          label="Outstanding"
+          value={formatINR(card.outstanding)}
+          caption={`Available Credit: ${formatINR(card.availableCredit)}`}
+        />
+
+        <div>
+          <div className="flex items-baseline justify-between gap-sm">
+            <p className="text-label-caps text-muted-foreground uppercase">Utilization</p>
+            <p className="text-body-sm text-muted-foreground">{card.utilizationPercent}% used</p>
+          </div>
+          <div className="mt-xs h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                'h-full rounded-full',
+                utilizationBarClassName(card.utilizationPercent),
+              )}
+              style={{ width: `${Math.min(100, card.utilizationPercent)}%` }}
             />
-            {submitted && creditLimitError && (
-              <p role="alert" className="mt-xs text-[11px] text-destructive">
-                {creditLimitError}
-              </p>
-            )}
-            <p className="mt-xs text-[11px] text-muted-foreground">
-              Adjust as your issuer raises or lowers this limit with your credit score.
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="credit-card-review-limit">Credit Limit</Label>
+          <Input
+            id="credit-card-review-limit"
+            type="number"
+            value={creditLimitInput}
+            onChange={(e) => setCreditLimitInput(e.target.value)}
+            placeholder="e.g. 500000"
+            aria-required="true"
+            aria-invalid={submitted && !!creditLimitError}
+            className={cn(submitted && creditLimitError && 'border-destructive')}
+          />
+          {submitted && creditLimitError && (
+            <p role="alert" className="mt-xs text-[11px] text-destructive">
+              {creditLimitError}
             </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Outstanding</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(card.outstanding)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Available Credit
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-secondary">
-              {formatINR(card.availableCredit)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Utilization</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {card.utilizationPercent}%
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Statement Date</p>
-            <p className="text-body-md text-foreground">{card.statementDate}</p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Due Date</p>
-            <p className="text-body-md text-foreground">{card.dueDate}</p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Minimum Due</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(card.minimumDue)}
-            </p>
-          </div>
+          )}
+          <p className="mt-xs text-[11px] text-muted-foreground">
+            Adjust as your issuer raises or lowers this limit with your credit score.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-md">
+          <DrawerStat
+            label="Statement Date"
+            value={card.statementDate}
+            valueClassName="font-normal"
+          />
+          <DrawerStat label="Due Date" value={card.dueDate} valueClassName="font-normal" />
+          <DrawerStat label="Minimum Due" value={formatINR(card.minimumDue)} />
         </div>
       </section>
 
@@ -262,20 +269,21 @@ function DrawerBody({
 
       {/* Section 3 — Latest Transactions */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <History className="size-3.5" aria-hidden="true" />
-            Latest Transactions
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllTransactions(card)}
-          >
-            View All Transactions
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={History}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllTransactions(card)}
+            >
+              View All Transactions
+            </Button>
+          }
+        >
+          Latest Transactions
+        </DrawerSectionHeader>
 
         {recentTxnsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -288,19 +296,19 @@ function DrawerBody({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-card">
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Date</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Merchant</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Amount</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Date</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Merchant</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {recentTxnsQuery.data.rows.map((txn) => (
-                  <tr key={txn.id}>
-                    <td className="whitespace-nowrap p-sm text-table-mono tabular-nums text-body-sm text-muted-foreground">
+                  <tr key={txn.id} className="transition-colors hover:bg-surface-hover">
+                    <td className="p-sm text-table-mono tabular-nums whitespace-nowrap text-muted-foreground">
                       {txn.date}
                     </td>
                     <td className="p-sm text-body-sm text-foreground">{txn.merchant.name}</td>
-                    <td className="p-sm text-table-mono tabular-nums text-body-sm text-foreground">
+                    <td className="p-sm text-table-mono tabular-nums font-semibold text-foreground">
                       {formatINR(txn.amount)}
                     </td>
                   </tr>
@@ -317,20 +325,21 @@ function DrawerBody({
 
       {/* Section 4 — Statements */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <FileText className="size-3.5" aria-hidden="true" />
-            Statements
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllStatements(card)}
-          >
-            View All Statements
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={FileText}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllStatements(card)}
+            >
+              View All Statements
+            </Button>
+          }
+        >
+          Statements
+        </DrawerSectionHeader>
 
         {statementsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -346,7 +355,7 @@ function DrawerBody({
                 className="flex items-center justify-between rounded-lg border border-border p-sm text-body-sm"
               >
                 <span className="truncate text-foreground">{statement.statementPeriodLabel}</span>
-                <span className="capitalize text-muted-foreground">
+                <span className="text-muted-foreground capitalize">
                   {statement.status.replace('_', ' ')}
                 </span>
               </li>
@@ -361,10 +370,7 @@ function DrawerBody({
 
       {/* Section 5 — Notes */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <StickyNote className="size-3.5" aria-hidden="true" />
-          Notes
-        </h3>
+        <DrawerSectionHeader icon={StickyNote}>Notes</DrawerSectionHeader>
         <div>
           <Label htmlFor="credit-card-review-notes">Internal Notes</Label>
           <Textarea

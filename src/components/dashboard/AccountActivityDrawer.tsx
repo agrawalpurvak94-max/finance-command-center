@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router'
-import { Landmark } from 'lucide-react'
+import { Landmark, History } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/ui/icon-chip'
+import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
 import { TransactionListRows } from '@/components/dashboard/TransactionListRows'
 import { formatINR } from '@/utils/currency'
 import { useAccountRecentTransactions } from '@/hooks/useDashboard'
@@ -46,10 +48,9 @@ export function AccountActivityDrawer({ account, onOpenChange }: AccountActivity
         {account && (
           <div className="flex flex-col gap-lg px-lg pb-lg">
             <div className="flex items-start gap-sm">
-              <Landmark
-                className="mt-0.5 size-6 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
+              <IconChip size="md" tone="info">
+                <Landmark className="size-4" aria-hidden="true" />
+              </IconChip>
               <div className="min-w-0">
                 <p className="truncate text-headline-sm text-foreground">{account.name}</p>
                 <p className="truncate text-body-sm text-muted-foreground">
@@ -84,7 +85,7 @@ export function AccountActivityDrawer({ account, onOpenChange }: AccountActivity
             <Separator />
 
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Recent Transactions</p>
+              <DrawerSectionHeader icon={History}>Recent Transactions</DrawerSectionHeader>
               <TransactionListRows
                 transactions={recentQuery.data}
                 isLoading={recentQuery.isLoading}

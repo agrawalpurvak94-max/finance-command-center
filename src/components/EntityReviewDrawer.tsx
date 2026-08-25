@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -105,6 +106,91 @@ export function EntityReviewDrawerFooter({
       <Button onClick={onSave} disabled={isSaving}>
         {isSaving ? 'Saving…' : saveLabel}
       </Button>
+    </div>
+  )
+}
+
+/**
+ * Icon + label-caps section heading — the exact `<h3><Icon/>Label</h3>`
+ * pattern that was hand-repeated across every drawer (Financial Overview,
+ * Recent Transactions, Statements, Notes, ...). Stage 7: extracted once
+ * this stopped being a coincidence and became the drawer system's actual
+ * section-header convention.
+ */
+export function DrawerSectionHeader({
+  icon: Icon,
+  children,
+  action,
+}: {
+  icon: LucideIcon
+  children: ReactNode
+  /** e.g. a "View All" button, right-aligned next to the heading. */
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-sm">
+      <h3 className="flex items-center gap-xs text-label-caps text-muted-foreground uppercase">
+        <Icon className="size-3.5" aria-hidden="true" />
+        {children}
+      </h3>
+      {action}
+    </div>
+  )
+}
+
+/**
+ * Label-over-value stat pair — the other hand-repeated pattern (Total
+ * Spend, Current Balance, Outstanding, Transaction Count, ...). Purely
+ * presentational: callers keep owning the actual value/formatting.
+ */
+export function DrawerStat({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string
+  value: ReactNode
+  valueClassName?: string
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-xs text-label-caps text-muted-foreground uppercase">{label}</p>
+      <p
+        className={cn(
+          'truncate text-body-md font-semibold text-foreground tabular-nums',
+          valueClassName,
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Bordered container for a drawer's single most important figure (an
+ * amount, a balance, an outstanding total) — the same "hero" treatment
+ * Stage 6 established for TransactionDetailsDrawer's amount, reused here
+ * so every drawer that has one prominent figure presents it the same way.
+ */
+export function DrawerHero({
+  label,
+  value,
+  valueClassName,
+  caption,
+}: {
+  label: string
+  value: ReactNode
+  valueClassName?: string
+  caption?: ReactNode
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-md">
+      <p className="text-label-caps text-muted-foreground uppercase">{label}</p>
+      <p className={cn('text-display-kpi text-foreground tabular-nums', valueClassName)}>{value}</p>
+      {caption && (
+        <p className="mt-xs text-table-mono text-muted-foreground tabular-nums">{caption}</p>
+      )}
     </div>
   )
 }

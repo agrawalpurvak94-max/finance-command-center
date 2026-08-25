@@ -9,8 +9,15 @@ import {
   StickyNote,
   Landmark,
   CreditCard,
+  Tag,
 } from 'lucide-react'
-import { EntityReviewDrawer, EntityReviewDrawerFooter } from '@/components/EntityReviewDrawer'
+import {
+  EntityReviewDrawer,
+  EntityReviewDrawerFooter,
+  DrawerSectionHeader,
+  DrawerStat,
+} from '@/components/EntityReviewDrawer'
+import { IconChip } from '@/components/ui/icon-chip'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,10 +32,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ClientStatusBadge } from '@/components/clients/ClientStatusBadge'
+import { getMerchantIdentity } from '@/lib/merchantIdentity'
 import { useTransactionsList } from '@/hooks/useTransactions'
 import { useStatementsList } from '@/hooks/useStatements'
 import { useUpdateClient } from '@/hooks/useClients'
 import { formatINR } from '@/utils/currency'
+import { cn } from '@/lib/utils'
 import type { ClientRecord, ClientRecordStatus } from '@/domain/Client'
 
 const clientTypeLabels: Record<ClientRecord['clientType'], string> = {
@@ -154,9 +163,9 @@ function DrawerBody({
       {/* Section 1 — Client Profile */}
       <section className="flex flex-col gap-md">
         <div className="flex items-center gap-md">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <IconChip size="lg" tone="info">
             <IdCard className="size-6" aria-hidden="true" />
-          </div>
+          </IconChip>
           <div className="min-w-0 flex-1">
             <Label htmlFor="client-review-name">Client Name</Label>
             <Input id="client-review-name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -241,27 +250,15 @@ function DrawerBody({
 
       {/* Section 2 — Financial Summary */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Wallet className="size-3.5" aria-hidden="true" />
-          Financial Summary
-        </h3>
+        <DrawerSectionHeader icon={Wallet}>Financial Summary</DrawerSectionHeader>
         <div className="grid grid-cols-2 gap-md">
+          <DrawerStat label="Total Spend" value={formatINR(client.totalSpend)} />
+          <DrawerStat
+            label="Total Transactions"
+            value={client.transactionCount.toLocaleString('en-IN')}
+          />
           <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Total Spend</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(client.totalSpend)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Total Transactions
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {client.transactionCount.toLocaleString('en-IN')}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Linked Accounts</p>
+            <p className="mb-xs text-label-caps text-muted-foreground uppercase">Linked Accounts</p>
             <div className="flex items-center gap-xs">
               <p className="text-body-md font-semibold tabular-nums text-foreground">
                 {client.linkedAccountsCount}
@@ -280,7 +277,7 @@ function DrawerBody({
             </div>
           </div>
           <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
+            <p className="mb-xs text-label-caps text-muted-foreground uppercase">
               Linked Credit Cards
             </p>
             <div className="flex items-center gap-xs">
@@ -300,26 +297,17 @@ function DrawerBody({
               )}
             </div>
           </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Linked Statements
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {client.linkedStatementsCount}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              First Transaction
-            </p>
-            <p className="text-body-md text-foreground">{client.firstTransactionAt ?? '—'}</p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Last Transaction
-            </p>
-            <p className="text-body-md text-foreground">{client.lastTransactionAt ?? '—'}</p>
-          </div>
+          <DrawerStat label="Linked Statements" value={client.linkedStatementsCount} />
+          <DrawerStat
+            label="First Transaction"
+            value={client.firstTransactionAt ?? '—'}
+            valueClassName="font-normal"
+          />
+          <DrawerStat
+            label="Last Transaction"
+            value={client.lastTransactionAt ?? '—'}
+            valueClassName="font-normal"
+          />
         </div>
       </section>
 
@@ -327,18 +315,20 @@ function DrawerBody({
 
       {/* Section 3 — Top Categories */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <PieChart className="size-3.5" aria-hidden="true" />
-          Top Categories
-        </h3>
+        <DrawerSectionHeader icon={PieChart}>Top Categories</DrawerSectionHeader>
         {client.topCategories.length > 0 ? (
           <ul className="flex flex-col gap-xs">
             {client.topCategories.map((entry) => (
               <li
                 key={entry.category.id}
-                className="flex items-center justify-between rounded-lg border border-border p-sm text-body-sm"
+                className="flex items-center gap-sm rounded-lg border border-border p-sm text-body-sm"
               >
-                <span className="truncate text-foreground">{entry.category.name}</span>
+                <IconChip size="sm" tone="neutral">
+                  <Tag className="size-3" aria-hidden="true" />
+                </IconChip>
+                <span className="min-w-0 flex-1 truncate text-foreground">
+                  {entry.category.name}
+                </span>
                 <span className="shrink-0 text-table-mono tabular-nums text-muted-foreground">
                   {formatINR(entry.totalSpend)}
                 </span>
@@ -354,23 +344,34 @@ function DrawerBody({
 
       {/* Section 4 — Top Merchants */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Store className="size-3.5" aria-hidden="true" />
-          Top Merchants
-        </h3>
+        <DrawerSectionHeader icon={Store}>Top Merchants</DrawerSectionHeader>
         {client.topMerchants.length > 0 ? (
           <ul className="flex flex-col gap-xs">
-            {client.topMerchants.map((entry) => (
-              <li
-                key={entry.merchant.id}
-                className="flex items-center justify-between rounded-lg border border-border p-sm text-body-sm"
-              >
-                <span className="truncate text-foreground">{entry.merchant.name}</span>
-                <span className="shrink-0 text-table-mono tabular-nums text-muted-foreground">
-                  {formatINR(entry.totalSpend)}
-                </span>
-              </li>
-            ))}
+            {client.topMerchants.map((entry) => {
+              const identity = getMerchantIdentity(entry.merchant.name)
+              return (
+                <li
+                  key={entry.merchant.id}
+                  className="flex items-center gap-sm rounded-lg border border-border p-sm text-body-sm"
+                >
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      'flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-semibold',
+                      identity.chipClassName,
+                    )}
+                  >
+                    {identity.initials}
+                  </div>
+                  <span className="min-w-0 flex-1 truncate text-foreground">
+                    {entry.merchant.name}
+                  </span>
+                  <span className="shrink-0 text-table-mono tabular-nums text-muted-foreground">
+                    {formatINR(entry.totalSpend)}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         ) : (
           <p className="text-body-sm text-muted-foreground">No merchant spend yet.</p>
@@ -381,20 +382,21 @@ function DrawerBody({
 
       {/* Section 5 — Recent Transactions */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <History className="size-3.5" aria-hidden="true" />
-            Recent Transactions
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllTransactions(client)}
-          >
-            View All Transactions
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={History}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllTransactions(client)}
+            >
+              View All Transactions
+            </Button>
+          }
+        >
+          Recent Transactions
+        </DrawerSectionHeader>
 
         {recentTxnsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -407,23 +409,23 @@ function DrawerBody({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-card">
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Date</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Merchant</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Category</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Amount</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Date</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Merchant</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Category</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {recentTxnsQuery.data.rows.map((txn) => (
-                  <tr key={txn.id}>
-                    <td className="whitespace-nowrap p-sm text-table-mono tabular-nums text-body-sm text-muted-foreground">
+                  <tr key={txn.id} className="transition-colors hover:bg-surface-hover">
+                    <td className="p-sm text-table-mono tabular-nums whitespace-nowrap text-muted-foreground">
                       {txn.date}
                     </td>
                     <td className="p-sm text-body-sm text-foreground">{txn.merchant.name}</td>
                     <td className="p-sm text-body-sm text-muted-foreground">
                       {txn.category?.name ?? 'Uncategorized'}
                     </td>
-                    <td className="p-sm text-table-mono tabular-nums text-body-sm text-foreground">
+                    <td className="p-sm text-table-mono tabular-nums font-semibold text-foreground">
                       {formatINR(txn.amount)}
                     </td>
                   </tr>
@@ -440,20 +442,21 @@ function DrawerBody({
 
       {/* Section 6 — Statements */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <FileText className="size-3.5" aria-hidden="true" />
-            Statements
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllStatements(client)}
-          >
-            View All Statements
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={FileText}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllStatements(client)}
+            >
+              View All Statements
+            </Button>
+          }
+        >
+          Statements
+        </DrawerSectionHeader>
 
         {statementsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -469,7 +472,7 @@ function DrawerBody({
                 className="flex items-center justify-between rounded-lg border border-border p-sm text-body-sm"
               >
                 <span className="truncate text-foreground">{statement.statementPeriodLabel}</span>
-                <span className="capitalize text-muted-foreground">
+                <span className="text-muted-foreground capitalize">
                   {statement.status.replace('_', ' ')}
                 </span>
               </li>
@@ -484,10 +487,7 @@ function DrawerBody({
 
       {/* Section 7 — Notes */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <StickyNote className="size-3.5" aria-hidden="true" />
-          Notes
-        </h3>
+        <DrawerSectionHeader icon={StickyNote}>Notes</DrawerSectionHeader>
         <div>
           <Label htmlFor="client-review-notes">Internal Notes</Label>
           <Textarea

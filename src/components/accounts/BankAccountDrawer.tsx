@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { Landmark, Wallet, History, FileText, StickyNote } from 'lucide-react'
-import { EntityReviewDrawer, EntityReviewDrawerFooter } from '@/components/EntityReviewDrawer'
+import {
+  EntityReviewDrawer,
+  EntityReviewDrawerFooter,
+  DrawerSectionHeader,
+  DrawerStat,
+  DrawerHero,
+} from '@/components/EntityReviewDrawer'
+import { IconChip } from '@/components/ui/icon-chip'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -121,9 +128,9 @@ function DrawerBody({
       {/* Section 1 — Account Summary */}
       <section className="flex flex-col gap-md">
         <div className="flex items-center gap-md">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <IconChip size="lg" tone="info">
             <Landmark className="size-6" aria-hidden="true" />
-          </div>
+          </IconChip>
           <div className="min-w-0 flex-1">
             <Label htmlFor="bank-account-review-nickname">Nickname</Label>
             <Input
@@ -154,7 +161,7 @@ function DrawerBody({
           </div>
           <div>
             <Label>Account Number</Label>
-            <p className="flex h-9 items-center text-table-mono text-body-md text-foreground">
+            <p className="flex h-9 items-center font-mono text-body-md text-foreground">
               {account.maskedAccountNumber}
             </p>
           </div>
@@ -190,41 +197,26 @@ function DrawerBody({
 
       {/* Section 2 — Financial Overview */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Wallet className="size-3.5" aria-hidden="true" />
-          Financial Overview
-        </h3>
+        <DrawerSectionHeader icon={Wallet}>Financial Overview</DrawerSectionHeader>
+
+        <DrawerHero
+          label="Current Balance"
+          value={formatINR(account.currentBalance)}
+          caption={`Available: ${formatINR(account.availableBalance)}`}
+        />
+
         <div className="grid grid-cols-2 gap-md">
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Current Balance</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(account.currentBalance)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Available Balance
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(account.availableBalance)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Monthly Credits</p>
-            <p className="text-body-md font-semibold tabular-nums text-secondary">
-              +{formatINR(account.monthlyCredits)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Monthly Debits</p>
-            <p className="text-body-md font-semibold tabular-nums text-destructive">
-              -{formatINR(account.monthlyDebits)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Last Sync</p>
-            <p className="text-body-md text-foreground">{account.lastSyncAt}</p>
-          </div>
+          <DrawerStat
+            label="Monthly Credits"
+            value={`+${formatINR(account.monthlyCredits)}`}
+            valueClassName="text-secondary"
+          />
+          <DrawerStat
+            label="Monthly Debits"
+            value={`-${formatINR(account.monthlyDebits)}`}
+            valueClassName="text-destructive"
+          />
+          <DrawerStat label="Last Sync" value={account.lastSyncAt} valueClassName="font-normal" />
         </div>
       </section>
 
@@ -232,20 +224,21 @@ function DrawerBody({
 
       {/* Section 3 — Latest Transactions */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <History className="size-3.5" aria-hidden="true" />
-            Latest Transactions
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllTransactions(account)}
-          >
-            View All Transactions
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={History}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllTransactions(account)}
+            >
+              View All Transactions
+            </Button>
+          }
+        >
+          Latest Transactions
+        </DrawerSectionHeader>
 
         {recentTxnsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -258,19 +251,19 @@ function DrawerBody({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-card">
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Date</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Merchant</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Amount</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Date</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Merchant</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {recentTxnsQuery.data.rows.map((txn) => (
-                  <tr key={txn.id}>
-                    <td className="whitespace-nowrap p-sm text-table-mono tabular-nums text-body-sm text-muted-foreground">
+                  <tr key={txn.id} className="transition-colors hover:bg-surface-hover">
+                    <td className="p-sm text-table-mono tabular-nums whitespace-nowrap text-muted-foreground">
                       {txn.date}
                     </td>
                     <td className="p-sm text-body-sm text-foreground">{txn.merchant.name}</td>
-                    <td className="p-sm text-table-mono tabular-nums text-body-sm text-foreground">
+                    <td className="p-sm text-table-mono tabular-nums font-semibold text-foreground">
                       {formatINR(txn.amount)}
                     </td>
                   </tr>
@@ -287,20 +280,21 @@ function DrawerBody({
 
       {/* Section 4 — Statements */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <FileText className="size-3.5" aria-hidden="true" />
-            Statements
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllStatements(account)}
-          >
-            View All Statements
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={FileText}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllStatements(account)}
+            >
+              View All Statements
+            </Button>
+          }
+        >
+          Statements
+        </DrawerSectionHeader>
 
         {statementsQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -316,7 +310,7 @@ function DrawerBody({
                 className="flex items-center justify-between rounded-lg border border-border p-sm text-body-sm"
               >
                 <span className="truncate text-foreground">{statement.statementPeriodLabel}</span>
-                <span className="capitalize text-muted-foreground">
+                <span className="text-muted-foreground capitalize">
                   {statement.status.replace('_', ' ')}
                 </span>
               </li>
@@ -331,10 +325,7 @@ function DrawerBody({
 
       {/* Section 5 — Notes */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <StickyNote className="size-3.5" aria-hidden="true" />
-          Notes
-        </h3>
+        <DrawerSectionHeader icon={StickyNote}>Notes</DrawerSectionHeader>
         <div>
           <Label htmlFor="bank-account-review-notes">Internal Notes</Label>
           <Textarea

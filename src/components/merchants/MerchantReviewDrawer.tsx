@@ -1,6 +1,11 @@
 import { useState } from 'react'
-import { Store, Sparkles, Receipt, History } from 'lucide-react'
-import { EntityReviewDrawer, EntityReviewDrawerFooter } from '@/components/EntityReviewDrawer'
+import { Sparkles, Receipt, History } from 'lucide-react'
+import {
+  EntityReviewDrawer,
+  EntityReviewDrawerFooter,
+  DrawerSectionHeader,
+  DrawerStat,
+} from '@/components/EntityReviewDrawer'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,9 +22,11 @@ import {
 import { MerchantStatusBadge } from '@/components/merchants/MerchantStatusBadge'
 import { CategorySelector } from '@/components/transactions/CategorySelector'
 import { AccountCell } from '@/components/transactions/AccountCell'
+import { getMerchantIdentity } from '@/lib/merchantIdentity'
 import { useTransactionsList } from '@/hooks/useTransactions'
 import { useUpdateMerchant } from '@/hooks/useMerchants'
 import { formatINR } from '@/utils/currency'
+import { cn } from '@/lib/utils'
 import type { MerchantRecord, MerchantStatus } from '@/domain/Merchant'
 
 interface MerchantReviewDrawerProps {
@@ -78,6 +85,7 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
   const [notes, setNotes] = useState(merchant.notes ?? '')
 
   const updateMerchant = useUpdateMerchant()
+  const identity = getMerchantIdentity(merchant.name)
 
   const recentQuery = useTransactionsList({
     page: 1,
@@ -114,8 +122,14 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
       {/* Section 1 — Merchant Identity */}
       <section className="flex flex-col gap-md">
         <div className="flex items-center gap-md">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Store className="size-6" aria-hidden="true" />
+          <div
+            aria-hidden="true"
+            className={cn(
+              'flex size-12 shrink-0 items-center justify-center rounded-lg text-sm font-semibold',
+              identity.chipClassName,
+            )}
+          >
+            {identity.initials}
           </div>
           <div className="min-w-0 flex-1">
             <Label htmlFor="merchant-review-name">Merchant Name</Label>
@@ -163,10 +177,7 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
 
       {/* Section 2 — Classification */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Sparkles className="size-3.5" aria-hidden="true" />
-          Classification
-        </h3>
+        <DrawerSectionHeader icon={Sparkles}>Classification</DrawerSectionHeader>
 
         <div>
           <Label>Default Category</Label>
@@ -194,47 +205,27 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
 
       {/* Section 3 — Merchant Intelligence (read-only) */}
       <section className="flex flex-col gap-md">
-        <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-          <Receipt className="size-3.5" aria-hidden="true" />
-          Merchant Intelligence
-        </h3>
+        <DrawerSectionHeader icon={Receipt}>Merchant Intelligence</DrawerSectionHeader>
         <div className="grid grid-cols-2 gap-md">
+          <DrawerStat
+            label="Total Transactions"
+            value={merchant.transactionCount.toLocaleString('en-IN')}
+          />
+          <DrawerStat label="Total Spend" value={formatINR(merchant.totalSpend)} />
+          <DrawerStat label="Average Transaction" value={formatINR(merchant.averageTransaction)} />
           <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Total Transactions
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {merchant.transactionCount.toLocaleString('en-IN')}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">Total Spend</p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(merchant.totalSpend)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Average Transaction
-            </p>
-            <p className="text-body-md font-semibold tabular-nums text-foreground">
-              {formatINR(merchant.averageTransaction)}
-            </p>
-          </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">First Seen</p>
+            <p className="mb-xs text-label-caps text-muted-foreground uppercase">First Seen</p>
             {firstSeenQuery.isLoading ? (
               <Skeleton className="h-5 w-20" />
             ) : (
-              <p className="text-body-md text-foreground">{firstSeenAt ?? '—'}</p>
+              <p className="text-body-md font-normal text-foreground">{firstSeenAt ?? '—'}</p>
             )}
           </div>
-          <div>
-            <p className="mb-xs text-label-caps uppercase text-muted-foreground">
-              Last Transaction
-            </p>
-            <p className="text-body-md text-foreground">{merchant.lastTransactionAt ?? '—'}</p>
-          </div>
+          <DrawerStat
+            label="Last Transaction"
+            value={merchant.lastTransactionAt ?? '—'}
+            valueClassName="font-normal"
+          />
         </div>
       </section>
 
@@ -242,20 +233,21 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
 
       {/* Section 4 — Recent Transactions */}
       <section className="flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-xs text-label-caps uppercase text-muted-foreground">
-            <History className="size-3.5" aria-hidden="true" />
-            Recent Transactions
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary"
-            onClick={() => onViewAllTransactions(merchant)}
-          >
-            View All Transactions
-          </Button>
-        </div>
+        <DrawerSectionHeader
+          icon={History}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary"
+              onClick={() => onViewAllTransactions(merchant)}
+            >
+              View All Transactions
+            </Button>
+          }
+        >
+          Recent Transactions
+        </DrawerSectionHeader>
 
         {recentQuery.isLoading ? (
           <div className="flex flex-col gap-sm">
@@ -268,21 +260,21 @@ function DrawerBody({ merchant, onClose, onViewAllTransactions, onSaved }: Drawe
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-card">
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Date</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Amount</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">Category</th>
-                  <th className="p-sm text-label-caps uppercase text-muted-foreground">
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Date</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Amount</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">Category</th>
+                  <th className="p-sm text-label-caps text-muted-foreground uppercase">
                     Account/Card
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {recentQuery.data.rows.map((txn) => (
-                  <tr key={txn.id}>
-                    <td className="whitespace-nowrap p-sm text-table-mono tabular-nums text-body-sm text-muted-foreground">
+                  <tr key={txn.id} className="transition-colors hover:bg-surface-hover">
+                    <td className="p-sm text-table-mono tabular-nums whitespace-nowrap text-muted-foreground">
                       {txn.date}
                     </td>
-                    <td className="p-sm text-table-mono tabular-nums text-body-sm text-foreground">
+                    <td className="p-sm text-table-mono tabular-nums font-semibold text-foreground">
                       {formatINR(txn.amount)}
                     </td>
                     <td className="p-sm text-body-sm text-muted-foreground">

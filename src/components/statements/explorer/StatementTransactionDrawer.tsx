@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { Landmark, CreditCard as CreditCardIcon, FileText, Paperclip } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -11,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { InlineSelector } from '@/components/transactions/InlineSelector'
 import { BizPersonalPill } from '@/components/transactions/BizPersonalPill'
+import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
+import { getMerchantIdentity } from '@/lib/merchantIdentity'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
 import type {
@@ -86,15 +89,26 @@ export function StatementTransactionDrawer({
           <div className="flex flex-col gap-lg px-lg pb-lg">
             {/* Transaction */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Transaction</p>
-              <div className="flex items-start justify-between gap-sm">
-                <div className="min-w-0">
+              <div className="flex items-start gap-sm">
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-semibold',
+                    getMerchantIdentity(row.merchant).chipClassName,
+                  )}
+                >
+                  {getMerchantIdentity(row.merchant).initials}
+                </div>
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-headline-sm text-foreground">{row.merchant}</p>
                   <p className="text-body-sm text-muted-foreground">{formatDate(row.date)}</p>
                 </div>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-md">
+                <p className="text-label-caps text-muted-foreground uppercase">Amount</p>
                 <p
                   className={cn(
-                    'shrink-0 text-headline-lg tabular-nums',
+                    'text-display-kpi tabular-nums',
                     row.type === 'debit' ? 'text-destructive' : 'text-secondary',
                   )}
                 >
@@ -151,9 +165,9 @@ export function StatementTransactionDrawer({
 
             {/* Account / Card */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">
+              <DrawerSectionHeader icon={isCard ? CreditCardIcon : Landmark}>
                 {isCard ? 'Card' : 'Account'}
-              </p>
+              </DrawerSectionHeader>
               <div className="grid grid-cols-2 gap-sm">
                 <Field label="Bank" value={account?.bankName} />
                 <Field label={isCard ? 'Card Name' : 'Account Name'} value={detail?.accountName} />
@@ -166,7 +180,7 @@ export function StatementTransactionDrawer({
 
             {/* Statement */}
             <div className="flex flex-col gap-sm">
-              <p className="text-label-caps uppercase text-muted-foreground">Statement</p>
+              <DrawerSectionHeader icon={FileText}>Statement</DrawerSectionHeader>
               <div className="grid grid-cols-2 gap-sm">
                 <Field label="Statement Name" value={detail?.statement.fileName} />
                 <Field label="Statement Period" value={detail?.statement.statementPeriodLabel} />
@@ -185,7 +199,7 @@ export function StatementTransactionDrawer({
                 <Separator />
                 {/* Source */}
                 <div className="flex flex-col gap-sm">
-                  <p className="text-label-caps uppercase text-muted-foreground">Source</p>
+                  <DrawerSectionHeader icon={Paperclip}>Source</DrawerSectionHeader>
                   <div className="flex flex-col gap-sm">
                     <Field label="Source Email Subject" value={row.emailSubject} />
                     <Field label="Source Message ID" value={row.sourceMessageId} />
