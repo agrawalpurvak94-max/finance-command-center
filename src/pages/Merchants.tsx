@@ -183,7 +183,10 @@ export function Merchants() {
         isExportDisabled={!listQuery.data || listQuery.data.rows.length === 0}
       />
 
-      <MerchantSummaryWidget query={summaryQuery} />
+      <MerchantSummaryWidget
+        query={summaryQuery}
+        onUncategorizedClick={() => navigate('/statements/explorer?uncategorized=1')}
+      />
 
       <div className="relative max-w-96">
         <Search

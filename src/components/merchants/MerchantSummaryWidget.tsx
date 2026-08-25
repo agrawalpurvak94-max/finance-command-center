@@ -10,6 +10,8 @@ import type { MerchantSummary } from '@/domain/Merchant'
 
 interface MerchantSummaryWidgetProps {
   query: UseQueryResult<MerchantSummary>
+  /** Fires when the "Uncategorized Merchants" tile is clicked — only wired while its count is non-zero. */
+  onUncategorizedClick?: () => void
 }
 
 function formatCount(value: number): string {
@@ -42,7 +44,7 @@ function toMetrics(
   ]
 }
 
-export function MerchantSummaryWidget({ query }: MerchantSummaryWidgetProps) {
+export function MerchantSummaryWidget({ query, onUncategorizedClick }: MerchantSummaryWidgetProps) {
   return (
     <QueryBoundary
       query={query}
@@ -65,7 +67,21 @@ export function MerchantSummaryWidget({ query }: MerchantSummaryWidgetProps) {
       {(summary) => (
         <div className="grid grid-cols-1 gap-md sm:grid-cols-3 lg:grid-cols-5">
           {toMetrics(summary).map((metric) => (
-            <KPICard key={metric.id} metric={metric} formatValue={metric.formatValue} />
+            <KPICard
+              key={metric.id}
+              metric={metric}
+              formatValue={metric.formatValue}
+              onClick={
+                metric.id === 'uncategorized' && summary.uncategorized > 0
+                  ? onUncategorizedClick
+                  : undefined
+              }
+              ariaLabel={
+                metric.id === 'uncategorized'
+                  ? 'View uncategorized statement transactions'
+                  : undefined
+              }
+            />
           ))}
         </div>
       )}

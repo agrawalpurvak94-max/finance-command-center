@@ -1769,3 +1769,73 @@ ALTER TABLE public.statement_transactions
 
 COMMENT ON COLUMN public.statement_transactions.owner_type IS
   'User-set Business/Personal classification for this row, from Statement Explorer''s toggle. Null until a user explicitly sets it -- until then the frontend falls back to metadata->>''business_personal'' (the parser''s own classification), then to ''personal'' (same last-resort default transactions.type uses).';
+
+-- ============================================================================
+-- PHASE 17 — Resolve merchant_memory.default_category_id from category text
+-- (2026-08-24)
+-- STATUS: NOT EXECUTED. Run via the Supabase SQL editor. Additive: one new
+-- trigger function + trigger, plus a one-time UPDATE that only ever fills
+-- currently-NULL default_category_id values -- no existing FK value is
+-- ever changed or overwritten, no row is dropped.
+--
+-- Root cause: merchant_memory.category (free text, e.g. 'Groceries') gets
+-- populated by AI/statement extraction (Workflow C/D) on INSERT, but
+-- default_category_id (the real FK to categories.id) is left NULL --
+-- nothing currently resolves one from the other. The Merchant Center
+-- "Uncategorized Merchants" KPI (supabase-merchant.repository.ts
+-- getSummary()) counts rows on `default_category_id IS NULL`, so every one
+-- of these rows is counted as uncategorized even though the table already
+-- displays a real category for them (via the repository's own
+-- fetchCategoryFallback() reading the free-text column). The AI/statement-
+-- assigned category is meant to be treated as final, per product decision:
+-- a merchant arriving with a category already extracted from a statement
+-- should never be flagged as needing categorization -- the user can still
+-- change it later, but it starts resolved, not blank.
+--
+-- Trigger fires BEFORE INSERT only, deliberately never on UPDATE -- so it
+-- resolves a brand-new row's category exactly once at creation time and
+-- can never fight a later explicit user correction (e.g. picking
+-- "Uncategorized" for a merchant via the Merchant Review drawer, which
+-- sets default_category_id back to NULL without touching the old free-text
+-- category column).
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.fn_resolve_merchant_default_category()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.default_category_id IS NULL
+     AND NEW.category IS NOT NULL
+     AND NEW.category <> 'Uncategorized' THEN
+    SELECT id INTO NEW.default_category_id
+    FROM public.categories
+    WHERE lower(name) = lower(NEW.category)
+    LIMIT 1;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_resolve_merchant_default_category ON public.merchant_memory;
+
+CREATE TRIGGER trg_resolve_merchant_default_category
+  BEFORE INSERT ON public.merchant_memory
+  FOR EACH ROW
+  EXECUTE FUNCTION public.fn_resolve_merchant_default_category();
+
+COMMENT ON FUNCTION public.fn_resolve_merchant_default_category() IS
+  'Resolves merchant_memory.default_category_id from the free-text category column at INSERT time only, case-insensitive exact match against categories.name. Never runs on UPDATE, so it can never overwrite a later explicit user correction.';
+
+-- One-time backfill for rows created before this trigger existed.
+UPDATE public.merchant_memory m
+SET default_category_id = c.id
+FROM public.categories c
+WHERE m.default_category_id IS NULL
+  AND m.category IS NOT NULL
+  AND m.category <> 'Uncategorized'
+  AND lower(c.name) = lower(m.category);
+
+-- Phase 17 rollback (safe any time -- drops the trigger/function only; the
+-- backfilled default_category_id values are correct data, not left as a
+-- side effect to undo):
+-- DROP TRIGGER IF EXISTS trg_resolve_merchant_default_category ON public.merchant_memory;
+-- DROP FUNCTION IF EXISTS public.fn_resolve_merchant_default_category();

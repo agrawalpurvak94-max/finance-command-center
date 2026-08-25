@@ -45,6 +45,7 @@ function matchesFilters(
     if (!haystack.includes(needle)) return false
   }
   if (filters.category && row.category !== filters.category) return false
+  if (filters.uncategorizedOnly && row.category && row.category !== 'Uncategorized') return false
   if (filters.type && row.type !== filters.type) return false
   if (filters.categorySource && row.categorySource !== filters.categorySource) return false
   if (filters.status && row.status !== filters.status) return false
@@ -62,7 +63,7 @@ function matchesFilters(
   return true
 }
 
-/** Reads Statement Analytics' drill-down query params into initial filter/search state — see StatementAnalytics.tsx's handleDrillDown. */
+/** Reads drill-down query params into initial filter/search state — from Statement Analytics' handleDrillDown, or Merchant Center's "Uncategorized Merchants" KPI tile (`?uncategorized=1`). */
 function readInitialState(searchParams: URLSearchParams): { search: string; filters: FiltersType } {
   const filters: {
     category?: string
@@ -71,6 +72,7 @@ function readInitialState(searchParams: URLSearchParams): { search: string; filt
     ownerType?: OwnerType
     dateFrom?: string
     dateTo?: string
+    uncategorizedOnly?: boolean
   } = {}
   const category = searchParams.get('category')
   if (category) filters.category = category
@@ -84,6 +86,8 @@ function readInitialState(searchParams: URLSearchParams): { search: string; filt
   if (dateFrom) filters.dateFrom = dateFrom
   const dateTo = searchParams.get('dateTo')
   if (dateTo) filters.dateTo = dateTo
+  // Drill-down from Merchant Center's "Uncategorized Merchants" KPI tile.
+  if (searchParams.get('uncategorized') === '1') filters.uncategorizedOnly = true
   return { search: searchParams.get('merchant') ?? '', filters }
 }
 

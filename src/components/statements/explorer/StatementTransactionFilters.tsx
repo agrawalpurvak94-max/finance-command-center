@@ -7,6 +7,7 @@ import {
   Gauge,
   Users,
   Briefcase,
+  CircleAlert,
 } from 'lucide-react'
 import { FilterChip } from '@/components/transactions/FilterChip'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import type { StatementTransactionFilters as FiltersType } from '@/domain/StatementTransaction'
 import type { Client } from '@/domain/Client'
 
@@ -94,6 +96,7 @@ export function StatementTransactionFilters({
 }: StatementTransactionFiltersProps) {
   const hasActiveFilters =
     !!filters.category ||
+    !!filters.uncategorizedOnly ||
     !!filters.type ||
     !!filters.categorySource ||
     !!filters.status ||
@@ -127,6 +130,23 @@ export function StatementTransactionFilters({
           ariaLabel="Category filter"
         />
       </FilterChip>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-pressed={!!filters.uncategorizedOnly}
+        onClick={() =>
+          onFiltersChange({ uncategorizedOnly: filters.uncategorizedOnly ? undefined : true })
+        }
+        className={cn(
+          'gap-xs rounded-md border-border bg-card text-body-sm font-medium',
+          filters.uncategorizedOnly && 'border-primary/50 bg-primary/10 text-primary',
+        )}
+      >
+        <CircleAlert className="size-3.5 text-muted-foreground" aria-hidden="true" />
+        Uncategorized Only
+      </Button>
 
       <FilterChip icon={ArrowLeftRight} label="Debit/Credit" isActive={!!filters.type}>
         <OptionSelect

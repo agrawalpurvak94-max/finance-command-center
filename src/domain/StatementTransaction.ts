@@ -61,6 +61,16 @@ export interface StatementTransactionFilters {
   /** Only meaningful in "All Statements" mode (`/statements/explorer`) — a single-statement view is already date-bounded by its own statement period. */
   readonly dateFrom?: string
   readonly dateTo?: string
+  /**
+   * Matches rows with no resolved category — `category` is null OR the
+   * literal string `'Uncategorized'` (the value InlineSelector writes back
+   * when a user explicitly clears a category, per StatementTransactionTable's
+   * `onChange={(v) => onUpdateCategory(row.id, v ?? 'Uncategorized')}`).
+   * Separate from `category` (an exact-match text filter) since "no
+   * category" isn't a value that can appear in that filter's own option
+   * list, which is built from distinct non-null category text already present.
+   */
+  readonly uncategorizedOnly?: boolean
 }
 
 /**
