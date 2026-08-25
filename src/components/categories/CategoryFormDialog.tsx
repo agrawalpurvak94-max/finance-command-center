@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Tag, Settings2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -7,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
+import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,6 +26,7 @@ import { CATEGORY_COLORS, type CategoryColor, type CategoryStatus } from '@/doma
 import {
   categoryColorClassNames,
   categoryColorLabels,
+  resolveCategoryIcon,
 } from '@/components/categories/categoryVisuals'
 import type {
   Category,
@@ -58,6 +62,22 @@ function FieldError({ children }: { children: string }) {
 }
 
 const NO_PARENT_VALUE = '__none__'
+
+/**
+ * Lowercase on purpose — see MerchantCategoryControl.tsx's identical
+ * `renderCategoryGlyph`: a capitalized `function PreviewIcon(...)` (or a
+ * capitalized variable rendered as a JSX tag) that resolves
+ * `resolveCategoryIcon()` trips React Compiler's "component created during
+ * render" check. Called directly as a function instead of JSX.
+ *
+ * Icon isn't user-editable yet (see the disabled "Icon picker coming soon"
+ * field below), so this always reflects the category's real saved icon —
+ * never a value the user just picked but hasn't saved.
+ */
+function renderCategoryPreviewIcon(category: CategoryRecord | null, className: string) {
+  const Icon = category ? resolveCategoryIcon(category.icon) : Tag
+  return <Icon className={className} aria-hidden="true" />
+}
 
 export function CategoryFormDialog({
   open,
@@ -143,22 +163,33 @@ function CategoryFormBody({
       </DialogHeader>
 
       <div className="flex flex-col gap-md">
-        <div>
-          <Label htmlFor="category-name">
-            Category Name
-            <RequiredMark />
-          </Label>
-          <Input
-            id="category-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Technology & Software"
-            aria-required="true"
-            aria-invalid={submitted && !!nameError}
-            className={cn(submitted && nameError && 'border-destructive')}
-          />
-          {submitted && nameError && <FieldError>{nameError}</FieldError>}
+        <div className="flex items-center gap-md">
+          <div
+            aria-hidden="true"
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-lg',
+              categoryColorClassNames[color],
+            )}
+          >
+            {renderCategoryPreviewIcon(category, 'size-5')}
+          </div>
+          <div className="min-w-0 flex-1">
+            <Label htmlFor="category-name">
+              Category Name
+              <RequiredMark />
+            </Label>
+            <Input
+              id="category-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Technology & Software"
+              aria-required="true"
+              aria-invalid={submitted && !!nameError}
+              className={cn(submitted && nameError && 'border-destructive')}
+            />
+          </div>
         </div>
+        {submitted && nameError && <FieldError>{nameError}</FieldError>}
 
         <div>
           <Label htmlFor="category-parent">Parent Category</Label>
@@ -203,6 +234,12 @@ function CategoryFormBody({
           />
           {submitted && descriptionError && <FieldError>{descriptionError}</FieldError>}
         </div>
+      </div>
+
+      <Separator className="my-md" />
+
+      <div className="flex flex-col gap-md">
+        <DrawerSectionHeader icon={Settings2}>Appearance & Status</DrawerSectionHeader>
 
         <div className="grid grid-cols-2 gap-md">
           <div>

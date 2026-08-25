@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { motion, useReducedMotion } from 'motion/react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryStatusBadge } from '@/components/categories/CategoryStatusBadge'
@@ -81,8 +82,9 @@ export function CategoryTable({
         id: 'transactionCount',
         header: 'Transaction Count',
         cell: ({ row }) => (
-          <span className="text-table-mono tabular-nums font-bold text-foreground">
+          <span className="tabular-nums text-body-sm font-bold text-foreground">
             {row.original.transactionCount.toLocaleString('en-IN')}
+            <span className="ml-1 text-[10px] font-normal text-muted-foreground">txns</span>
           </span>
         ),
       },
@@ -90,7 +92,7 @@ export function CategoryTable({
         id: 'merchantsAssigned',
         header: 'Merchants Assigned',
         cell: ({ row }) => (
-          <span className="text-table-mono tabular-nums text-foreground">
+          <span className="tabular-nums text-body-sm text-muted-foreground">
             {row.original.merchantsAssigned.toLocaleString('en-IN')}
           </span>
         ),
@@ -104,7 +106,7 @@ export function CategoryTable({
         id: 'lastUpdatedAt',
         header: 'Last Updated',
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-table-mono tabular-nums text-body-sm text-muted-foreground">
+          <span className="whitespace-nowrap tabular-nums text-body-sm text-muted-foreground">
             {new Date(row.original.lastUpdatedAt).toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short',
@@ -118,13 +120,15 @@ export function CategoryTable({
         header: '',
         size: 48,
         cell: ({ row }) => (
-          <CategoryRowActionsMenu
-            category={row.original}
-            onViewTransactions={onViewTransactions}
-            onViewMerchants={onViewMerchants}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+          <div className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 group-focus-within/row:opacity-100">
+            <CategoryRowActionsMenu
+              category={row.original}
+              onViewTransactions={onViewTransactions}
+              onViewMerchants={onViewMerchants}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </div>
         ),
       },
     ],
@@ -137,8 +141,29 @@ export function CategoryTable({
     getCoreRowModel: getCoreRowModel(),
   })
 
+  const shouldReduceMotion = useReducedMotion()
+
+  const columnWidths: Record<string, string> = {
+    name: 'w-56',
+    parentCategory: 'w-40',
+    description: 'w-64',
+    transactionCount: 'w-32',
+    merchantsAssigned: 'w-32',
+    status: 'w-24',
+    lastUpdatedAt: 'w-32',
+    actions: 'w-14',
+  }
+
+  const alignRight = new Set(['transactionCount', 'merchantsAssigned', 'lastUpdatedAt'])
+  const alignCenter = new Set(['status', 'actions'])
+
   return (
-    <div className="overflow-x-auto">
+    <motion.div
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="overflow-x-auto"
+    >
       <table className="w-full min-w-240 border-collapse text-left">
         <thead className="sticky top-0 z-10 bg-card">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -150,7 +175,12 @@ export function CategoryTable({
                 return (
                   <th
                     key={header.id}
-                    className="p-md text-label-caps uppercase text-muted-foreground"
+                    className={cn(
+                      'group/header p-md text-label-caps text-muted-foreground uppercase',
+                      columnWidths[header.column.id],
+                      alignRight.has(header.column.id) && 'text-right',
+                      alignCenter.has(header.column.id) && 'text-center',
+                    )}
                   >
                     {isSortable ? (
                       <button
@@ -160,6 +190,7 @@ export function CategoryTable({
                         }
                         className={cn(
                           'flex items-center gap-xs transition-colors hover:text-foreground',
+                          alignRight.has(header.column.id) && 'ml-auto',
                           isActive && 'text-foreground',
                         )}
                       >
@@ -171,7 +202,10 @@ export function CategoryTable({
                             <ArrowUp className="size-3" aria-hidden="true" />
                           )
                         ) : (
-                          <ArrowUpDown className="size-3 opacity-40" aria-hidden="true" />
+                          <ArrowUpDown
+                            className="size-3 opacity-0 transition-opacity group-hover/header:opacity-50"
+                            aria-hidden="true"
+                          />
                         )}
                       </button>
                     ) : (
@@ -185,9 +219,16 @@ export function CategoryTable({
         </thead>
         <tbody className="divide-y divide-border">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="transition-colors hover:bg-accent/40">
+            <tr key={row.id} className="group/row transition-colors hover:bg-surface-hover">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="p-md align-middle">
+                <td
+                  key={cell.id}
+                  className={cn(
+                    'px-md py-sm align-middle',
+                    alignRight.has(cell.column.id) && 'text-right',
+                    alignCenter.has(cell.column.id) && 'text-center',
+                  )}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -195,6 +236,6 @@ export function CategoryTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   )
 }
