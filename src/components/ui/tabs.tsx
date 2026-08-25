@@ -9,7 +9,7 @@ function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        'inline-flex h-9 w-fit items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground',
+        'inline-flex h-9 w-fit items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1 text-muted-foreground',
         className,
       )}
       {...props}
@@ -22,7 +22,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
       className={cn(
-        "inline-flex h-7 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-body-sm font-medium text-muted-foreground outline-none transition-[color,box-shadow] select-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-card data-[selected]:text-foreground data-[selected]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "inline-flex h-7 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-body-sm font-medium text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-foreground data-[active]:text-background [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
