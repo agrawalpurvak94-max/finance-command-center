@@ -1839,3 +1839,44 @@ WHERE m.default_category_id IS NULL
 -- side effect to undo):
 -- DROP TRIGGER IF EXISTS trg_resolve_merchant_default_category ON public.merchant_memory;
 -- DROP FUNCTION IF EXISTS public.fn_resolve_merchant_default_category();
+
+-- ============================================================================
+-- PHASE 18 — Backfill categories.user_id for the 24 default categories
+-- (2026-08-25)
+-- STATUS: NOT EXECUTED. Run via the Supabase SQL editor. Pure data backfill:
+-- only fills currently-NULL user_id values on categories.categories already
+-- has a user_id column and an existing `own_cat_all` RLS policy (auth.uid()
+-- = user_id, for ALL commands) -- neither the column nor the policy is
+-- touched by this migration, only the data.
+--
+-- Root cause of "Edit Category > Save Changes silently does nothing": all
+-- 24 live categories were seeded with user_id = NULL (see the class-level
+-- doc comment on SupabaseCategoryRepository). own_cat_all only grants
+-- UPDATE to rows where auth.uid() = user_id, so editing any of these 24
+-- categories matches zero rows -- PostgREST returns no error, just an empty
+-- result, which supabase-category.repository.ts's update() correctly
+-- surfaces as "could not be updated... RLS denied the write", but the
+-- calling UI (CategoryFormDialog / Categories.tsx) has no error-state
+-- rendering, so the dialog just sits there with no visible feedback. The
+-- frontend was already talking to Supabase correctly the whole time; RLS
+-- was the one silently rejecting the write.
+--
+-- Fix: this is a single-tenant app (see Phase 2.6's header comment) -- the
+-- one verified owner, id 2f324f4d-1dc3-4ec5-8c23-93da480842c7, already owns
+-- every other user_id-populated row in the database (accounts, clients,
+-- statements, transactions, merchant_memory). These 24 categories are this
+-- same owner's data, just never labeled -- backfilling user_id makes the
+-- existing own_cat_all policy correctly recognize them as editable, exactly
+-- like Phase 2.6 did for accounts/clients/statements. No RLS policy
+-- changed, no new column, no application code touched.
+-- ============================================================================
+
+UPDATE public.categories
+  SET user_id = '2f324f4d-1dc3-4ec5-8c23-93da480842c7'
+  WHERE user_id IS NULL;
+
+-- Phase 18 rollback (only safe if none of these categories have been
+-- edited since -- otherwise this would also revert genuine post-backfill
+-- user edits' ownership, not just this migration's effect):
+-- UPDATE public.categories SET user_id = NULL
+--   WHERE user_id = '2f324f4d-1dc3-4ec5-8c23-93da480842c7';
