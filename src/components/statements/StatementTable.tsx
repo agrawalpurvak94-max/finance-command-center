@@ -226,7 +226,7 @@ export function StatementTable({
                           onSortChange({ id: sortId, desc: isActive ? !sort?.desc : false })
                         }
                         className={cn(
-                          'flex items-center gap-xs transition-colors hover:text-foreground',
+                          'flex items-center gap-xs uppercase transition-colors hover:text-foreground',
                           alignRight.has(header.column.id) && 'ml-auto',
                           isActive && 'text-foreground',
                         )}

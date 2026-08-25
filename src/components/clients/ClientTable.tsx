@@ -185,7 +185,7 @@ export function ClientTable({
                           onSortChange({ id: sortId, desc: isActive ? !sort?.desc : false })
                         }
                         className={cn(
-                          'flex items-center gap-xs whitespace-nowrap transition-colors hover:text-foreground',
+                          'flex items-center gap-xs uppercase whitespace-nowrap transition-colors hover:text-foreground',
                           isActive && 'text-foreground',
                         )}
                       >
