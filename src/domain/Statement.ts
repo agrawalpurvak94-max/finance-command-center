@@ -54,6 +54,8 @@ export interface StatementFilters {
   readonly clientId?: string
   /** Drill-down filter from Accounts (Module 8) / Credit Cards (Module 9) "View All Statements". */
   readonly accountId?: string
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder?: string
 }
 
 export interface StatementSort {

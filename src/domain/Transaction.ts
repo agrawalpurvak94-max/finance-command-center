@@ -46,6 +46,8 @@ export interface TransactionFilters {
   readonly merchantId?: string
   readonly bankAccountId?: string
   readonly creditCardId?: string
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder?: string
   readonly type?: TransactionType
   readonly ownerType?: OwnerType
   readonly paymentMode?: PaymentMode

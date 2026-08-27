@@ -1,4 +1,4 @@
-import { CalendarRange, Landmark, FileType2, ListFilter, User } from 'lucide-react'
+import { CalendarRange, Landmark, FileType2, ListFilter, User, UserRound } from 'lucide-react'
 import { FilterChip } from '@/components/transactions/FilterChip'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ interface StatementFiltersProps {
   onClear: () => void
   bankNames: readonly string[]
   clients: readonly Client[]
+  accountHolders: readonly string[]
 }
 
 // Base UI's Select.Value renders the raw value string unless given a
@@ -71,6 +72,7 @@ export function StatementFilters({
   onClear,
   bankNames,
   clients,
+  accountHolders,
 }: StatementFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-sm rounded-xl border border-border bg-card p-sm">
@@ -147,6 +149,16 @@ export function StatementFilters({
           options={clients}
           onChange={(v) => onChange({ clientId: v })}
           ariaLabel="Client filter"
+        />
+      </FilterChip>
+
+      <FilterChip icon={UserRound} label="Account Holder" isActive={!!draft.accountHolder}>
+        <ReferenceSelect
+          value={draft.accountHolder}
+          placeholder="All holders"
+          options={accountHolders.map((name) => ({ id: name, name }))}
+          onChange={(v) => onChange({ accountHolder: v })}
+          ariaLabel="Account holder filter"
         />
       </FilterChip>
 

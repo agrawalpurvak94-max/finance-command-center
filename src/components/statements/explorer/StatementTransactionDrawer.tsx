@@ -169,6 +169,7 @@ export function StatementTransactionDrawer({
                 {isCard ? 'Card' : 'Account'}
               </DrawerSectionHeader>
               <div className="grid grid-cols-2 gap-sm">
+                <Field label="Account Holder" value={detail?.accountHolder ?? 'Unassigned'} />
                 <Field label="Bank" value={account?.bankName} />
                 <Field label={isCard ? 'Card Name' : 'Account Name'} value={detail?.accountName} />
                 <Field label="Account Type" value={isCard ? 'Credit Card' : 'Bank Account'} />

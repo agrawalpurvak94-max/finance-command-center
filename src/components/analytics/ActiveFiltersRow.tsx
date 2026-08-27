@@ -24,6 +24,7 @@ const FILTER_LABELS: Partial<Record<keyof AnalyticsFilters, string>> = {
   bankAccountId: 'Bank Account',
   creditCardId: 'Credit Card',
   bankName: 'Bank',
+  accountHolder: 'Account Holder',
   type: 'Type',
   ownerType: 'Biz/Personal',
   paymentMode: 'Payment Mode',

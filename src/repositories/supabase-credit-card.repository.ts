@@ -117,6 +117,7 @@ type AccountRow = {
   notes: string | null
   resolved_is_active: boolean | null
   client_id: string | null
+  account_holder_name: string | null
 }
 
 type ActivityAgg = {
@@ -230,6 +231,7 @@ function mapRow(
     status: row.resolved_is_active === false ? 'inactive' : 'active',
     notes: row.notes,
     clientId: row.client_id,
+    accountHolder: row.account_holder_name,
   }
 }
 
@@ -431,6 +433,7 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
         statement_day: statementDay,
         minimum_due: 0,
         is_active: input.status === 'active',
+        account_holder_name: input.accountHolder ?? null,
       })
       .select('*')
       .single()
@@ -455,11 +458,31 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
         notes: data.notes,
         resolved_is_active: data.is_active,
         client_id: data.client_id,
+        account_holder_name: data.account_holder_name,
       },
       0,
       'healthy',
       undefined,
     )
+  }
+
+  /** Narrow write for the Account Holder identity field — see `CreditCardRepository.updateAccountHolder`'s doc comment. Mirrors `updateCreditLimit`'s pattern (RETURNING-only, scoped to Credit Card rows). */
+  async updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .update({ account_holder_name: accountHolder })
+      .eq('id', id)
+      .eq('account_type', 'Credit Card')
+      .select('account_holder_name')
+      .maybeSingle()
+
+    if (error) throw new Error(`Failed to update account holder for ${id}: ${error.message}`)
+    if (!data)
+      throw new Error(
+        `Credit card ${id}'s holder could not be updated — it does not exist, or RLS denied the write.`,
+      )
+
+    return (data as { account_holder_name: string | null }).account_holder_name
   }
 
   async update(id: string, input: CreditCardUpdateInput): Promise<CreditCardRecord> {
@@ -526,6 +549,7 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
         notes: data.notes,
         resolved_is_active: data.is_active,
         client_id: data.client_id,
+        account_holder_name: data.account_holder_name,
       },
       (utilRow as { utilization_percent?: number | null } | null)?.utilization_percent ?? null,
       toCreditCardHealth((healthRow as { health?: string } | null)?.health),

@@ -158,6 +158,22 @@ async function updateCreditLimit(cardId: string, creditLimit: number): Promise<C
   return creditCardRepository.updateCreditLimit(cardId, creditLimit)
 }
 
+/**
+ * Financial Pulse drawer's inline Account Holder edit — routes to whichever
+ * repository actually owns the row (same `accounts` table, split by
+ * `account_type` at the repository layer, same as every other narrow write
+ * here). Shared by both `AccountActivityDrawer` and `CreditCardActivityDrawer`.
+ */
+async function updateAccountHolder(
+  accountId: string,
+  kind: AccountKind,
+  accountHolder: string | null,
+): Promise<string | null> {
+  return kind === 'credit_card'
+    ? creditCardRepository.updateAccountHolder(accountId, accountHolder)
+    : bankAccountRepository.updateAccountHolder(accountId, accountHolder)
+}
+
 async function buildBankAccountCards(): Promise<ConnectedAccount[]> {
   const { rows } = await bankAccountRepository.list({ page: 1, pageSize: 50 })
   return Promise.all(
@@ -181,6 +197,7 @@ async function buildBankAccountCards(): Promise<ConnectedAccount[]> {
         transactionCount: activity.count,
         institutionName: a.bankName,
         accountTypeLabel: BANK_TYPE_LABEL[a.accountType],
+        accountHolder: a.accountHolder,
       } satisfies ConnectedAccount
     }),
   )
@@ -212,6 +229,7 @@ async function buildCreditCardCards(): Promise<ConnectedAccount[]> {
         transactionCount: activity.count,
         institutionName: c.bankName,
         accountTypeLabel: 'Credit Card',
+        accountHolder: c.accountHolder,
       } satisfies ConnectedAccount
     }),
   )
@@ -458,4 +476,5 @@ export const dashboardService = {
   getLatestStatementForAccount,
   getCreditPosition,
   updateCreditLimit,
+  updateAccountHolder,
 }

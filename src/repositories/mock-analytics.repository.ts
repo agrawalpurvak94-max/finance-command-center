@@ -38,6 +38,7 @@ function matchesAnalyticsFilters(txn: Transaction, filters: AnalyticsFilters): b
   if (filters.bankAccountId && txn.account.id !== filters.bankAccountId) return false
   if (filters.creditCardId && txn.account.id !== filters.creditCardId) return false
   if (filters.bankName && txn.account.bankName !== filters.bankName) return false
+  if (filters.accountHolder && txn.account.accountHolder !== filters.accountHolder) return false
   if (filters.type && txn.type !== filters.type) return false
   if (filters.ownerType && txn.ownerType !== filters.ownerType) return false
   if (filters.paymentMode && txn.paymentMode !== filters.paymentMode) return false

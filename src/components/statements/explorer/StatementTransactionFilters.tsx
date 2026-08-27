@@ -6,6 +6,7 @@ import {
   CircleCheck,
   Gauge,
   Users,
+  UserRound,
   Briefcase,
   CircleAlert,
 } from 'lucide-react'
@@ -33,6 +34,7 @@ interface StatementTransactionFiltersProps {
   categorySourceOptions: readonly string[]
   statusOptions: readonly string[]
   clientOptions: readonly Client[]
+  accountHolders: readonly string[]
 }
 
 // Same small pattern as StatementFilters.tsx's local ReferenceSelect —
@@ -93,6 +95,7 @@ export function StatementTransactionFilters({
   categorySourceOptions,
   statusOptions,
   clientOptions,
+  accountHolders,
 }: StatementTransactionFiltersProps) {
   const hasActiveFilters =
     !!filters.category ||
@@ -102,6 +105,7 @@ export function StatementTransactionFilters({
     !!filters.status ||
     !!filters.confidenceTier ||
     !!filters.clientId ||
+    !!filters.accountHolder ||
     !!filters.ownerType
 
   return (
@@ -204,6 +208,16 @@ export function StatementTransactionFilters({
           options={clientOptions.map((c) => ({ id: c.id, label: c.name }))}
           onChange={(v) => onFiltersChange({ clientId: v })}
           ariaLabel="Client filter"
+        />
+      </FilterChip>
+
+      <FilterChip icon={UserRound} label="Account Holder" isActive={!!filters.accountHolder}>
+        <OptionSelect
+          value={filters.accountHolder}
+          placeholder="All holders"
+          options={accountHolders.map((name) => ({ id: name, label: name }))}
+          onChange={(v) => onFiltersChange({ accountHolder: v })}
+          ariaLabel="Account holder filter"
         />
       </FilterChip>
 

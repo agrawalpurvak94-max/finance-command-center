@@ -16,6 +16,8 @@ export interface AccountStatementTile {
   readonly name: string
   readonly institutionName: string
   readonly maskedNumber: string
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder: string | null
   readonly hasStatement: boolean
   readonly statementId: string | null
   readonly statementPeriodLabel: string | null

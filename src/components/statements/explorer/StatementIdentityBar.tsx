@@ -33,6 +33,12 @@ export function StatementIdentityBar({ detail }: StatementIdentityBarProps) {
         {identity.initials}
       </div>
       <div className="min-w-0">
+        {/* Holder first and most prominent — priority order for this bar is
+            Holder, then Bank, then Account/Card, then Last 4, per explicit
+            instruction. Never hidden for width. */}
+        <p className="truncate text-label-caps font-semibold uppercase text-primary">
+          {detail.accountHolder || 'Unassigned'}
+        </p>
         <p className="truncate text-body-md font-semibold text-foreground">{detail.accountName}</p>
         <p className="flex items-center gap-xs text-body-sm text-muted-foreground">
           <Icon className="size-3.5 shrink-0" aria-hidden="true" />

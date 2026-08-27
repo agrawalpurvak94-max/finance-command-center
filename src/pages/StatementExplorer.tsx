@@ -25,7 +25,11 @@ import {
   useUpdateStatementTransactionClient,
   useUpdateStatementTransactionOwnerType,
 } from '@/hooks/useStatementExplorer'
-import { useTransactionCategories, useTransactionClients } from '@/hooks/useTransactions'
+import {
+  useTransactionAccounts,
+  useTransactionCategories,
+  useTransactionClients,
+} from '@/hooks/useTransactions'
 import { useCategoriesList } from '@/hooks/useCategories'
 import type { CategoryVisual } from '@/components/merchants/MerchantCategoryControl'
 import type {
@@ -53,6 +57,7 @@ function matchesFilters(
   if (filters.categorySource && row.categorySource !== filters.categorySource) return false
   if (filters.status && row.status !== filters.status) return false
   if (filters.clientId && row.clientId !== filters.clientId) return false
+  if (filters.accountHolder && row.accountHolder !== filters.accountHolder) return false
   if (filters.ownerType && row.ownerType !== filters.ownerType) return false
   if (filters.dateFrom && row.date < filters.dateFrom) return false
   if (filters.dateTo && row.date > filters.dateTo) return false
@@ -71,6 +76,7 @@ function readInitialState(searchParams: URLSearchParams): { search: string; filt
   const filters: {
     category?: string
     clientId?: string
+    accountHolder?: string
     type?: 'debit' | 'credit'
     ownerType?: OwnerType
     dateFrom?: string
@@ -81,6 +87,8 @@ function readInitialState(searchParams: URLSearchParams): { search: string; filt
   if (category) filters.category = category
   const clientId = searchParams.get('clientId')
   if (clientId) filters.clientId = clientId
+  const accountHolder = searchParams.get('accountHolder')
+  if (accountHolder) filters.accountHolder = accountHolder
   const type = searchParams.get('type')
   if (type === 'debit' || type === 'credit') filters.type = type
   const ownerType = searchParams.get('ownerType')
@@ -125,6 +133,18 @@ export function StatementExplorer() {
   const transactionsQuery = isAllMode ? allTxnQuery : singleTxnQuery
   const masterCategoriesQuery = useTransactionCategories()
   const masterClientsQuery = useTransactionClients()
+  const masterAccountsQuery = useTransactionAccounts()
+  const accountHolders = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (masterAccountsQuery.data ?? [])
+            .map((a) => a.accountHolder)
+            .filter((h): h is string => !!h),
+        ),
+      ).sort(),
+    [masterAccountsQuery.data],
+  )
   const updateCategory = useUpdateStatementTransactionCategory(statementId)
   const updateClient = useUpdateStatementTransactionClient(statementId)
   const updateOwnerType = useUpdateStatementTransactionOwnerType(statementId)
@@ -330,6 +350,7 @@ export function StatementExplorer() {
             categorySourceOptions={categorySourceOptions}
             statusOptions={statusOptions}
             clientOptions={masterClientsQuery.data ?? []}
+            accountHolders={accountHolders}
           />
 
           <div className="text-body-sm text-muted-foreground">

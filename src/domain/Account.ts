@@ -18,6 +18,13 @@ export interface TransactionAccount {
   readonly bankName: string
   readonly cardNetwork?: CardNetwork
   readonly last4: string
+  /**
+   * `accounts.account_holder_name` — free text (e.g. "Husband"/"Wife"/
+   * "Business"), resolved via `accounts.id`, never inferred from bank name,
+   * card name, or any other field. Null when genuinely unset — never
+   * defaulted to a guessed value.
+   */
+  readonly accountHolder: string | null
 }
 
 /** Richer account summary shape used by the Financial Pulse account/credit-card cards. */
@@ -44,6 +51,8 @@ export interface ConnectedAccount {
   readonly institutionName?: string
   /** Human-readable account type, e.g. "Credit Card" / "Savings" / "Current" / "Overdraft", for the account drawer header. */
   readonly accountTypeLabel?: string
+  /** See `TransactionAccount.accountHolder`'s doc comment. */
+  readonly accountHolder: string | null
 }
 
 /**
@@ -81,6 +90,8 @@ export interface BankAccountRecord {
   readonly notes: string | null
   /** Module 7 (Clients) drill-down target — null for accounts not tied to a specific client. */
   readonly clientId: string | null
+  /** See `TransactionAccount.accountHolder`'s doc comment. */
+  readonly accountHolder: string | null
 }
 
 export interface BankAccountFilters {
@@ -124,6 +135,8 @@ export interface BankAccountCreateInput {
   readonly accountNumber: string
   readonly openingBalance: number
   readonly status: BankAccountRecordStatus
+  /** See `TransactionAccount.accountHolder`'s doc comment. Optional at creation — null/omitted means genuinely unset, not a guessed value. */
+  readonly accountHolder?: string | null
 }
 
 export interface BankAccountUpdateInput {

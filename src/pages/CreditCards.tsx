@@ -96,7 +96,8 @@ export function CreditCards() {
       return (
         tile.name.toLowerCase().includes(term) ||
         tile.institutionName.toLowerCase().includes(term) ||
-        tile.maskedNumber.toLowerCase().includes(term)
+        tile.maskedNumber.toLowerCase().includes(term) ||
+        (tile.accountHolder?.toLowerCase().includes(term) ?? false)
       )
     })
   }, [tilesQuery.data, search, typeFilter])
@@ -147,7 +148,7 @@ export function CreditCards() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search bank name, account name, last 4 digits…"
+            placeholder="Search bank name, account name, holder, last 4 digits…"
             className="pl-9"
             aria-label="Search accounts"
           />

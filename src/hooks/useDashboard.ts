@@ -125,3 +125,38 @@ export function useUpdateCreditLimit() {
     },
   })
 }
+
+/**
+ * Financial Pulse drawer's inline Account Holder edit (both
+ * `AccountActivityDrawer` and `CreditCardActivityDrawer`) — invalidates
+ * every other place a holder value is displayed: this account's own
+ * dashboard tile list (bank or card, by kind), the full Accounts/Credit
+ * Cards module list, and Account Intelligence's tiles/summary (a separate,
+ * non-centralized query key — see useAccountStatements.ts).
+ */
+export function useUpdateAccountHolder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      accountId,
+      kind,
+      accountHolder,
+    }: {
+      accountId: string
+      kind: AccountKind
+      accountHolder: string | null
+    }) => dashboardService.updateAccountHolder(accountId, kind, accountHolder),
+    onSuccess: (_data, { kind }) => {
+      void queryClient.invalidateQueries({
+        queryKey:
+          kind === 'credit_card'
+            ? queryKeys.dashboard.creditCards
+            : queryKeys.dashboard.connectedAccounts,
+      })
+      void queryClient.invalidateQueries({
+        queryKey: kind === 'credit_card' ? queryKeys.creditCards.all : queryKeys.accounts.all,
+      })
+      void queryClient.invalidateQueries({ queryKey: ['account-statements'] })
+    },
+  })
+}

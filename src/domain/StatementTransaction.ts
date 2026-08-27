@@ -46,6 +46,16 @@ export interface StatementTransactionRow {
   readonly sourceMessageId: string | null
   /** From `metadata.email_subject`. */
   readonly emailSubject: string | null
+  /**
+   * Resolved via `statement_transactions.statement_id -> statements.account_id
+   * -> accounts.account_holder_name` (same technique
+   * `statement-analytics.service.ts`'s `getAdaptedTransactions` already uses
+   * for its own per-row `account` resolution) — never carried directly on
+   * `statement_transactions`, which has no account_id of its own. Null when
+   * genuinely unassigned, or when the row's statement_id doesn't resolve to
+   * a real statement.
+   */
+  readonly accountHolder: string | null
 }
 
 export interface StatementTransactionFilters {
@@ -58,6 +68,8 @@ export interface StatementTransactionFilters {
   readonly confidenceTier?: 'high' | 'medium' | 'low'
   readonly clientId?: string
   readonly ownerType?: OwnerType
+  /** See `StatementTransactionRow.accountHolder`'s doc comment. */
+  readonly accountHolder?: string
   /** Only meaningful in "All Statements" mode (`/statements/explorer`) — a single-statement view is already date-bounded by its own statement period. */
   readonly dateFrom?: string
   readonly dateTo?: string
@@ -90,6 +102,8 @@ export interface StatementAccountIdentity {
   readonly accountLast4: string | null
   readonly cardNetwork: string | null
   readonly creditLimit: number | null
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder: string | null
 }
 
 /** One entry in the Statement Explorer's top statement-selector dropdown. */
@@ -109,4 +123,6 @@ export interface StatementExplorerDetail {
   readonly creditLimit: number | null
   /** Credit-card-only, derived as Credit Limit − this statement's Total Amount Due; null when either input is unavailable. */
   readonly availableCredit: number | null
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder: string | null
 }

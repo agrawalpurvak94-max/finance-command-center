@@ -92,6 +92,20 @@ export function AccountStatementTileCard({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
+              {/* Same treatment as Financial Pulse's AccountCard: text-body-sm/
+                  font-bold (bumped up from text-[10px] — matches Financial
+                  Pulse's own size fix) and colored with this tile's own
+                  institution accent (identity.textClassName) instead of a
+                  fixed text-primary, so the holder name always matches the
+                  tile's own accent bar/avatar. */}
+              <p
+                className={cn(
+                  'truncate text-body-sm font-bold uppercase tracking-wide',
+                  identity.textClassName,
+                )}
+              >
+                {tile.accountHolder || 'Holder not assigned'}
+              </p>
               <p className="truncate text-body-md font-semibold text-foreground">{tile.name}</p>
               <p className="truncate text-body-sm text-muted-foreground">{tile.institutionName}</p>
             </div>

@@ -97,6 +97,7 @@ async function getAccountStatementTiles(clientId?: string): Promise<AccountState
           name: c.nickname || c.cardName,
           institutionName: c.bankName,
           maskedNumber: c.maskedNumber,
+          accountHolder: c.accountHolder,
         },
         statement,
       )
@@ -114,6 +115,7 @@ async function getAccountStatementTiles(clientId?: string): Promise<AccountState
           name: a.nickname || a.accountName,
           institutionName: a.bankName,
           maskedNumber: a.maskedAccountNumber,
+          accountHolder: a.accountHolder,
         },
         statement,
       )

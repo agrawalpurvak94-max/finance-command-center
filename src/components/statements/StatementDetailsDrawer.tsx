@@ -62,6 +62,11 @@ function DrawerBody({ statement }: { statement: Statement }) {
         <Separator />
 
         <div className="grid grid-cols-2 gap-md">
+          <DrawerStat
+            label="Account Holder"
+            value={account.accountHolder ?? 'Unassigned'}
+            valueClassName="font-normal"
+          />
           <DrawerStat label="Bank" value={account.bankName} valueClassName="font-normal" />
           <DrawerStat
             label="Account"

@@ -162,6 +162,7 @@ function generateCreditCard(card: (typeof mockCreditCards)[number]): CreditCardR
     status: 'active',
     notes: null,
     clientId: CARD_CLIENT_IDS[card.id] ?? null,
+    accountHolder: null,
   }
 }
 

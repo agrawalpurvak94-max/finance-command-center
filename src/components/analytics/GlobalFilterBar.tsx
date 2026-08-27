@@ -10,6 +10,7 @@ import {
   Tag,
   Tags,
   User,
+  UserRound,
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
@@ -65,6 +66,14 @@ export function GlobalFilterBar({
   creditCards,
   bankNames,
 }: GlobalFilterBarProps) {
+  // Derived here (not a new prop) — same technique as Transactions'
+  // FilterToolbar, since bankAccounts/creditCards already carry accountHolder.
+  const accountHolders = Array.from(
+    new Set(
+      [...bankAccounts, ...creditCards].map((a) => a.accountHolder).filter((h): h is string => !!h),
+    ),
+  ).sort()
+
   return (
     <div className="sticky top-0 z-20 flex flex-wrap items-center gap-sm rounded-xl border border-border bg-card/95 p-sm shadow-sm backdrop-blur-sm">
       <FilterChip
@@ -151,6 +160,16 @@ export function GlobalFilterBar({
           options={bankNames.map((name) => ({ id: name, name }))}
           onChange={(v) => onChange({ bankName: v })}
           ariaLabel="Bank filter"
+        />
+      </FilterChip>
+
+      <FilterChip icon={UserRound} label="Account Holder" isActive={!!draft.accountHolder}>
+        <FilterReferenceSelect
+          value={draft.accountHolder}
+          placeholder="All holders"
+          options={accountHolders.map((name) => ({ id: name, name }))}
+          onChange={(v) => onChange({ accountHolder: v })}
+          ariaLabel="Account holder filter"
         />
       </FilterChip>
 

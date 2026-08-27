@@ -145,6 +145,8 @@ function matchesFilters(t: AdaptedTransaction, filters: StatementAnalyticsFilter
   if (filters.bankAccountId && (!t.account || t.account.id !== filters.bankAccountId)) return false
   if (filters.creditCardId && (!t.account || t.account.id !== filters.creditCardId)) return false
   if (filters.bankName && (!t.account || t.account.bankName !== filters.bankName)) return false
+  if (filters.accountHolder && (!t.account || t.account.accountHolder !== filters.accountHolder))
+    return false
   return true
 }
 

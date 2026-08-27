@@ -40,6 +40,7 @@ function matchesFilters(txn: Transaction, params: TransactionListParams): boolea
   if (filters.merchantId && txn.merchant.id !== filters.merchantId) return false
   if (filters.bankAccountId && txn.account.id !== filters.bankAccountId) return false
   if (filters.creditCardId && txn.account.id !== filters.creditCardId) return false
+  if (filters.accountHolder && txn.account.accountHolder !== filters.accountHolder) return false
   if (filters.type && txn.type !== filters.type) return false
   if (filters.ownerType && txn.ownerType !== filters.ownerType) return false
   if (filters.paymentMode && txn.paymentMode !== filters.paymentMode) return false

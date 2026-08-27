@@ -28,6 +28,14 @@ export interface CreditCardRepository {
    * silently wipe them if it called `update()` instead.
    */
   updateCreditLimit(id: string, creditLimit: number): Promise<CreditCardPosition>
+  /**
+   * Narrow write for the Account Holder identity field (Husband/Wife/
+   * Business) — same `accounts.account_holder_name` column `updateCreditLimit`
+   * writes alongside, mirrored here so a caller with only the holder value
+   * (Financial Pulse's inline drawer edit) never has to load/resubmit
+   * nickname/status/notes via the full `update()`.
+   */
+  updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null>
   create(input: CreditCardCreateInput): Promise<CreditCardRecord>
   update(id: string, input: CreditCardUpdateInput): Promise<CreditCardRecord>
   delete(id: string): Promise<void>

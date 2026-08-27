@@ -97,6 +97,15 @@ export function Statements() {
     () => Array.from(new Set((accountsQuery.data ?? []).map((a) => a.bankName))).sort(),
     [accountsQuery.data],
   )
+  const accountHolders = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (accountsQuery.data ?? []).map((a) => a.accountHolder).filter((h): h is string => !!h),
+        ),
+      ).sort(),
+    [accountsQuery.data],
+  )
 
   const summaryQuery = useStatementsSummary()
   const listQuery = useStatementsList({
@@ -200,6 +209,7 @@ export function Statements() {
         }}
         bankNames={bankNames}
         clients={clientsQuery.data ?? []}
+        accountHolders={accountHolders}
       />
 
       <div className="flex items-center justify-between px-xs text-body-sm text-muted-foreground">

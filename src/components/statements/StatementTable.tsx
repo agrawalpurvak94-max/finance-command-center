@@ -103,14 +103,18 @@ export function StatementTable({
         ),
       },
       {
-        id: 'fileName',
-        header: 'File Name',
+        // Presentation-only replacement for the previous "File Name" column
+        // — the underlying source_file/pdf_filename value is untouched in
+        // Supabase and still shown in StatementDetailsDrawer's identity
+        // panel (Statement Name) and header, just no longer duplicated here.
+        id: 'accountHolder',
+        header: 'Account Holder',
         cell: ({ row }) => (
           <span
-            title={row.original.fileName}
-            className="block max-w-48 truncate text-body-sm text-muted-foreground"
+            title={row.original.account.accountHolder ?? undefined}
+            className="block max-w-40 truncate text-body-sm font-medium text-foreground"
           >
-            {row.original.fileName}
+            {row.original.account.accountHolder || 'Unassigned'}
           </span>
         ),
       },
@@ -182,9 +186,9 @@ export function StatementTable({
   const columnWidths: Record<string, string> = {
     statementDate: 'w-32',
     bank: 'w-40',
-    account: 'w-36',
+    account: 'w-40',
     statementPeriod: 'w-36',
-    fileName: 'w-48',
+    accountHolder: 'w-40',
     transactionsExtracted: 'w-32',
     status: 'w-36',
     importedAt: 'w-32',

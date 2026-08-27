@@ -38,7 +38,11 @@ export function StatementSelector({
 
   return (
     <Select value={value} onValueChange={(v) => v && onChange(v)}>
-      <SelectTrigger aria-label="Select statement" className="w-full min-w-72 sm:w-auto">
+      {/* Widened from min-w-72 -- holder-aware labels ("HUSBAND · HDFC Bank
+          •••• 7125 — 19 Jul 2026 – 18 Aug 2026") run longer than the old
+          bank-only ones and must not truncate the holder, the highest-
+          priority identity field. */}
+      <SelectTrigger aria-label="Select statement" className="w-full min-w-96 sm:w-auto">
         <SelectValue placeholder={isLoading ? 'Loading statements…' : 'Select a statement'}>
           {(current: string) => labelsById[current] ?? current}
         </SelectValue>

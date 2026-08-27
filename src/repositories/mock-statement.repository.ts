@@ -31,6 +31,8 @@ function matchesFilters(statement: Statement, params: StatementListParams): bool
   if (filters.status && statement.status !== filters.status) return false
   if (filters.clientId && statement.client?.id !== filters.clientId) return false
   if (filters.accountId && statement.account.id !== filters.accountId) return false
+  if (filters.accountHolder && statement.account.accountHolder !== filters.accountHolder)
+    return false
 
   return true
 }

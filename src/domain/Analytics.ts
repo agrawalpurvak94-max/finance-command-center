@@ -27,6 +27,8 @@ export interface AnalyticsFilters {
   readonly bankAccountId?: string
   readonly creditCardId?: string
   readonly bankName?: string
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder?: string
   readonly type?: TransactionType
   readonly ownerType?: OwnerType
   readonly paymentMode?: PaymentMode

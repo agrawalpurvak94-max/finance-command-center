@@ -94,6 +94,7 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
   const [accountNumber, setAccountNumber] = useState('')
   const [openingBalance, setOpeningBalance] = useState('0')
   const [status, setStatus] = useState<BankAccountRecordStatus>('active')
+  const [accountHolder, setAccountHolder] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   const bankNameError = bankName.trim().length === 0 ? 'Enter a bank name.' : null
@@ -115,6 +116,7 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
       accountNumber: accountNumber.trim(),
       openingBalance: Number(openingBalance) || 0,
       status,
+      accountHolder: accountHolder.trim() || null,
     })
   }
 
@@ -183,6 +185,19 @@ function BankAccountFormBody({ isPending, onSubmit, onCancel }: BankAccountFormB
             className={cn(submitted && accountNameError && 'border-destructive')}
           />
           {submitted && accountNameError && <FieldError>{accountNameError}</FieldError>}
+        </div>
+
+        <div>
+          <Label htmlFor="bank-account-holder">Account Holder</Label>
+          <Input
+            id="bank-account-holder"
+            value={accountHolder}
+            onChange={(e) => setAccountHolder(e.target.value)}
+            placeholder="e.g. Husband, Wife, Business"
+          />
+          <p className="mt-xs text-[11px] text-muted-foreground">
+            Identify who owns this account or card.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2">

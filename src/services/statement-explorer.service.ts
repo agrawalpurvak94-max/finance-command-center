@@ -51,6 +51,7 @@ async function getStatementExplorerDetail(
     cardNetwork: identity?.cardNetwork ?? statement.account.cardNetwork ?? null,
     creditLimit,
     availableCredit,
+    accountHolder: identity?.accountHolder ?? statement.account.accountHolder ?? null,
   }
 }
 
@@ -63,12 +64,28 @@ async function getStatementSelectorOptions(): Promise<StatementSelectorOption[]>
   })
   return rows.map((s) => ({
     id: s.id,
-    label: `${s.account.bankName} •••• ${s.account.last4} — ${s.statementPeriodLabel}`,
+    // Holder-first — see the STATEMENT EXPLORER — STATEMENT SELECTOR spec:
+    // priority order is Holder, then Bank, then Last 4, then Statement
+    // Period, and holder must never be dropped for width. 'UNASSIGNED' (not
+    // a guessed value) when accountHolder is genuinely unset.
+    label: `${(s.account.accountHolder ?? 'Unassigned').toUpperCase()} · ${s.account.bankName} •••• ${s.account.last4} — ${s.statementPeriodLabel}`,
   }))
 }
 
+/**
+ * Every row in a single-statement view shares the same account, so its
+ * accountHolder is resolved once from the statement itself (already fetched
+ * by callers via `getStatementExplorerDetail`) rather than re-resolved per
+ * row — cheaper than the "All Statements" per-row map below, and correct
+ * either way since there's only one account in play here.
+ */
 async function getStatementTransactions(statementId: string): Promise<StatementTransactionRow[]> {
-  return statementTransactionRepository.listByStatement(statementId)
+  const [rows, statement] = await Promise.all([
+    statementTransactionRepository.listByStatement(statementId),
+    statementRepository.getById(statementId),
+  ])
+  const accountHolder = statement?.account.accountHolder ?? null
+  return rows.map((row) => ({ ...row, accountHolder }))
 }
 
 /**
@@ -77,9 +94,24 @@ async function getStatementTransactions(statementId: string): Promise<StatementT
  * `:statementId`), which Statement Analytics drill-downs navigate into.
  * Reuses `statementAnalyticsRepository` (same underlying table) rather than
  * duplicating a second "fetch everything" query here.
+ *
+ * Per-row accountHolder is resolved via statement_id -> statements.account_id
+ * -> accounts.account_holder_name, the same statementId->account map
+ * `statement-analytics.service.ts`'s `getAdaptedTransactions` builds for its
+ * own per-row account resolution — not duplicated logic, just the same
+ * technique applied to this module's own row shape.
  */
 async function getAllStatementTransactions(): Promise<StatementTransactionRow[]> {
-  return statementAnalyticsRepository.listAllTransactions()
+  const [rows, statementsRes] = await Promise.all([
+    statementAnalyticsRepository.listAllTransactions(),
+    statementRepository.list({ page: 1, pageSize: 500 }),
+  ])
+  const holderByStatementId = new Map<string, string | null>()
+  for (const s of statementsRes.rows) holderByStatementId.set(s.id, s.account.accountHolder)
+  return rows.map((row) => ({
+    ...row,
+    accountHolder: holderByStatementId.get(row.statementId) ?? null,
+  }))
 }
 
 async function updateStatementTransactionCategory(id: string, category: string): Promise<void> {

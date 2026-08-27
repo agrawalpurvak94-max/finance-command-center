@@ -21,4 +21,10 @@ export interface BankAccountRepository {
   delete(id: string): Promise<void>
   /** "Sync All" header action — refreshes every account's lastSyncAt. */
   syncAll(): Promise<void>
+  /**
+   * Narrow write for the Account Holder identity field (Husband/Wife/
+   * Business) on `accounts.account_holder_name` — mirrors
+   * `CreditCardRepository.updateAccountHolder`'s doc comment.
+   */
+  updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null>
 }

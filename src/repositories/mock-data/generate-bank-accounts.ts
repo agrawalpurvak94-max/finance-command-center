@@ -149,6 +149,7 @@ function generateBankAccount(account: (typeof mockBankAccounts)[number]): BankAc
     status: 'active',
     notes: null,
     clientId: meta.clientId,
+    accountHolder: null,
   }
 }
 

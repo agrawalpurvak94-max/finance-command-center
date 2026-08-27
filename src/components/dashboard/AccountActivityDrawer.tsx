@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { IconChip } from '@/components/ui/icon-chip'
 import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
 import { TransactionListRows } from '@/components/dashboard/TransactionListRows'
+import { EditableAccountHolder } from '@/components/dashboard/EditableAccountHolder'
 import { formatINR } from '@/utils/currency'
 import { useAccountRecentTransactions } from '@/hooks/useDashboard'
 import type { ConnectedAccount } from '@/domain/Account'
@@ -61,6 +62,12 @@ export function AccountActivityDrawer({ account, onOpenChange }: AccountActivity
                 </p>
               </div>
             </div>
+
+            <EditableAccountHolder
+              accountId={account.id}
+              kind="bank"
+              accountHolder={account.accountHolder}
+            />
 
             <Separator />
 

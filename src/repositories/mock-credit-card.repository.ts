@@ -162,9 +162,17 @@ export class MockCreditCardRepository implements CreditCardRepository {
       status: input.status,
       notes: null,
       clientId: null,
+      accountHolder: input.accountHolder ?? null,
     }
     this.cards = [card, ...this.cards]
     return withLatency(card, 400)
+  }
+
+  async updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null> {
+    const index = this.cards.findIndex((c) => c.id === id)
+    if (index === -1) throw new Error(`Credit card ${id} not found`)
+    this.cards[index] = { ...this.cards[index], accountHolder }
+    return withLatency(accountHolder, 200)
   }
 
   async update(id: string, input: CreditCardUpdateInput): Promise<CreditCardRecord> {

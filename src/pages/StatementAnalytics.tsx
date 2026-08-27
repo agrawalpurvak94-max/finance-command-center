@@ -5,6 +5,7 @@ import {
   Tag,
   Store,
   Users,
+  UserRound,
   ArrowLeftRight,
   Briefcase,
   FileStack,
@@ -33,6 +34,7 @@ import { BizPersonalSpendChart } from '@/components/analytics/BizPersonalSpendCh
 import { useStatementAnalytics } from '@/hooks/useStatementAnalytics'
 import { useStatementSelectorOptions } from '@/hooks/useStatementExplorer'
 import {
+  useTransactionAccounts,
   useTransactionCategories,
   useTransactionClients,
   useTransactionMerchants,
@@ -47,6 +49,7 @@ const DRILL_DOWN_KEYS = [
   'dateFrom',
   'dateTo',
   'clientId',
+  'accountHolder',
   'type',
   'ownerType',
 ] as const satisfies readonly (keyof AnalyticsFilters)[]
@@ -72,6 +75,10 @@ export function StatementAnalytics() {
   const categoriesQuery = useTransactionCategories()
   const merchantsQuery = useTransactionMerchants()
   const clientsQuery = useTransactionClients()
+  const accountsQuery = useTransactionAccounts()
+  const accountHolders = Array.from(
+    new Set((accountsQuery.data ?? []).map((a) => a.accountHolder).filter((h): h is string => !!h)),
+  ).sort()
 
   const analytics = useStatementAnalytics(filters, granularity)
 
@@ -103,6 +110,7 @@ export function StatementAnalytics() {
     !!filters.categoryId ||
     !!filters.merchantId ||
     !!filters.clientId ||
+    !!filters.accountHolder ||
     !!filters.type ||
     !!filters.ownerType
 
@@ -252,6 +260,32 @@ export function StatementAnalytics() {
               {(clientsQuery.data ?? []).map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterChip>
+
+        <FilterChip icon={UserRound} label="Account Holder" isActive={!!filters.accountHolder}>
+          <Select
+            value={filters.accountHolder ?? '__all__'}
+            onValueChange={(v) =>
+              setFilters((prev) => ({
+                ...prev,
+                accountHolder: v && v !== '__all__' ? v : undefined,
+              }))
+            }
+          >
+            <SelectTrigger aria-label="Account holder filter" className="w-full">
+              <SelectValue placeholder="All holders">
+                {(current: string) => (current === '__all__' ? 'All holders' : current)}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All holders</SelectItem>
+              {accountHolders.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
                 </SelectItem>
               ))}
             </SelectContent>

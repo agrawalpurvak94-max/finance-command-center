@@ -116,6 +116,7 @@ type AccountLookupRow = {
   institution_name: string
   card_network: string | null
   resolved_last4: string | null
+  account_holder_name: string | null
 }
 
 function buildAccount(
@@ -124,7 +125,13 @@ function buildAccount(
 ): TransactionAccount {
   const row = accountId ? lookup.get(accountId) : undefined
   if (!row) {
-    return { id: accountId ?? '', kind: 'bank', bankName: 'Unknown', last4: '0000' }
+    return {
+      id: accountId ?? '',
+      kind: 'bank',
+      bankName: 'Unknown',
+      last4: '0000',
+      accountHolder: null,
+    }
   }
   return {
     id: row.id,
@@ -135,6 +142,7 @@ function buildAccount(
         ? (row.card_network as TransactionAccount['cardNetwork'])
         : undefined,
     last4: row.resolved_last4 ?? '0000',
+    accountHolder: row.account_holder_name,
   }
 }
 
@@ -188,7 +196,7 @@ async function fetchAccountLookup(
   if (ids.length === 0) return map
   const { data, error } = await client
     .from('vw_accounts')
-    .select('id,account_kind,institution_name,card_network,resolved_last4')
+    .select('id,account_kind,institution_name,card_network,resolved_last4,account_holder_name')
     .in('id', ids)
   if (error) throw new Error(`Failed to resolve statement accounts: ${error.message}`)
   for (const row of (data ?? []) as AccountLookupRow[]) map.set(row.id, row)
@@ -231,6 +239,21 @@ export class SupabaseStatementRepository implements StatementRepository {
         .select('id')
         .eq('account_kind', filters.accountKind)
       const ids = (kindAccounts ?? []).map((r) => (r as { id: string }).id)
+      query = query.in(
+        'account_id',
+        ids.length > 0 ? ids : ['00000000-0000-0000-0000-000000000000'],
+      )
+    }
+    // vw_statements has no account_holder_name column of its own (it's an
+    // accounts-table field, not a statements one) -- resolved the same way
+    // accountKind is above: look up matching account ids first, then filter
+    // statements by account_id.
+    if (filters?.accountHolder) {
+      const { data: holderAccounts } = await this.client
+        .from('vw_accounts')
+        .select('id')
+        .eq('account_holder_name', filters.accountHolder)
+      const ids = (holderAccounts ?? []).map((r) => (r as { id: string }).id)
       query = query.in(
         'account_id',
         ids.length > 0 ? ids : ['00000000-0000-0000-0000-000000000000'],

@@ -3,17 +3,24 @@ import type { Client } from '@/domain/Client'
 import type { Merchant } from '@/domain/Merchant'
 import type { TransactionAccount } from '@/domain/Account'
 
+/** Mock data never assigns a holder — `accountHolder` stays null throughout, matching a genuinely-unset live account. */
+function withNoHolder(
+  accounts: readonly Omit<TransactionAccount, 'accountHolder'>[],
+): TransactionAccount[] {
+  return accounts.map((a) => ({ ...a, accountHolder: null }))
+}
+
 // 5 bank (current/savings) accounts.
-export const mockBankAccounts: readonly TransactionAccount[] = [
+export const mockBankAccounts: readonly TransactionAccount[] = withNoHolder([
   { id: 'acct-hdfc-current', kind: 'bank', bankName: 'HDFC Bank', last4: '4292' },
   { id: 'acct-icici-current', kind: 'bank', bankName: 'ICICI Bank', last4: '1102' },
   { id: 'acct-axis-savings', kind: 'bank', bankName: 'Axis Bank', last4: '8812' },
   { id: 'acct-kotak-treasury', kind: 'bank', bankName: 'Kotak Bank', last4: '4001' },
   { id: 'acct-sbi-current', kind: 'bank', bankName: 'State Bank of India', last4: '7734' },
-]
+])
 
 // 16 credit cards across issuers/networks.
-export const mockCreditCards: readonly TransactionAccount[] = [
+export const mockCreditCards: readonly TransactionAccount[] = withNoHolder([
   {
     id: 'cc-hdfc-corp-plat',
     kind: 'credit_card',
@@ -126,7 +133,7 @@ export const mockCreditCards: readonly TransactionAccount[] = [
     cardNetwork: 'VISA',
     last4: '5567',
   },
-]
+])
 
 export const mockAccounts: readonly TransactionAccount[] = [...mockBankAccounts, ...mockCreditCards]
 

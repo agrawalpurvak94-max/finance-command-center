@@ -127,9 +127,17 @@ export class MockBankAccountRepository implements BankAccountRepository {
       status: input.status,
       notes: null,
       clientId: null,
+      accountHolder: input.accountHolder ?? null,
     }
     this.accounts = [account, ...this.accounts]
     return withLatency(account, 400)
+  }
+
+  async updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null> {
+    const index = this.accounts.findIndex((a) => a.id === id)
+    if (index === -1) throw new Error(`Bank account ${id} not found`)
+    this.accounts[index] = { ...this.accounts[index], accountHolder }
+    return withLatency(accountHolder, 200)
   }
 
   async update(id: string, input: BankAccountUpdateInput): Promise<BankAccountRecord> {

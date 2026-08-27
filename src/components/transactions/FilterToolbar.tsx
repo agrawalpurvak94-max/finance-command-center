@@ -2,6 +2,7 @@ import {
   CalendarRange,
   Tag,
   User,
+  UserRound,
   Store,
   Landmark,
   CreditCard,
@@ -44,6 +45,14 @@ export function FilterToolbar({
   bankAccounts,
   creditCards,
 }: FilterToolbarProps) {
+  // Derived here (not a new prop) — bankAccounts/creditCards already carry
+  // accountHolder, so no extra plumbing back up to the page is needed.
+  const accountHolders = Array.from(
+    new Set(
+      [...bankAccounts, ...creditCards].map((a) => a.accountHolder).filter((h): h is string => !!h),
+    ),
+  ).sort()
+
   return (
     <div className="flex flex-wrap items-center gap-sm rounded-xl border border-border bg-card p-sm">
       <FilterChip
@@ -120,6 +129,16 @@ export function FilterToolbar({
           options={creditCards.map((a) => ({ id: a.id, name: `${a.bankName} •••• ${a.last4}` }))}
           onChange={(v) => onChange({ creditCardId: v })}
           ariaLabel="Credit card filter"
+        />
+      </FilterChip>
+
+      <FilterChip icon={UserRound} label="Account Holder" isActive={!!draft.accountHolder}>
+        <FilterReferenceSelect
+          value={draft.accountHolder}
+          placeholder="All holders"
+          options={accountHolders.map((name) => ({ id: name, name }))}
+          onChange={(v) => onChange({ accountHolder: v })}
+          ariaLabel="Account holder filter"
         />
       </FilterChip>
 

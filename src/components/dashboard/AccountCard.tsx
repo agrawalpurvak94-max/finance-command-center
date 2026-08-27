@@ -76,6 +76,21 @@ export function AccountCard({ account, onOpen }: AccountCardProps) {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
+            {/* Bumped from text-[10px]/font-semibold to text-body-sm/font-bold
+                per explicit instruction — it read as illegible at the
+                original size. Colored with this tile's own institution
+                accent (identity.textClassName) rather than a fixed
+                text-primary, so the holder name always matches the tile's
+                own accent bar/avatar instead of reading blue on every tile
+                regardless of bank. */}
+            <p
+              className={cn(
+                'truncate text-body-sm font-bold uppercase tracking-wide',
+                identity.textClassName,
+              )}
+            >
+              {account.accountHolder || 'Holder not assigned'}
+            </p>
             <p className="truncate text-body-sm font-semibold text-foreground">{account.name}</p>
             <p className="truncate text-label-caps text-muted-foreground">
               {[account.institutionName, account.accountTypeLabel].filter(Boolean).join(' · ')}

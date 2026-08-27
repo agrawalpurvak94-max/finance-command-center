@@ -46,6 +46,8 @@ export interface CreditCardRecord {
   readonly notes: string | null
   /** Module 7 (Clients) drill-down target — null for cards not tied to a specific client. */
   readonly clientId: string | null
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
+  readonly accountHolder: string | null
 }
 
 export interface CreditCardFilters {
@@ -91,6 +93,8 @@ export interface CreditCardCreateInput {
   readonly statementDate: string
   readonly dueDate: string
   readonly status: CreditCardRecordStatus
+  /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. Optional at creation — null/omitted means genuinely unset, not a guessed value. */
+  readonly accountHolder?: string | null
 }
 
 /**

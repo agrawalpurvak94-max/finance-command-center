@@ -77,6 +77,7 @@ type AccountRow = {
   created_at: string | null
   resolved_is_active: boolean | null
   client_id: string | null
+  account_holder_name: string | null
 }
 
 type ActivityAgg = {
@@ -175,6 +176,7 @@ function mapRow(
     status: row.resolved_is_active === false ? 'inactive' : 'active',
     notes: row.notes,
     clientId: row.client_id,
+    accountHolder: row.account_holder_name,
   }
 }
 
@@ -310,6 +312,7 @@ export class SupabaseBankAccountRepository implements BankAccountRepository {
         opening_balance: input.openingBalance,
         current_balance: input.openingBalance,
         is_active: input.status === 'active',
+        account_holder_name: input.accountHolder ?? null,
       })
       .select('*')
       .single()
@@ -330,10 +333,30 @@ export class SupabaseBankAccountRepository implements BankAccountRepository {
         created_at: data.created_at,
         resolved_is_active: data.is_active,
         client_id: data.client_id,
+        account_holder_name: data.account_holder_name,
       },
       'healthy',
       undefined,
     )
+  }
+
+  /** Narrow write — see `BankAccountRepository.updateAccountHolder`'s doc comment. Mirrors `SupabaseCreditCardRepository.updateAccountHolder`. */
+  async updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .update({ account_holder_name: accountHolder })
+      .eq('id', id)
+      .neq('account_type', 'Credit Card')
+      .select('account_holder_name')
+      .maybeSingle()
+
+    if (error) throw new Error(`Failed to update account holder for ${id}: ${error.message}`)
+    if (!data)
+      throw new Error(
+        `Account ${id}'s holder could not be updated — it does not exist, is a credit card, or RLS denied the write.`,
+      )
+
+    return (data as { account_holder_name: string | null }).account_holder_name
   }
 
   async update(id: string, input: BankAccountUpdateInput): Promise<BankAccountRecord> {
@@ -374,6 +397,7 @@ export class SupabaseBankAccountRepository implements BankAccountRepository {
         created_at: data.created_at,
         resolved_is_active: data.is_active,
         client_id: data.client_id,
+        account_holder_name: data.account_holder_name,
       },
       ((healthRow as { health?: BankAccountHealth } | null)?.health ??
         'healthy') as BankAccountHealth,

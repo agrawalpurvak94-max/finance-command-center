@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { IconChip } from '@/components/ui/icon-chip'
 import { DrawerSectionHeader } from '@/components/EntityReviewDrawer'
 import { TransactionListRows } from '@/components/dashboard/TransactionListRows'
+import { EditableAccountHolder } from '@/components/dashboard/EditableAccountHolder'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
 import {
@@ -242,6 +243,12 @@ export function CreditCardActivityDrawer({ account, onOpenChange }: CreditCardAc
                 </p>
               </div>
             </div>
+
+            <EditableAccountHolder
+              accountId={account.id}
+              kind="credit_card"
+              accountHolder={account.accountHolder}
+            />
 
             <Separator />
 

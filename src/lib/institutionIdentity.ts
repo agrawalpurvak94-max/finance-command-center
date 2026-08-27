@@ -15,6 +15,10 @@ export interface InstitutionIdentity {
   readonly initials: string
   /** Icon-chip background/text pairing. */
   readonly chipClassName: string
+  /** Text-only variant of the same accent — for labels that need the
+   * institution's color without a chip background (e.g. an account
+   * holder's name on a tile that already has its own accent bar/wash). */
+  readonly textClassName: string
   /** Subtle tile border ring on hover. */
   readonly ringClassName: string
   /** Low-opacity header wash — never covers the whole card. */
@@ -28,60 +32,70 @@ type AccentPalette = Omit<InstitutionIdentity, 'initials'>
 const ACCENTS = {
   blue: {
     chipClassName: 'bg-blue-500/10 text-blue-400',
+    textClassName: 'text-blue-400',
     ringClassName: 'hover:ring-blue-500/20',
     gradientClassName: 'from-blue-500/10 via-transparent to-transparent',
     barClassName: 'bg-blue-500/70',
   },
   orange: {
     chipClassName: 'bg-orange-500/10 text-orange-400',
+    textClassName: 'text-orange-400',
     ringClassName: 'hover:ring-orange-500/20',
     gradientClassName: 'from-orange-500/10 via-transparent to-transparent',
     barClassName: 'bg-orange-500/70',
   },
   rose: {
     chipClassName: 'bg-rose-500/10 text-rose-400',
+    textClassName: 'text-rose-400',
     ringClassName: 'hover:ring-rose-500/20',
     gradientClassName: 'from-rose-500/10 via-transparent to-transparent',
     barClassName: 'bg-rose-500/70',
   },
   indigo: {
     chipClassName: 'bg-indigo-500/10 text-indigo-400',
+    textClassName: 'text-indigo-400',
     ringClassName: 'hover:ring-indigo-500/20',
     gradientClassName: 'from-indigo-500/10 via-transparent to-transparent',
     barClassName: 'bg-indigo-500/70',
   },
   violet: {
     chipClassName: 'bg-violet-500/10 text-violet-400',
+    textClassName: 'text-violet-400',
     ringClassName: 'hover:ring-violet-500/20',
     gradientClassName: 'from-violet-500/10 via-transparent to-transparent',
     barClassName: 'bg-violet-500/70',
   },
   teal: {
     chipClassName: 'bg-teal-500/10 text-teal-400',
+    textClassName: 'text-teal-400',
     ringClassName: 'hover:ring-teal-500/20',
     gradientClassName: 'from-teal-500/10 via-transparent to-transparent',
     barClassName: 'bg-teal-500/70',
   },
   sky: {
     chipClassName: 'bg-sky-500/10 text-sky-400',
+    textClassName: 'text-sky-400',
     ringClassName: 'hover:ring-sky-500/20',
     gradientClassName: 'from-sky-500/10 via-transparent to-transparent',
     barClassName: 'bg-sky-500/70',
   },
   red: {
     chipClassName: 'bg-red-500/10 text-red-400',
+    textClassName: 'text-red-400',
     ringClassName: 'hover:ring-red-500/20',
     gradientClassName: 'from-red-500/10 via-transparent to-transparent',
     barClassName: 'bg-red-500/70',
   },
   fuchsia: {
     chipClassName: 'bg-fuchsia-500/10 text-fuchsia-400',
+    textClassName: 'text-fuchsia-400',
     ringClassName: 'hover:ring-fuchsia-500/20',
     gradientClassName: 'from-fuchsia-500/10 via-transparent to-transparent',
     barClassName: 'bg-fuchsia-500/70',
   },
   cyan: {
     chipClassName: 'bg-cyan-500/10 text-cyan-400',
+    textClassName: 'text-cyan-400',
     ringClassName: 'hover:ring-cyan-500/20',
     gradientClassName: 'from-cyan-500/10 via-transparent to-transparent',
     barClassName: 'bg-cyan-500/70',

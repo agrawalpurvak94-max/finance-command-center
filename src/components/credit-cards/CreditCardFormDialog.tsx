@@ -98,6 +98,7 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
   const [statementDate, setStatementDate] = useState(todayIso())
   const [dueDate, setDueDate] = useState(defaultDueDateIso())
   const [status, setStatus] = useState<CreditCardRecordStatus>('active')
+  const [accountHolder, setAccountHolder] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   const bankNameError = bankName.trim().length === 0 ? 'Enter a bank name.' : null
@@ -119,6 +120,7 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
       statementDate,
       dueDate,
       status,
+      accountHolder: accountHolder.trim() || null,
     })
   }
 
@@ -184,6 +186,19 @@ function CreditCardFormBody({ isPending, onSubmit, onCancel }: CreditCardFormBod
             className={cn(submitted && cardNameError && 'border-destructive')}
           />
           {submitted && cardNameError && <FieldError>{cardNameError}</FieldError>}
+        </div>
+
+        <div>
+          <Label htmlFor="credit-card-holder">Account Holder</Label>
+          <Input
+            id="credit-card-holder"
+            value={accountHolder}
+            onChange={(e) => setAccountHolder(e.target.value)}
+            placeholder="e.g. Husband, Wife, Business"
+          />
+          <p className="mt-xs text-[11px] text-muted-foreground">
+            Identify who owns this account or card.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2">

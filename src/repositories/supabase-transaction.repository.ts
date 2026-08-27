@@ -135,6 +135,11 @@ function syntheticAccount(free: AccountFreeText | undefined): TransactionAccount
     kind: 'bank',
     bankName: free?.bank_name ?? 'Unknown',
     last4: free?.card_last4 ?? free?.account_last4 ?? '0000',
+    // Never resolvable here — this is a free-text fallback with no accountId
+    // to look up `accounts.account_holder_name` against. Out of scope for
+    // the Transactions module regardless (identity-enhancement scope is
+    // Financial Pulse/Account Intelligence/Statement Control/Explorer only).
+    accountHolder: null,
   }
 }
 
@@ -157,6 +162,8 @@ function resolvedAccount(
         ? (cardNetwork as TransactionAccount['cardNetwork'])
         : undefined,
     last4: accountLast4 ?? '0000',
+    // Out of scope for the Transactions module — see syntheticAccount's comment above.
+    accountHolder: null,
   }
 }
 
@@ -266,6 +273,20 @@ export class SupabaseTransactionRepository implements TransactionRepository {
       query = applyIdOrNameFilter(query, 'merchant_id', 'merchant_name', filters.merchantId)
     if (filters?.bankAccountId) query = query.eq('account_id', filters.bankAccountId)
     if (filters?.creditCardId) query = query.eq('account_id', filters.creditCardId)
+    // vw_transactions has no account_holder_name of its own (an accounts-
+    // table field) -- resolve matching account ids first, same pattern as
+    // Statements' accountKind/accountHolder filters.
+    if (filters?.accountHolder) {
+      const { data: holderAccounts } = await this.client
+        .from('vw_accounts')
+        .select('id')
+        .eq('account_holder_name', filters.accountHolder)
+      const ids = (holderAccounts ?? []).map((r) => (r as { id: string }).id)
+      query = query.in(
+        'account_id',
+        ids.length > 0 ? ids : ['00000000-0000-0000-0000-000000000000'],
+      )
+    }
     if (filters?.ownerType) query = query.eq('raw_type', filters.ownerType)
     if (filters?.status)
       query = query.eq('status', STATUS_DOMAIN_TO_DB[filters.status] ?? filters.status)
@@ -538,7 +559,7 @@ export class SupabaseTransactionRepository implements TransactionRepository {
   async listAccounts(): Promise<readonly TransactionAccount[]> {
     const { data, error } = await this.client
       .from('vw_accounts')
-      .select('id,account_kind,institution_name,card_network,resolved_last4')
+      .select('id,account_kind,institution_name,card_network,resolved_last4,account_holder_name')
     if (error) throw new Error(`Failed to list accounts: ${error.message}`)
     return (data ?? []).map((r) => {
       const row = r as {
@@ -547,6 +568,7 @@ export class SupabaseTransactionRepository implements TransactionRepository {
         institution_name: string
         card_network: string | null
         resolved_last4: string | null
+        account_holder_name: string | null
       }
       return {
         id: row.id,
@@ -557,6 +579,7 @@ export class SupabaseTransactionRepository implements TransactionRepository {
             ? (row.card_network as TransactionAccount['cardNetwork'])
             : undefined,
         last4: row.resolved_last4 ?? '0000',
+        accountHolder: row.account_holder_name,
       }
     })
   }

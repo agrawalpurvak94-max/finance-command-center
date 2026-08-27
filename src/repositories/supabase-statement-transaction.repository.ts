@@ -73,6 +73,11 @@ export function mapRow(row: StatementTransactionDbRow): StatementTransactionRow 
     emailSubject: row.metadata?.email_subject ?? null,
     clientId: row.client_id ?? null,
     ownerType: toOwnerType(row.owner_type, row.metadata?.business_personal),
+    // Resolved at the service layer (statement-explorer.service.ts /
+    // statement-analytics.service.ts), which has the statementId -> account
+    // map this row-level mapper doesn't have access to — see
+    // StatementTransactionRow.accountHolder's doc comment.
+    accountHolder: null,
   }
 }
 
@@ -85,6 +90,7 @@ type AccountIdentityDbRow = {
   account_last4: string | null
   card_network: string | null
   credit_limit: number | string | null
+  account_holder_name: string | null
 }
 
 export class SupabaseStatementTransactionRepository implements StatementTransactionRepository {
@@ -115,7 +121,7 @@ export class SupabaseStatementTransactionRepository implements StatementTransact
     const { data, error } = await this.client
       .from('vw_accounts')
       .select(
-        'id, account_kind, account_name, institution_name, card_last4, account_last4, card_network, credit_limit',
+        'id, account_kind, account_name, institution_name, card_last4, account_last4, card_network, credit_limit, account_holder_name',
       )
       .eq('id', accountId)
       .maybeSingle()
@@ -133,6 +139,7 @@ export class SupabaseStatementTransactionRepository implements StatementTransact
       accountLast4: row.account_last4,
       cardNetwork: row.card_network,
       creditLimit: row.credit_limit != null ? Number(row.credit_limit) : null,
+      accountHolder: row.account_holder_name,
     }
   }
 
