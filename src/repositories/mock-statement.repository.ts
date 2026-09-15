@@ -4,6 +4,7 @@ import type {
   StatementListParams,
   StatementListResult,
   StatementSummary,
+  StatementUpdateInput,
 } from '@/domain/Statement'
 import type { StatementRepository } from '@/repositories/statement.repository'
 import { mockStatements } from '@/repositories/mock-data/generate-statements'
@@ -101,6 +102,7 @@ export class MockStatementRepository implements StatementRepository {
       account,
       client: null,
       statementDate: now,
+      statementPeriodStart: now,
       statementPeriodEnd: now,
       statementPeriodLabel: input.statementPeriodLabel,
       dueDate: null,
@@ -125,6 +127,20 @@ export class MockStatementRepository implements StatementRepository {
     if (index === -1) throw new Error(`Statement ${id} not found`)
 
     const updated: Statement = { ...this.statements[index], status: 'processing' }
+    this.statements[index] = updated
+    return withLatency(updated, 300)
+  }
+
+  async update(id: string, input: StatementUpdateInput): Promise<Statement> {
+    const index = this.statements.findIndex((s) => s.id === id)
+    if (index === -1) throw new Error(`Statement ${id} not found`)
+
+    const updated: Statement = {
+      ...this.statements[index],
+      statementDate: input.statementDate ?? '',
+      statementPeriodStart: input.statementPeriodStart,
+      statementPeriodEnd: input.statementPeriodEnd,
+    }
     this.statements[index] = updated
     return withLatency(updated, 300)
   }

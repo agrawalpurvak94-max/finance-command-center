@@ -16,6 +16,13 @@ export interface Statement {
   readonly client: Client | null
   readonly statementDate: string
   /**
+   * `statements.statement_period_start` — the statement cycle's opening
+   * date. Exposed alongside `statementPeriodEnd` so Statement Control's
+   * drawer can edit the period as two discrete dates; `statementPeriodLabel`
+   * remains the display-only combined string built from both.
+   */
+  readonly statementPeriodStart: string | null
+  /**
    * The statement cycle's closing date (`statements.statement_period_end`).
    * Added for Financial Pulse's credit-card period logic — `statementDate`
    * (`statements.statement_date`) is never populated by Workflow D on live
@@ -88,4 +95,19 @@ export interface StatementCreateInput {
   readonly accountId: string
   readonly statementPeriodLabel: string
   readonly fileName: string
+}
+
+/**
+ * Statement Control drawer's metadata edit (Statement Date / Statement
+ * Period Start / Statement Period End) — a narrow write against the same
+ * `statements` row `reprocess`/`delete` already target. Does not touch
+ * `processing_status`, `account_id`, or any extracted-transaction data.
+ * `null` clears the column; a field's current value is preserved by passing
+ * it back unchanged, matching the "full replacement, not a merge" pattern
+ * `BankAccountUpdateInput`/`CreditCardUpdateInput` already use.
+ */
+export interface StatementUpdateInput {
+  readonly statementDate: string | null
+  readonly statementPeriodStart: string | null
+  readonly statementPeriodEnd: string | null
 }

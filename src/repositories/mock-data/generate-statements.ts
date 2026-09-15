@@ -67,6 +67,7 @@ function generateStatement(index: number, account: (typeof mockAccounts)[number]
   periodEnd.setDate(0)
 
   const statementDate = periodEnd.toISOString().slice(0, 10)
+  const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1)
   const importedDate = new Date(periodEnd)
   importedDate.setDate(importedDate.getDate() + 1 + Math.floor(random() * 3))
   const importedAt = importedDate.toISOString().slice(0, 10)
@@ -83,6 +84,7 @@ function generateStatement(index: number, account: (typeof mockAccounts)[number]
     account,
     client,
     statementDate,
+    statementPeriodStart: periodStart.toISOString().slice(0, 10),
     statementPeriodEnd: periodEnd.toISOString().slice(0, 10),
     statementPeriodLabel: periodLabel,
     dueDate: null,

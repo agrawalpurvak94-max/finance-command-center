@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { StatementStatusBadge } from '@/components/statements/StatementStatusBadge'
 import { StatementRowActionsMenu } from '@/components/statements/StatementRowActionsMenu'
 import { getInstitutionIdentity } from '@/lib/institutionIdentity'
+import { formatStatementDate } from '@/lib/statementDate'
 import type { Statement, StatementSort } from '@/domain/Statement'
 
 interface StatementTableProps {
@@ -43,11 +44,7 @@ export function StatementTable({
         header: 'Statement Date',
         cell: ({ row }) => (
           <span className="whitespace-nowrap tabular-nums text-body-sm">
-            {new Date(row.original.statementDate).toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })}
+            {formatStatementDate(row.original.statementDate)}
           </span>
         ),
       },

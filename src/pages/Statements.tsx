@@ -7,6 +7,7 @@ import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
 import { Pagination } from '@/components/Pagination'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Toast } from '@/components/Toast'
 import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { StatementsHeader } from '@/components/statements/StatementsHeader'
 import { StatementsTabBar } from '@/components/statements/StatementsTabBar'
@@ -89,6 +90,7 @@ export function Statements() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Statement | null>(null)
   const [reprocessingId, setReprocessingId] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const accountsQuery = useTransactionAccounts()
   const clientsQuery = useTransactionClients()
@@ -280,7 +282,13 @@ export function Statements() {
         statement={selectedStatement}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
+        onSaved={(updated, message) => {
+          setSelectedStatement(updated)
+          setToastMessage(message)
+        }}
       />
+
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
 
       <UploadStatementDialog
         open={uploadOpen}

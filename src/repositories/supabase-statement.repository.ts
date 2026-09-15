@@ -7,6 +7,7 @@ import type {
   StatementListResult,
   StatementStatus,
   StatementSummary,
+  StatementUpdateInput,
 } from '@/domain/Statement'
 import type { StatementRepository } from '@/repositories/statement.repository'
 import { getCurrentUserId } from '@/lib/supabaseAuth'
@@ -170,6 +171,7 @@ function mapRow(row: StatementRow, lookup: Map<string, AccountLookupRow>): State
     account,
     client: row.client_id && row.client_name ? { id: row.client_id, name: row.client_name } : null,
     statementDate,
+    statementPeriodStart: row.statement_period_start,
     statementPeriodEnd,
     statementPeriodLabel: periodLabel(row),
     dueDate: row.due_date,
@@ -380,6 +382,38 @@ export class SupabaseStatementRepository implements StatementRepository {
 
     const statement = await this.getById(id)
     if (!statement) throw new Error(`Statement ${id} vanished after reprocess.`)
+    return statement
+  }
+
+  /**
+   * Statement Control drawer's metadata edit. Writes only the three
+   * date columns named in `StatementUpdateInput` — never
+   * `processing_status`, `account_id`, or anything under
+   * `statement_transactions` — so this can never re-trigger parsing or
+   * touch extracted transaction data. Re-fetches through `getById` (same as
+   * `reprocess` above) rather than hand-building a row, so the returned
+   * `Statement` picks up any account/holder change that landed first.
+   */
+  async update(id: string, input: StatementUpdateInput): Promise<Statement> {
+    const { data, error } = await this.client
+      .from('statements')
+      .update({
+        statement_date: input.statementDate,
+        statement_period_start: input.statementPeriodStart,
+        statement_period_end: input.statementPeriodEnd,
+      })
+      .eq('id', id)
+      .select('id')
+      .maybeSingle()
+
+    if (error) throw new Error(`Failed to update statement ${id}: ${error.message}`)
+    if (!data)
+      throw new Error(
+        `Statement ${id} could not be updated — it does not exist, or RLS denied the write.`,
+      )
+
+    const statement = await this.getById(id)
+    if (!statement) throw new Error(`Statement ${id} vanished after update.`)
     return statement
   }
 

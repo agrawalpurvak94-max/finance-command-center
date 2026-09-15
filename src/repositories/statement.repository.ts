@@ -4,6 +4,7 @@ import type {
   StatementListParams,
   StatementListResult,
   StatementSummary,
+  StatementUpdateInput,
 } from '@/domain/Statement'
 
 /**
@@ -23,5 +24,7 @@ export interface StatementRepository {
   getSummary(): Promise<StatementSummary>
   create(input: StatementCreateInput): Promise<Statement>
   reprocess(id: string): Promise<Statement>
+  /** Statement Control drawer's metadata edit — see `StatementUpdateInput`'s doc comment. */
+  update(id: string, input: StatementUpdateInput): Promise<Statement>
   delete(id: string): Promise<void>
 }
