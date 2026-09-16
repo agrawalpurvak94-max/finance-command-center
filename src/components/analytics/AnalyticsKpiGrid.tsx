@@ -41,7 +41,7 @@ function buildMetrics(summary: AnalyticsSummary): {
     {
       metric: {
         id: 'monthly-spend',
-        label: 'Monthly Spend',
+        label: summary.monthlySpendLabel,
         value: summary.monthlySpend,
         trend: summary.monthlySpendTrend ?? undefined,
       },

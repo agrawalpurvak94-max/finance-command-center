@@ -10,9 +10,17 @@ interface FilterChipProps {
   label: string
   isActive?: boolean
   children: ReactNode
+  /** Overrides the popover's default `w-64` — for a filter whose content (e.g. long statement labels) needs more room. */
+  contentClassName?: string
 }
 
-export function FilterChip({ icon: Icon, label, isActive, children }: FilterChipProps) {
+export function FilterChip({
+  icon: Icon,
+  label,
+  isActive,
+  children,
+  contentClassName,
+}: FilterChipProps) {
   return (
     <Popover>
       <PopoverTrigger
@@ -31,7 +39,7 @@ export function FilterChip({ icon: Icon, label, isActive, children }: FilterChip
         {label}
         <ChevronDown className="size-3.5" aria-hidden="true" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64">
+      <PopoverContent align="start" className={cn('w-64', contentClassName)}>
         {children}
       </PopoverContent>
     </Popover>

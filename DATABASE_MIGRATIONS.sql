@@ -1880,3 +1880,109 @@ UPDATE public.categories
 -- user edits' ownership, not just this migration's effect):
 -- UPDATE public.categories SET user_id = NULL
 --   WHERE user_id = '2f324f4d-1dc3-4ec5-8c23-93da480842c7';
+
+-- ============================================================================
+-- PHASE 19 — Coalesce statement_date/statement_period_end for credit cards
+-- in vw_statements (2026-09-16)
+-- STATUS: NOT EXECUTED. Run via the Supabase SQL editor. View-only, no table
+-- changes, no data changes.
+--
+-- Root cause of "Statement Control's Statement Date sort looks wrong": CC
+-- Parser sometimes only populates one of statement_date /
+-- statement_period_end for a given credit-card statement (both name the
+-- same statement cycle's closing date). supabase-statement.repository.ts's
+-- mapRow() already coalesces the two for DISPLAY on credit-card rows
+-- (`row.statement_date ?? row.statement_period_end`), but Statement
+-- Control's sort and the dateFrom/dateTo filters both order/filter on the
+-- view's raw statement_date column, which is NOT coalesced -- a row that
+-- visibly shows a real date (via the period_end fallback) can still sort as
+-- if it had none, and can be silently excluded by a date-range filter that
+-- should have matched it.
+--
+-- Fix: move the same fallback into the view itself, conditioned on
+-- a.account_type = 'Credit Card' (bank statements are left untouched,
+-- matching the existing frontend comment: "Bank statements are left
+-- as-is"). Once this runs, mapRow()'s TS-side coalesce becomes a no-op for
+-- credit cards (both sides already equal) -- left in place as a harmless
+-- defensive fallback, not removed here.
+--
+-- CORRECTED (2026-09-16, same day): the first version of this migration
+-- referenced `a.account_kind`, which does not exist on the base
+-- `public.accounts` table -- it only exists as a computed column inside
+-- `vw_accounts` (`CASE WHEN a.account_type = 'Credit Card' THEN
+-- 'credit_card' ELSE 'bank' END AS account_kind`, see Phase 7 above). Since
+-- this view joins the base `accounts` table directly (not `vw_accounts`),
+-- it must test the real underlying column instead: `a.account_type =
+-- 'Credit Card'`. Caught immediately by a live "column does not exist"
+-- error (42703) before this was ever applied -- no broken view was ever
+-- live.
+--
+-- Column list, order and names are otherwise IDENTICAL to Phase 13's
+-- version -- only the two expressions feeding the existing
+-- statement_period_end (position 5) and statement_date (position 6) columns
+-- change; CREATE OR REPLACE VIEW only requires the same column name/type at
+-- the same position, not the same source expression.
+-- ============================================================================
+
+CREATE OR REPLACE VIEW public.vw_statements AS
+SELECT
+  s.id,
+  s.account_id,
+  s.statement_name,
+  s.statement_period_start,
+  CASE
+    WHEN a.account_type = 'Credit Card'
+      THEN COALESCE(s.statement_period_end, s.statement_date)
+    ELSE s.statement_period_end
+  END AS statement_period_end,
+  CASE
+    WHEN a.account_type = 'Credit Card'
+      THEN COALESCE(s.statement_date, s.statement_period_end)
+    ELSE s.statement_date
+  END AS statement_date,
+  s.due_date,
+  s.opening_balance,
+  s.closing_balance,
+  s.total_debits,
+  s.total_credits,
+  s.minimum_due,
+  s.credit_limit,
+  s.available_credit,
+  s.rewards_points,
+  s.pdf_filename,
+  s.pdf_storage_path,
+  s.parser_version,
+  s.processing_status,
+  s.notes,
+  s.created_at,
+  s.updated_at,
+  s.client_id,
+  s.user_id,
+  a.account_name,
+  a.institution_name,
+  a.card_network,
+  cl.client_name,
+  (SELECT COUNT(*) FROM public.statement_transactions st WHERE st.statement_id = s.id) AS transactions_extracted,
+  s.statement_total_amount_due
+FROM public.statements s
+LEFT JOIN public.accounts a ON a.id = s.account_id
+LEFT JOIN public.clients cl ON cl.id = s.client_id;
+
+COMMENT ON VIEW public.vw_statements IS
+  'Statement list with account/client resolved and a live count of linked statement_transactions. Phase 19: statement_date/statement_period_end are coalesced against each other for credit-card rows (bank rows untouched), so sorting, dateFrom/dateTo filtering, and display all agree -- previously only the frontend mapRow() display did this coalesce, sort/filter did not.';
+
+-- Phase 19 rollback (restores Phase 13's uncoalesced expressions):
+-- CREATE OR REPLACE VIEW public.vw_statements AS
+-- SELECT
+--   s.id, s.account_id, s.statement_name, s.statement_period_start,
+--   s.statement_period_end, s.statement_date, s.due_date, s.opening_balance,
+--   s.closing_balance, s.total_debits, s.total_credits, s.minimum_due,
+--   s.credit_limit, s.available_credit, s.rewards_points, s.pdf_filename,
+--   s.pdf_storage_path, s.parser_version, s.processing_status, s.notes,
+--   s.created_at, s.updated_at, s.client_id, s.user_id, a.account_name,
+--   a.institution_name, a.card_network, cl.client_name,
+--   (SELECT COUNT(*) FROM public.statement_transactions st WHERE st.statement_id = s.id) AS transactions_extracted,
+--   s.statement_total_amount_due
+-- FROM public.statements s
+-- LEFT JOIN public.accounts a ON a.id = s.account_id
+-- LEFT JOIN public.clients cl ON cl.id = s.client_id;

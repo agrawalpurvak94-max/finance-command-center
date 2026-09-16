@@ -10,10 +10,12 @@ import { EmptyState } from '@/components/EmptyState'
 import { Toast } from '@/components/Toast'
 import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
 import { AccountStatementsSummaryWidget } from '@/components/account-statements/AccountStatementsSummaryWidget'
+import { CreditCardPaymentSummaryWidget } from '@/components/account-statements/CreditCardPaymentSummary'
 import { AccountStatementTileCard } from '@/components/account-statements/AccountStatementTileCard'
 import { CreditCardFormDialog } from '@/components/credit-cards/CreditCardFormDialog'
 import { BankAccountFormDialog } from '@/components/accounts/BankAccountFormDialog'
 import { useAccountStatementTiles, useAccountStatementsSummary } from '@/hooks/useAccountStatements'
+import { accountStatementsService } from '@/services/account-statements.service'
 import { useCreateCreditCard } from '@/hooks/useCreditCards'
 import { useCreateBankAccount } from '@/hooks/useAccounts'
 import { useTransactionClients } from '@/hooks/useTransactions'
@@ -102,6 +104,19 @@ export function CreditCards() {
     })
   }, [tilesQuery.data, search, typeFilter])
 
+  // Derived from the SAME filtered tile list the grid below renders, so the
+  // consolidated summary always matches what's visible and reacts to
+  // search/type-filter/client-drilldown/refetch exactly like the grid does
+  // — no separate query, no risk of drifting out of sync.
+  const creditCardPaymentSummary = useMemo(
+    () => accountStatementsService.getCreditCardPaymentSummary(filteredTiles),
+    [filteredTiles],
+  )
+  const creditCardDueDateInsights = useMemo(
+    () => accountStatementsService.getCreditCardDueDateInsights(filteredTiles),
+    [filteredTiles],
+  )
+
   const handleOpenTile = (tile: AccountStatementTile) => {
     navigate(`/statements?accountId=${encodeURIComponent(tile.id)}`)
   }
@@ -166,6 +181,13 @@ export function CreditCards() {
           ))}
         </div>
       </div>
+
+      {typeFilter === 'Credit Card' && (
+        <CreditCardPaymentSummaryWidget
+          summary={creditCardPaymentSummary}
+          insights={creditCardDueDateInsights}
+        />
+      )}
 
       <div className="flex items-center justify-between px-xs text-body-sm text-muted-foreground">
         <span>

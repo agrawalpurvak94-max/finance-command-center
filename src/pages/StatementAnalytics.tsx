@@ -29,6 +29,7 @@ import { AnalyticsKpiGrid } from '@/components/analytics/AnalyticsKpiGrid'
 import { SpendTrendChart } from '@/components/analytics/SpendTrendChart'
 import { CategorySpendChart } from '@/components/analytics/CategorySpendChart'
 import { MerchantSpendChart } from '@/components/analytics/MerchantSpendChart'
+import { CardSpendChart } from '@/components/analytics/CardSpendChart'
 import { ClientSpendChart } from '@/components/analytics/ClientSpendChart'
 import { BizPersonalSpendChart } from '@/components/analytics/BizPersonalSpendChart'
 import { useStatementAnalytics } from '@/hooks/useStatementAnalytics'
@@ -127,14 +128,27 @@ export function StatementAnalytics() {
       <StatementsTabBar active="analytics" explorerHref="/statements/explorer" />
 
       <div className="flex flex-wrap items-center gap-sm rounded-xl border border-border bg-card p-sm">
-        <FilterChip icon={FileStack} label="Statement" isActive={!!filters.statementId}>
+        <FilterChip
+          icon={FileStack}
+          label="Statement"
+          isActive={!!filters.statementId}
+          contentClassName="w-auto max-w-[28rem]"
+        >
           <Select
             value={filters.statementId ?? '__all__'}
             onValueChange={(v) =>
               setFilters((prev) => ({ ...prev, statementId: v && v !== '__all__' ? v : undefined }))
             }
           >
-            <SelectTrigger aria-label="Statement filter" className="w-full">
+            {/* Full statement labels ("HUSBAND · HDFC Bank •••• 7125 — 19 Jul
+                2026 – 18 Aug 2026") run long — let the trigger wrap onto
+                multiple lines instead of clamping to one, same reasoning
+                StatementSelector.tsx already documents for this exact label
+                shape. */}
+            <SelectTrigger
+              aria-label="Statement filter"
+              className="h-auto w-full *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:text-left *:data-[slot=select-value]:whitespace-normal"
+            >
               <SelectValue placeholder="All statements">
                 {(current: string) =>
                   current === '__all__'
@@ -143,10 +157,10 @@ export function StatementAnalytics() {
                 }
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-96">
               <SelectItem value="__all__">All statements</SelectItem>
               {(statementOptionsQuery.data ?? []).map((s) => (
-                <SelectItem key={s.id} value={s.id}>
+                <SelectItem key={s.id} value={s.id} textClassName="whitespace-normal">
                   {s.label}
                 </SelectItem>
               ))}
@@ -405,7 +419,7 @@ export function StatementAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-lg lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         <div
           className={cn(
             'transition-opacity duration-300',
@@ -422,6 +436,21 @@ export function StatementAnalytics() {
                 viewLabel="View in Statement Explorer"
                 {...handlers}
               />
+            )}
+          </QueryBoundary>
+        </div>
+        <div
+          className={cn(
+            'transition-opacity duration-300',
+            analytics.cardSpend.isFetching && 'opacity-60',
+          )}
+        >
+          <QueryBoundary
+            query={analytics.cardSpend}
+            skeleton={<Skeleton className="h-80 rounded-xl" />}
+          >
+            {(data) => (
+              <CardSpendChart data={data} viewLabel="View in Statement Explorer" {...handlers} />
             )}
           </QueryBoundary>
         </div>

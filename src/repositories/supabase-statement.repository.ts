@@ -264,12 +264,14 @@ export class SupabaseStatementRepository implements StatementRepository {
 
     const sortColumn = sort ? SORT_COLUMN[sort.id] : 'statement_date'
     const sortAscending = sort ? !sort.desc : false
-    // Postgres defaults to NULLS FIRST on a DESC sort, which would put
-    // statements with no statementPeriodEnd/statementDate ahead of real
-    // dated ones — always push nulls last so "most recent" queries (e.g.
-    // Financial Pulse's per-account latest statement) get a real date back
-    // when one exists.
-    query = query.order(sortColumn, { ascending: sortAscending, nullsFirst: sortAscending })
+    // Postgres defaults to NULLS FIRST on a DESC sort (and NULLS LAST on
+    // ASC), which would put statements with no statementPeriodEnd/
+    // statementDate ahead of real dated ones on a descending sort. Always
+    // push nulls last, on both ascending and descending sorts, so "most
+    // recent" queries (e.g. Financial Pulse's per-account latest statement)
+    // get a real date back when one exists, and so Statement Control's
+    // ascending sort doesn't surface undated rows first.
+    query = query.order(sortColumn, { ascending: sortAscending, nullsFirst: false })
 
     const start = (page - 1) * pageSize
     query = query.range(start, start + pageSize - 1)

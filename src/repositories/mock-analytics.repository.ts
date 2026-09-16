@@ -287,6 +287,7 @@ export class MockAnalyticsRepository implements AnalyticsRepository {
       averageTransaction,
       monthlySpend,
       monthlySpendTrend: computeTrend(monthlySpend, prevMonthSpend, false),
+      monthlySpendLabel: 'Monthly Spend',
       totalIncome,
       netCashFlow: totalIncome - totalSpend,
       highestSpendingCategory,

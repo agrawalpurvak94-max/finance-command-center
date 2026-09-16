@@ -50,6 +50,8 @@ export interface AnalyticsSummary {
   readonly averageTransaction: number
   readonly monthlySpend: number
   readonly monthlySpendTrend: Trend | null
+  /** "Monthly Spend" with no active Date Range filter, "Period Spend" once one is set — see `computePeriodSpend` in `lib/analyticsBuckets.ts`. */
+  readonly monthlySpendLabel: 'Monthly Spend' | 'Period Spend'
   readonly totalIncome: number
   readonly netCashFlow: number
   readonly highestSpendingCategory: { readonly category: Category; readonly amount: number } | null

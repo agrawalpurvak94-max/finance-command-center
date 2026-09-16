@@ -15,7 +15,13 @@ import { statementRepository } from '@/services/statements.service'
 import { statementAnalyticsRepository } from '@/services/statement-analytics-repo.service'
 import { transactionRepository } from '@/services/transactions.service'
 import { formatINR } from '@/utils/currency'
-import { sum, buildBuckets, bucketIndexForDate, computeTrend } from '@/lib/analyticsBuckets'
+import {
+  sum,
+  buildBuckets,
+  bucketIndexForDate,
+  isCustomRangeActive,
+  computePeriodSpend,
+} from '@/lib/analyticsBuckets'
 
 /**
  * Statement Analytics (Statements module, Tab 3) — composes
@@ -126,15 +132,19 @@ async function getAdaptedTransactions(
 }
 
 /**
- * Applies every `StatementAnalyticsFilters` dimension client-side.
- * `categoryId`/`merchantId` only ever match a REAL resolved id — an
- * unresolved row (whose `.id` is null) can never accidentally satisfy a
- * specific master-table filter, but stays fully present in unfiltered
- * aggregations (see `getAdaptedTransactions` — nothing is dropped there).
+ * Every `StatementAnalyticsFilters` dimension except the date range —
+ * split out so `getSummary`'s Period Spend comparison can hold every other
+ * filter constant while varying only the date window (see
+ * `computePeriodSpend` in `lib/analyticsBuckets.ts`). `categoryId`/
+ * `merchantId` only ever match a REAL resolved id — an unresolved row
+ * (whose `.id` is null) can never accidentally satisfy a specific
+ * master-table filter, but stays fully present in unfiltered aggregations
+ * (see `getAdaptedTransactions` — nothing is dropped there).
  */
-function matchesFilters(t: AdaptedTransaction, filters: StatementAnalyticsFilters): boolean {
-  if (filters.dateFrom && t.date < filters.dateFrom) return false
-  if (filters.dateTo && t.date > filters.dateTo) return false
+function matchesFiltersExceptDate(
+  t: AdaptedTransaction,
+  filters: StatementAnalyticsFilters,
+): boolean {
   if (filters.categoryId && t.category.id !== filters.categoryId) return false
   if (filters.merchantId && t.merchant.id !== filters.merchantId) return false
   if (filters.clientId && t.clientId !== filters.clientId) return false
@@ -150,6 +160,12 @@ function matchesFilters(t: AdaptedTransaction, filters: StatementAnalyticsFilter
   return true
 }
 
+function matchesFilters(t: AdaptedTransaction, filters: StatementAnalyticsFilters): boolean {
+  if (filters.dateFrom && t.date < filters.dateFrom) return false
+  if (filters.dateTo && t.date > filters.dateTo) return false
+  return matchesFiltersExceptDate(t, filters)
+}
+
 async function getFilteredTransactions(
   filters: StatementAnalyticsFilters,
 ): Promise<AdaptedTransaction[]> {
@@ -158,7 +174,8 @@ async function getFilteredTransactions(
 }
 
 async function getSummary(filters: StatementAnalyticsFilters): Promise<AnalyticsSummary> {
-  const txns = await getFilteredTransactions(filters)
+  const adapted = await getAdaptedTransactions(filters)
+  const txns = adapted.filter((t) => matchesFilters(t, filters))
   const debits = txns.filter((t) => t.type === 'debit')
   const credits = txns.filter((t) => t.type === 'credit')
 
@@ -167,20 +184,17 @@ async function getSummary(filters: StatementAnalyticsFilters): Promise<Analytics
   const totalTransactions = txns.length
   const averageTransaction = totalTransactions ? sum(txns, (t) => t.amount) / totalTransactions : 0
 
-  const now = new Date()
-  const monthPrefix = now.toISOString().slice(0, 7)
-  const prevMonthDate = new Date(now)
-  prevMonthDate.setMonth(prevMonthDate.getMonth() - 1)
-  const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7)
-
-  const monthlySpend = sum(
-    debits.filter((t) => t.date.startsWith(monthPrefix)),
-    (t) => t.amount,
-  )
-  const prevMonthSpend = sum(
-    debits.filter((t) => t.date.startsWith(prevMonthPrefix)),
-    (t) => t.amount,
-  )
+  // Period Spend: `getAdaptedTransactions` above is already unbounded by
+  // date (only `statementId` scopes it), so — unlike the real-time
+  // repository's equivalent — no second fetch is needed here. With no
+  // active range, `debits` (date-unbounded) already covers this-month vs
+  // last-month. With an active range, every OTHER filter still applies but
+  // the date bound is dropped, so both the selected period and its
+  // immediately-preceding comparison period are present to sum locally.
+  const periodDebits = isCustomRangeActive(filters)
+    ? adapted.filter((t) => matchesFiltersExceptDate(t, filters) && t.type === 'debit')
+    : debits
+  const period = computePeriodSpend(filters, periodDebits)
 
   const categoryTotals = new Map<string, { category: Category; amount: number }>()
   for (const t of debits) {
@@ -224,8 +238,9 @@ async function getSummary(filters: StatementAnalyticsFilters): Promise<Analytics
     totalSpend,
     totalTransactions,
     averageTransaction,
-    monthlySpend,
-    monthlySpendTrend: computeTrend(monthlySpend, prevMonthSpend, false),
+    monthlySpend: period.value,
+    monthlySpendTrend: period.trend,
+    monthlySpendLabel: period.label,
     totalIncome,
     netCashFlow: totalIncome - totalSpend,
     highestSpendingCategory,
@@ -319,6 +334,43 @@ async function getMerchantSpend(
     }))
 }
 
+/**
+ * Spend by CARD, not by statement — one credit card can have several
+ * statements (e.g. multiple billing cycles), so this groups by
+ * `t.account.id` (the resolved credit-card account, same resolution
+ * `getAdaptedTransactions` already does via statementId -> account) rather
+ * than by `t.statementId`. A card with 3 statements in the selected range
+ * contributes to exactly one bar, its combined spend — never 3 separate
+ * bars. Respects every filter, including the active Date Range, via
+ * `getFilteredTransactions`, same as every other chart on this page.
+ */
+async function getCardSpend(
+  filters: StatementAnalyticsFilters,
+): Promise<readonly AnalyticsRankedRow[]> {
+  const debits = (await getFilteredTransactions(filters)).filter(
+    (t) => t.type === 'debit' && t.account?.kind === 'credit_card',
+  )
+  const totals = new Map<string, { account: TransactionAccount; amount: number; count: number }>()
+  for (const t of debits) {
+    const account = t.account!
+    const entry = totals.get(account.id) ?? { account, amount: 0, count: 0 }
+    entry.amount += t.amount
+    entry.count += 1
+    totals.set(account.id, entry)
+  }
+  return [...totals.values()]
+    .sort((a, b) => b.amount - a.amount)
+    .map((e) => ({
+      id: e.account.id,
+      label: `${e.account.bankName} •••• ${e.account.last4}`,
+      value: e.amount,
+      valueLabel: formatINR(e.amount),
+      secondaryValue: e.count,
+      secondaryLabel: `${e.count} txns`,
+      drillFilter: { creditCardId: e.account.id },
+    }))
+}
+
 async function getClientSpend(
   filters: StatementAnalyticsFilters,
 ): Promise<readonly AnalyticsRankedRow[]> {
@@ -357,5 +409,6 @@ export const statementAnalyticsService = {
   getOwnerTypeSpend,
   getCategorySpend,
   getMerchantSpend,
+  getCardSpend,
   getClientSpend,
 }

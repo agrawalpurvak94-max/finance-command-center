@@ -40,11 +40,25 @@ export function useStatementAnalytics(
     placeholderData,
   })
 
+  const cardSpend = useQuery({
+    queryKey: ['statement-analytics', 'card-spend', filters],
+    queryFn: () => statementAnalyticsService.getCardSpend(filters),
+    placeholderData,
+  })
+
   const clientSpend = useQuery({
     queryKey: ['statement-analytics', 'client-spend', filters],
     queryFn: () => statementAnalyticsService.getClientSpend(filters),
     placeholderData,
   })
 
-  return { summary, spendTrend, ownerTypeSpend, categorySpend, merchantSpend, clientSpend }
+  return {
+    summary,
+    spendTrend,
+    ownerTypeSpend,
+    categorySpend,
+    merchantSpend,
+    cardSpend,
+    clientSpend,
+  }
 }

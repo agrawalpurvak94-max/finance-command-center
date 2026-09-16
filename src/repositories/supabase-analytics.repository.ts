@@ -18,7 +18,14 @@ import type {
 import type { AnalyticsRepository } from '@/repositories/analytics.repository'
 import { SupabaseTransactionRepository } from '@/repositories/supabase-transaction.repository'
 import { formatINR } from '@/utils/currency'
-import { sum, iso, buildBuckets, bucketIndexForDate, computeTrend } from '@/lib/analyticsBuckets'
+import {
+  sum,
+  buildBuckets,
+  bucketIndexForDate,
+  isCustomRangeActive,
+  comparisonWindowStart,
+  computePeriodSpend,
+} from '@/lib/analyticsBuckets'
 
 /**
  * Composes `SupabaseTransactionRepository` rather than re-querying/re-mapping
@@ -76,20 +83,21 @@ export class SupabaseAnalyticsRepository implements AnalyticsRepository {
       ? sum(txns, (t) => t.amount) / totalTransactions
       : 0
 
-    const now = new Date()
-    const monthPrefix = iso(now).slice(0, 7)
-    const prevMonthDate = new Date(now)
-    prevMonthDate.setMonth(prevMonthDate.getMonth() - 1)
-    const prevMonthPrefix = iso(prevMonthDate).slice(0, 7)
-
-    const monthlySpend = sum(
-      debits.filter((t) => t.date.startsWith(monthPrefix)),
-      (t) => t.amount,
-    )
-    const prevMonthSpend = sum(
-      debits.filter((t) => t.date.startsWith(prevMonthPrefix)),
-      (t) => t.amount,
-    )
+    // Period Spend: with no active Date Range filter, `debits` (already
+    // scoped by `filters`, which has no date bound) covers everything
+    // needed for the this-month-vs-last-month comparison. With an active
+    // range, `debits` is narrowed to exactly that range, so the comparison
+    // period (immediately before it) needs a second, wider fetch — see
+    // `computePeriodSpend`'s doc comment in lib/analyticsBuckets.ts.
+    const periodDebits = isCustomRangeActive(filters)
+      ? (
+          await this.fetchTransactions({
+            ...filters,
+            dateFrom: comparisonWindowStart(filters),
+          })
+        ).filter((t) => t.type === 'debit')
+      : debits
+    const period = computePeriodSpend(filters, periodDebits)
 
     const categoryTotals = new Map<string, { category: Category; amount: number }>()
     for (const t of debits) {
@@ -125,8 +133,9 @@ export class SupabaseAnalyticsRepository implements AnalyticsRepository {
       totalSpend,
       totalTransactions,
       averageTransaction,
-      monthlySpend,
-      monthlySpendTrend: computeTrend(monthlySpend, prevMonthSpend, false),
+      monthlySpend: period.value,
+      monthlySpendTrend: period.trend,
+      monthlySpendLabel: period.label,
       totalIncome,
       netCashFlow: totalIncome - totalSpend,
       highestSpendingCategory,
@@ -419,11 +428,12 @@ export class SupabaseAnalyticsRepository implements AnalyticsRepository {
     const summary = await this.getSummary(filters)
 
     if (summary.monthlySpendTrend && summary.monthlySpendTrend.direction !== 'flat') {
+      const periodNoun = summary.monthlySpendLabel === 'Period Spend' ? 'period' : 'month'
       insights.push({
         id: 'insight-monthly-spend-trend',
         severity: summary.monthlySpendTrend.tone === 'negative' ? 'warning' : 'good',
-        title: `Monthly spend ${summary.monthlySpendTrend.direction === 'up' ? 'increased' : 'decreased'} ${summary.monthlySpendTrend.label.replace(' MoM', '')}`,
-        description: `Compared to last month, this month's spend is ${formatINR(summary.monthlySpend)}.`,
+        title: `${summary.monthlySpendLabel} ${summary.monthlySpendTrend.direction === 'up' ? 'increased' : 'decreased'} ${summary.monthlySpendTrend.label.replace(' MoM', '')}`,
+        description: `Compared to the previous ${periodNoun}, this ${periodNoun}'s spend is ${formatINR(summary.monthlySpend)}.`,
       })
     }
 
