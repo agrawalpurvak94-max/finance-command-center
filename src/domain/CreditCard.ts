@@ -95,6 +95,17 @@ export interface CreditCardCreateInput {
   readonly status: CreditCardRecordStatus
   /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. Optional at creation — null/omitted means genuinely unset, not a guessed value. */
   readonly accountHolder?: string | null
+  /**
+   * Settings → Credentials fields (`accounts.card_product` /
+   * `statement_password` / `account_category` / `currency`). Optional so the
+   * existing `CreditCardFormDialog` (which predates Credentials) keeps
+   * compiling unchanged — `SupabaseCreditCardRepository.create()` defaults
+   * `accountCategory` to `'Personal'` and `currency` to `'INR'` when omitted.
+   */
+  readonly cardProduct?: string | null
+  readonly statementPassword?: string | null
+  readonly accountCategory?: 'Personal' | 'Business'
+  readonly currency?: string
 }
 
 /**

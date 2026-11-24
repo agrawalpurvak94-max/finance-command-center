@@ -16,6 +16,8 @@ export interface AccountStatementTile {
   readonly name: string
   readonly institutionName: string
   readonly maskedNumber: string
+  /** Credit cards only (e.g. "Diners Black") — always null for bank accounts, and null when unset in Supabase. Sourced from `accounts.card_product` via `CreditCardRepository.listCredentials()` — never `vw_accounts`, which doesn't project this column. See `domain/Credential.ts`. */
+  readonly cardProduct: string | null
   /** See `TransactionAccount.accountHolder`'s doc comment in domain/Account.ts. */
   readonly accountHolder: string | null
   readonly hasStatement: boolean
@@ -53,10 +55,19 @@ export interface CreditCardPaymentSummary {
   readonly cardsWithDue: number
 }
 
-/** One row of the due-date insights list — every card sharing this exact due date, combined. */
-export interface CreditCardDueDateInsight {
-  readonly dueDate: string
+/**
+ * One upcoming card payment — a single card's own next due amount, never
+ * merged with another card's. See `getUpcomingCardPayments`.
+ */
+export interface UpcomingCardPayment {
+  readonly tileId: string
+  readonly name: string
+  readonly institutionName: string
+  readonly maskedNumber: string
+  /** See `AccountStatementTile.cardProduct`'s doc comment. */
+  readonly cardProduct: string | null
   readonly amount: number
-  /** e.g. "₹42,500 due by 25th of the month." — see `getCreditCardDueDateInsights`. */
-  readonly label: string
+  readonly dueDate: string
+  /** Negative when overdue, 0 when due today — computed against the viewer's local calendar date. */
+  readonly daysRemaining: number
 }

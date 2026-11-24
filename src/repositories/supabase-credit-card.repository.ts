@@ -13,6 +13,7 @@ import type {
 } from '@/domain/CreditCard'
 import type { CreditCardRepository } from '@/repositories/credit-card.repository'
 import { getCurrentUserId } from '@/lib/supabaseAuth'
+import type { AccountCredentialRecord } from '@/domain/Credential'
 
 /**
  * Same physical `accounts` table as Accounts (Module 8), always additionally
@@ -235,6 +236,36 @@ function mapRow(
   }
 }
 
+type CredentialRow = {
+  id: string
+  institution_name: string
+  card_product: string | null
+  card_last4: string | null
+  account_number_last4: string | null
+  statement_password: string | null
+  account_category: string | null
+  currency: string | null
+  is_active: boolean | null
+  updated_at: string | null
+  created_at: string | null
+}
+
+function toCredentialRecord(row: CredentialRow): AccountCredentialRecord {
+  return {
+    id: row.id,
+    kind: 'credit_card',
+    institutionName: row.institution_name,
+    cardProduct: row.card_product,
+    last4: row.card_last4 ?? row.account_number_last4 ?? '0000',
+    accountTypeLabel: 'Credit Card',
+    accountCategory: row.account_category,
+    currency: row.currency ?? 'INR',
+    statementPassword: row.statement_password,
+    status: row.is_active === false ? 'inactive' : 'active',
+    updatedAt: row.updated_at ?? row.created_at ?? new Date().toISOString(),
+  }
+}
+
 const SORT_COLUMN: Record<NonNullable<CreditCardListParams['sort']>['id'], string> = {
   bankName: 'institution_name',
   cardName: 'account_name',
@@ -425,7 +456,6 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
         card_network: input.network,
         account_number_last4: input.last4,
         card_last4: input.last4,
-        currency: 'INR',
         credit_limit: input.creditLimit,
         current_balance: 0,
         available_credit: input.creditLimit,
@@ -434,6 +464,10 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
         minimum_due: 0,
         is_active: input.status === 'active',
         account_holder_name: input.accountHolder ?? null,
+        card_product: input.cardProduct ?? null,
+        statement_password: input.statementPassword ?? null,
+        account_category: input.accountCategory ?? 'Personal',
+        currency: input.currency ?? 'INR',
       })
       .select('*')
       .single()
@@ -568,5 +602,41 @@ export class SupabaseCreditCardRepository implements CreditCardRepository {
       throw new Error(
         `Credit card ${id} could not be deleted — it does not exist, or RLS denied the write.`,
       )
+  }
+
+  /** Settings → Credentials read — see `CreditCardRepository.listCredentials`'s doc comment. */
+  async listCredentials(): Promise<AccountCredentialRecord[]> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .select(
+        'id, institution_name, card_product, card_last4, account_number_last4, statement_password, account_category, currency, is_active, updated_at, created_at',
+      )
+      .eq('account_type', 'Credit Card')
+      .order('institution_name', { ascending: true })
+    if (error) throw new Error(`Failed to load credit card credentials: ${error.message}`)
+
+    return ((data as CredentialRow[] | null) ?? []).map(toCredentialRecord)
+  }
+
+  /** Narrow write for `accounts.statement_password` — mirrors `updateAccountHolder`'s pattern. */
+  async updateStatementPassword(
+    id: string,
+    statementPassword: string | null,
+  ): Promise<string | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .update({ statement_password: statementPassword })
+      .eq('id', id)
+      .eq('account_type', 'Credit Card')
+      .select('statement_password')
+      .maybeSingle()
+
+    if (error) throw new Error(`Failed to update statement credential for ${id}: ${error.message}`)
+    if (!data)
+      throw new Error(
+        `Credit card ${id}'s credential could not be updated — it does not exist, or RLS denied the write.`,
+      )
+
+    return (data as { statement_password: string | null }).statement_password
   }
 }

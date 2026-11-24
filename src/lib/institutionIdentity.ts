@@ -25,6 +25,14 @@ export interface InstitutionIdentity {
   readonly gradientClassName: string
   /** 2px top accent strip. */
   readonly barClassName: string
+  /**
+   * Raw hex for the SAME accent, for runtime CSS (custom properties driving
+   * a hover glow/spotlight) where Tailwind's verbatim-class constraint
+   * doesn't apply — never a second color system, just this one accent
+   * expressed as a value instead of a class. Matches each accent's own
+   * `-400` Tailwind shade (the one already used for text/hover above).
+   */
+  readonly glowColor: string
 }
 
 type AccentPalette = Omit<InstitutionIdentity, 'initials'>
@@ -36,6 +44,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-blue-500/20',
     gradientClassName: 'from-blue-500/10 via-transparent to-transparent',
     barClassName: 'bg-blue-500/70',
+    glowColor: '#60a5fa',
   },
   orange: {
     chipClassName: 'bg-orange-500/10 text-orange-400',
@@ -43,6 +52,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-orange-500/20',
     gradientClassName: 'from-orange-500/10 via-transparent to-transparent',
     barClassName: 'bg-orange-500/70',
+    glowColor: '#fb923c',
   },
   rose: {
     chipClassName: 'bg-rose-500/10 text-rose-400',
@@ -50,6 +60,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-rose-500/20',
     gradientClassName: 'from-rose-500/10 via-transparent to-transparent',
     barClassName: 'bg-rose-500/70',
+    glowColor: '#fb7185',
   },
   indigo: {
     chipClassName: 'bg-indigo-500/10 text-indigo-400',
@@ -57,6 +68,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-indigo-500/20',
     gradientClassName: 'from-indigo-500/10 via-transparent to-transparent',
     barClassName: 'bg-indigo-500/70',
+    glowColor: '#818cf8',
   },
   violet: {
     chipClassName: 'bg-violet-500/10 text-violet-400',
@@ -64,6 +76,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-violet-500/20',
     gradientClassName: 'from-violet-500/10 via-transparent to-transparent',
     barClassName: 'bg-violet-500/70',
+    glowColor: '#a78bfa',
   },
   teal: {
     chipClassName: 'bg-teal-500/10 text-teal-400',
@@ -71,6 +84,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-teal-500/20',
     gradientClassName: 'from-teal-500/10 via-transparent to-transparent',
     barClassName: 'bg-teal-500/70',
+    glowColor: '#2dd4bf',
   },
   sky: {
     chipClassName: 'bg-sky-500/10 text-sky-400',
@@ -78,6 +92,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-sky-500/20',
     gradientClassName: 'from-sky-500/10 via-transparent to-transparent',
     barClassName: 'bg-sky-500/70',
+    glowColor: '#38bdf8',
   },
   red: {
     chipClassName: 'bg-red-500/10 text-red-400',
@@ -85,6 +100,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-red-500/20',
     gradientClassName: 'from-red-500/10 via-transparent to-transparent',
     barClassName: 'bg-red-500/70',
+    glowColor: '#f87171',
   },
   fuchsia: {
     chipClassName: 'bg-fuchsia-500/10 text-fuchsia-400',
@@ -92,6 +108,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-fuchsia-500/20',
     gradientClassName: 'from-fuchsia-500/10 via-transparent to-transparent',
     barClassName: 'bg-fuchsia-500/70',
+    glowColor: '#e879f9',
   },
   cyan: {
     chipClassName: 'bg-cyan-500/10 text-cyan-400',
@@ -99,6 +116,7 @@ const ACCENTS = {
     ringClassName: 'hover:ring-cyan-500/20',
     gradientClassName: 'from-cyan-500/10 via-transparent to-transparent',
     barClassName: 'bg-cyan-500/70',
+    glowColor: '#22d3ee',
   },
 } as const satisfies Record<string, AccentPalette>
 

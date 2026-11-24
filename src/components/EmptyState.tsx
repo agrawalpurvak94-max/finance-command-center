@@ -26,7 +26,13 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       <p className="w-full text-body-md font-medium text-foreground">{title}</p>
       <p className="mx-auto w-full max-w-80 text-body-sm text-muted-foreground">{description}</p>
       {action && (
-        <Button size="sm" variant="outline" className="mt-sm" render={<Link to={action.href} />}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-sm"
+          nativeButton={false}
+          render={<Link to={action.href} />}
+        >
           {action.label}
         </Button>
       )}

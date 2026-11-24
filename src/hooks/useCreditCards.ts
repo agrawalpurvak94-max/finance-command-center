@@ -28,6 +28,8 @@ export function useCreateCreditCard() {
     mutationFn: (input: CreditCardCreateInput) => creditCardRepository.create(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.creditCards.all })
+      // A newly created card also appears in Settings → Credentials' list.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.credentials.all })
     },
   })
 }

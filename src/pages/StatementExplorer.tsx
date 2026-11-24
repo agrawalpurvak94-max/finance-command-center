@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { PageContainer } from '@/layouts/PageContainer'
 import { EmptyState } from '@/components/EmptyState'
 import { Pagination } from '@/components/Pagination'
+import { Toast } from '@/components/Toast'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CircleAlert, FileStack } from 'lucide-react'
@@ -125,6 +126,7 @@ export function StatementExplorer() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [selectedRow, setSelectedRow] = useState<StatementTransactionRow | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const selectorQuery = useStatementSelectorOptions()
   const detailQuery = useStatementExplorerDetail(statementId)
@@ -241,15 +243,24 @@ export function StatementExplorer() {
   }, [transactionsQuery.data])
 
   function handleUpdateCategory(rowId: string, category: string) {
-    updateCategory.mutate({ id: rowId, category })
+    updateCategory.mutate(
+      { id: rowId, category },
+      { onError: (err) => setToastMessage(`Couldn't save category: ${err.message}`) },
+    )
   }
 
   function handleUpdateClient(rowId: string, clientId: string | null) {
-    updateClient.mutate({ id: rowId, clientId })
+    updateClient.mutate(
+      { id: rowId, clientId },
+      { onError: (err) => setToastMessage(`Couldn't save client: ${err.message}`) },
+    )
   }
 
   function handleUpdateOwnerType(rowId: string, ownerType: OwnerType) {
-    updateOwnerType.mutate({ id: rowId, ownerType })
+    updateOwnerType.mutate(
+      { id: rowId, ownerType },
+      { onError: (err) => setToastMessage(`Couldn't save Business/Personal: ${err.message}`) },
+    )
   }
 
   function handleSelectStatement(id: string) {
@@ -405,6 +416,8 @@ export function StatementExplorer() {
           />
         </>
       )}
+
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
     </PageContainer>
   )
 }

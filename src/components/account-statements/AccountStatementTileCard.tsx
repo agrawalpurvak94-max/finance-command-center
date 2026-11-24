@@ -1,6 +1,8 @@
 import { Landmark, CreditCard as CreditCardIcon, FileX } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { SpotlightOverlay } from '@/components/ui/spotlight-overlay'
+import { useSpotlight } from '@/hooks/useSpotlight'
 import { getInstitutionIdentity } from '@/lib/institutionIdentity'
 import { formatINR } from '@/utils/currency'
 import { cn } from '@/lib/utils'
@@ -47,6 +49,7 @@ export function AccountStatementTileCard({
   const Icon = tile.kind === 'credit_card' ? CreditCardIcon : Landmark
   const identity = getInstitutionIdentity(tile.institutionName)
   const shouldReduceMotion = useReducedMotion()
+  const spotlight = useSpotlight()
 
   return (
     <motion.div
@@ -63,9 +66,13 @@ export function AccountStatementTileCard({
         type="button"
         data-account-statement-tile-trigger={tile.id}
         onClick={() => onOpen(tile)}
+        onMouseMove={spotlight.onMouseMove}
+        onMouseEnter={spotlight.onMouseEnter}
+        onMouseLeave={spotlight.onMouseLeave}
         aria-label={`View statements for ${tile.name}`}
+        style={{ ['--glow-ring-color' as string]: identity.glowColor }}
         className={cn(
-          'group relative flex h-full w-full flex-col gap-md overflow-hidden rounded-xl border border-border bg-card p-md text-left shadow-sm ring-0 transition-all duration-200',
+          'group glow-ring-hover relative flex h-full w-full flex-col gap-md overflow-hidden rounded-xl border border-border bg-card p-md text-left shadow-sm ring-0 transition-all duration-200',
           'hover:-translate-y-0.5 hover:border-transparent hover:shadow-lg hover:ring-1',
           'active:translate-y-0 active:scale-[0.99] active:duration-100',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -83,10 +90,15 @@ export function AccountStatementTileCard({
             identity.gradientClassName,
           )}
         />
+        <SpotlightOverlay
+          background={spotlight.background}
+          opacity={spotlight.opacity}
+          color={identity.glowColor}
+        />
 
         <div className="relative flex items-start justify-between gap-sm">
           <div className="flex min-w-0 flex-1 items-center gap-sm">
-            <Avatar className="shrink-0 transition-transform duration-200 group-hover:scale-105">
+            <Avatar className="shrink-0 transition-[transform,filter] duration-200 group-hover:scale-105 group-hover:brightness-110">
               <AvatarFallback className={cn('font-semibold', identity.chipClassName)}>
                 {identity.initials}
               </AvatarFallback>
@@ -106,8 +118,23 @@ export function AccountStatementTileCard({
               >
                 {tile.accountHolder || 'Holder not assigned'}
               </p>
-              <p className="truncate text-body-md font-semibold text-foreground">{tile.name}</p>
-              <p className="truncate text-body-sm text-muted-foreground">{tile.institutionName}</p>
+              {tile.kind === 'credit_card' ? (
+                <>
+                  <p className="truncate text-body-sm text-muted-foreground">
+                    {tile.institutionName}
+                  </p>
+                  <p className="truncate text-body-md font-semibold text-foreground">
+                    {tile.cardProduct ?? 'Product not configured'} Credit Card
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="truncate text-body-md font-semibold text-foreground">{tile.name}</p>
+                  <p className="truncate text-body-sm text-muted-foreground">
+                    {tile.institutionName}
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />

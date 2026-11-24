@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import { TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatINR } from '@/utils/currency'
@@ -27,6 +28,19 @@ interface KPICardProps {
   ariaLabel?: string
   /** Small muted subtitle under the value — e.g. clarifying which accounts a figure is scoped to. Neutral, unlike `trend`/`warningLabel`. */
   caption?: string
+  /** Optional leading identity icon (e.g. Account Intelligence's Portfolio Snapshot) — omit for the plain label/value card every other caller already uses. */
+  icon?: LucideIcon
+  /** Background/text pairing for the icon chip — required whenever `icon` is passed, e.g. `'bg-blue-500/10 text-blue-400'`. */
+  iconClassName?: string
+  /**
+   * Richer surface (soft inner highlight + hover border glow + a blurred
+   * icon halo) for a page's own dedicated summary row — e.g. Account
+   * Intelligence's Portfolio Snapshot. Every other existing caller omits
+   * this and keeps today's plain card exactly as-is.
+   */
+  elevated?: boolean
+  /** Hover glow color for `elevated` — a CSS color value (hex, or a `var(--token)` reference), ignored unless `elevated` is set. */
+  glowColor?: string
 }
 
 export function KPICard({
@@ -36,27 +50,54 @@ export function KPICard({
   onClick,
   ariaLabel,
   caption,
+  icon: Icon,
+  iconClassName,
+  elevated,
+  glowColor,
 }: KPICardProps) {
   const className = cn(
     'flex w-full flex-col justify-between rounded-lg border border-border bg-card p-md text-left',
     onClick && 'transition-colors hover:border-primary hover:bg-surface-hover',
     metric.warningLabel && 'border-l-4 border-l-destructive',
+    elevated && 'glow-ring-hover shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
   )
+  const style = elevated ? { ['--glow-ring-color' as string]: glowColor } : undefined
 
   const content = (
     <>
-      <div className="min-w-0">
-        <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
-        <div
-          className={cn(
-            'mt-xs truncate tabular-nums text-foreground',
-            valueClassName ?? 'text-display-kpi',
-          )}
-          title={formatValue(metric.value)}
-        >
-          {formatValue(metric.value)}
+      <div className="flex min-w-0 items-start gap-sm">
+        {Icon && (
+          <span className="relative shrink-0">
+            {elevated && (
+              <span
+                aria-hidden="true"
+                className={cn('absolute inset-0 rounded-full opacity-60 blur-md', iconClassName)}
+              />
+            )}
+            <span
+              aria-hidden="true"
+              className={cn(
+                'relative flex size-8 items-center justify-center rounded-full',
+                iconClassName,
+              )}
+            >
+              <Icon className="size-4" />
+            </span>
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <span className="text-label-caps uppercase text-muted-foreground">{metric.label}</span>
+          <div
+            className={cn(
+              'mt-xs truncate tabular-nums text-foreground',
+              valueClassName ?? 'text-display-kpi',
+            )}
+            title={formatValue(metric.value)}
+          >
+            {formatValue(metric.value)}
+          </div>
+          {caption && <p className="mt-xs text-[11px] text-muted-foreground">{caption}</p>}
         </div>
-        {caption && <p className="mt-xs text-[11px] text-muted-foreground">{caption}</p>}
       </div>
       {metric.trend && (
         <div className="mt-md">
@@ -74,11 +115,21 @@ export function KPICard({
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} aria-label={ariaLabel} className={className}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={ariaLabel}
+        className={className}
+        style={style}
+      >
         {content}
       </button>
     )
   }
 
-  return <div className={className}>{content}</div>
+  return (
+    <div className={className} style={style}>
+      {content}
+    </div>
+  )
 }

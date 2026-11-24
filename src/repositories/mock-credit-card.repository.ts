@@ -10,6 +10,7 @@ import type {
 import type { CreditCardRepository } from '@/repositories/credit-card.repository'
 import { mockCreditCardRecords } from '@/repositories/mock-data/generate-credit-cards'
 import { mockStatements } from '@/repositories/mock-data/generate-statements'
+import type { AccountCredentialRecord } from '@/domain/Credential'
 
 function withLatency<T>(data: T, ms = 350): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
@@ -71,6 +72,12 @@ function isThisMonth(date: string): boolean {
 
 export class MockCreditCardRepository implements CreditCardRepository {
   private cards: CreditCardRecord[] = [...mockCreditCardRecords]
+  // Settings → Credentials fields aren't part of CreditCardRecord (see
+  // domain/Credential.ts's doc comment) — kept as side-maps here so this
+  // mock (currently unused; Module 12A swapped to Supabase) still satisfies
+  // CreditCardRepository.
+  private cardProducts = new Map<string, string | null>()
+  private statementPasswords = new Map<string, string | null>()
 
   async list(params: CreditCardListParams): Promise<CreditCardListResult> {
     const filtered = this.cards
@@ -165,6 +172,8 @@ export class MockCreditCardRepository implements CreditCardRepository {
       accountHolder: input.accountHolder ?? null,
     }
     this.cards = [card, ...this.cards]
+    this.cardProducts.set(card.id, input.cardProduct ?? null)
+    this.statementPasswords.set(card.id, input.statementPassword ?? null)
     return withLatency(card, 400)
   }
 
@@ -215,5 +224,33 @@ export class MockCreditCardRepository implements CreditCardRepository {
   async delete(id: string): Promise<void> {
     this.cards = this.cards.filter((c) => c.id !== id)
     return withLatency(undefined, 200)
+  }
+
+  async listCredentials(): Promise<AccountCredentialRecord[]> {
+    return withLatency(
+      this.cards.map((c) => ({
+        id: c.id,
+        kind: 'credit_card',
+        institutionName: c.bankName,
+        cardProduct: this.cardProducts.get(c.id) ?? c.cardName,
+        last4: c.last4,
+        accountTypeLabel: 'Credit Card',
+        accountCategory: null,
+        currency: 'INR',
+        statementPassword: this.statementPasswords.get(c.id) ?? null,
+        status: c.status === 'inactive' ? 'inactive' : 'active',
+        updatedAt: c.lastTransactionAt ?? new Date().toISOString(),
+      })),
+      250,
+    )
+  }
+
+  async updateStatementPassword(
+    id: string,
+    statementPassword: string | null,
+  ): Promise<string | null> {
+    if (!this.cards.some((c) => c.id === id)) throw new Error(`Credit card ${id} not found`)
+    this.statementPasswords.set(id, statementPassword)
+    return withLatency(statementPassword, 200)
   }
 }

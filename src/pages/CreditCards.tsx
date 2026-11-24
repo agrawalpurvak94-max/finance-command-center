@@ -7,17 +7,16 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
 import { EmptyState } from '@/components/EmptyState'
-import { Toast } from '@/components/Toast'
 import { ActiveFilterBanner } from '@/components/ActiveFilterBanner'
+import { InsightsPanel } from '@/components/analytics/InsightsPanel'
 import { AccountStatementsSummaryWidget } from '@/components/account-statements/AccountStatementsSummaryWidget'
 import { CreditCardPaymentSummaryWidget } from '@/components/account-statements/CreditCardPaymentSummary'
 import { AccountStatementTileCard } from '@/components/account-statements/AccountStatementTileCard'
-import { CreditCardFormDialog } from '@/components/credit-cards/CreditCardFormDialog'
-import { BankAccountFormDialog } from '@/components/accounts/BankAccountFormDialog'
+import { AmbientGlow } from '@/components/ui/ambient-glow'
 import { useAccountStatementTiles, useAccountStatementsSummary } from '@/hooks/useAccountStatements'
+import { useBankAccountsSummary } from '@/hooks/useAccounts'
+import { useCreditCardsSummary } from '@/hooks/useCreditCards'
 import { accountStatementsService } from '@/services/account-statements.service'
-import { useCreateCreditCard } from '@/hooks/useCreditCards'
-import { useCreateBankAccount } from '@/hooks/useAccounts'
 import { useTransactionClients } from '@/hooks/useTransactions'
 import type { AccountStatementTile, AccountStatementType } from '@/domain/AccountStatements'
 
@@ -41,6 +40,19 @@ function TileGridSkeleton() {
   )
 }
 
+function InsightsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-sm sm:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-lg" />
+      ))}
+    </div>
+  )
+}
+
+/** Insights never carry an `actionFilter` on this page (no cross-filter target exists here), so they always render as static, non-clickable cards — this handler never fires. */
+function handleInsightClick() {}
+
 /**
  * Account Statements — unified statement-analysis view (formerly separate
  * Credit Cards / Financial Accounts pages, Module 12B follow-up). Kept the
@@ -50,6 +62,15 @@ function TileGridSkeleton() {
  *
  * NOT real-time — see `account-statements.service.ts`'s header comment for
  * the statement-vs-transactions data source rule this page follows.
+ *
+ * Information hierarchy (Account Intelligence UX redesign): Insights →
+ * Portfolio Snapshot → Credit Card Payments → filters/search → account list.
+ * The first three sections are always computed from the FULL client-scoped
+ * tile list (never the type-filter/search-narrowed one) so they stay
+ * meaningful portfolio-wide intelligence regardless of which accounts the
+ * list below happens to be showing; only Portfolio Snapshot itself adapts
+ * its metric set when the "Credit Cards" chip is active (see
+ * `isCreditCardFocused`).
  */
 export function CreditCards() {
   const navigate = useNavigate()
@@ -61,16 +82,12 @@ export function CreditCards() {
   )
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<AccountStatementType | 'all'>('all')
-  const [creditCardFormOpen, setCreditCardFormOpen] = useState(false)
-  const [bankAccountFormOpen, setBankAccountFormOpen] = useState(false)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const clientsQuery = useTransactionClients()
   const summaryQuery = useAccountStatementsSummary()
+  const bankSummaryQuery = useBankAccountsSummary()
+  const creditCardSummaryQuery = useCreditCardsSummary()
   const tilesQuery = useAccountStatementTiles(clientDrillDownId)
-
-  const createCard = useCreateCreditCard()
-  const createAccount = useCreateBankAccount()
 
   function handleClearClientDrillDown() {
     if (!clientDrillDownId) return
@@ -89,42 +106,57 @@ export function CreditCards() {
     ? (clientsQuery.data?.find((c) => c.id === clientDrillDownId)?.name ?? clientDrillDownId)
     : null
 
-  const filteredTiles = useMemo(() => {
+  // Portfolio-wide intelligence — Insights, the payment position, and the
+  // "has any credit cards" check all read the FULL tile list, independent of
+  // the type filter/search below, so switching to e.g. "Savings" doesn't
+  // make "what do I owe" disappear.
+  const creditCardPaymentSummary = useMemo(
+    () => accountStatementsService.getCreditCardPaymentSummary(tilesQuery.data ?? []),
+    [tilesQuery.data],
+  )
+  const upcomingCardPayments = useMemo(
+    () => accountStatementsService.getUpcomingCardPayments(tilesQuery.data ?? []),
+    [tilesQuery.data],
+  )
+  const insights = useMemo(
+    () => accountStatementsService.getAccountIntelligenceInsights(tilesQuery.data ?? []),
+    [tilesQuery.data],
+  )
+  const hasCreditCards = useMemo(
+    () => (tilesQuery.data ?? []).some((tile) => tile.kind === 'credit_card'),
+    [tilesQuery.data],
+  )
+
+  // The type filter + search only ever narrow what the account list/grid
+  // below shows — they never affect the intelligence sections above.
+  const visibleTiles = useMemo(() => {
     const all = tilesQuery.data ?? []
+    const scoped =
+      typeFilter === 'all' ? all : all.filter((tile) => tile.accountType === typeFilter)
     const term = search.trim().toLowerCase()
-    return all.filter((tile) => {
-      if (typeFilter !== 'all' && tile.accountType !== typeFilter) return false
-      if (!term) return true
-      return (
+    if (!term) return scoped
+    return scoped.filter(
+      (tile) =>
         tile.name.toLowerCase().includes(term) ||
         tile.institutionName.toLowerCase().includes(term) ||
+        (tile.cardProduct?.toLowerCase().includes(term) ?? false) ||
         tile.maskedNumber.toLowerCase().includes(term) ||
-        (tile.accountHolder?.toLowerCase().includes(term) ?? false)
-      )
-    })
+        (tile.accountHolder?.toLowerCase().includes(term) ?? false),
+    )
   }, [tilesQuery.data, search, typeFilter])
 
-  // Derived from the SAME filtered tile list the grid below renders, so the
-  // consolidated summary always matches what's visible and reacts to
-  // search/type-filter/client-drilldown/refetch exactly like the grid does
-  // — no separate query, no risk of drifting out of sync.
-  const creditCardPaymentSummary = useMemo(
-    () => accountStatementsService.getCreditCardPaymentSummary(filteredTiles),
-    [filteredTiles],
-  )
-  const creditCardDueDateInsights = useMemo(
-    () => accountStatementsService.getCreditCardDueDateInsights(filteredTiles),
-    [filteredTiles],
-  )
-
-  const handleOpenTile = (tile: AccountStatementTile) => {
-    navigate(`/statements?accountId=${encodeURIComponent(tile.id)}`)
+  // Shared by both the tile grid and the Upcoming Payments rows — the same
+  // destination either way, never a second navigation target.
+  const handleOpenAccountId = (id: string) => {
+    navigate(`/statements?accountId=${encodeURIComponent(id)}`)
   }
+  const handleOpenTile = (tile: AccountStatementTile) => handleOpenAccountId(tile.id)
 
   const hasActiveSearch = !!search || typeFilter !== 'all'
 
   return (
-    <PageContainer className="flex flex-col gap-md">
+    <PageContainer className="relative flex flex-col gap-md">
+      <AmbientGlow className="top-0 left-1/4" />
       <div className="flex flex-col gap-md sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-headline-lg text-foreground">Account Intelligence</h1>
@@ -133,11 +165,19 @@ export function CreditCards() {
           </p>
         </div>
         <div className="flex gap-sm">
-          <Button size="sm" variant="outline" onClick={() => setBankAccountFormOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate('/credentials?add=bank-account')}
+          >
             <Plus className="size-4" aria-hidden="true" />
             Add Bank Account
           </Button>
-          <Button size="sm" onClick={() => setCreditCardFormOpen(true)}>
+          <Button
+            size="sm"
+            className="btn-shimmer"
+            onClick={() => navigate('/credentials?add=credit-card')}
+          >
             <Plus className="size-4" aria-hidden="true" />
             Add Credit Card
           </Button>
@@ -151,7 +191,29 @@ export function CreditCards() {
         />
       )}
 
-      <AccountStatementsSummaryWidget query={summaryQuery} />
+      <div className="flex flex-col gap-sm">
+        <p className="text-label-caps uppercase text-muted-foreground">Insights</p>
+        {tilesQuery.isLoading ? (
+          <InsightsSkeleton />
+        ) : (
+          <InsightsPanel insights={insights} onInsightClick={handleInsightClick} />
+        )}
+      </div>
+
+      <AccountStatementsSummaryWidget
+        query={summaryQuery}
+        bankSummaryQuery={bankSummaryQuery}
+        creditCardSummaryQuery={creditCardSummaryQuery}
+        paymentSummary={creditCardPaymentSummary}
+        isCreditCardFocused={typeFilter === 'Credit Card'}
+      />
+
+      <CreditCardPaymentSummaryWidget
+        summary={creditCardPaymentSummary}
+        payments={upcomingCardPayments}
+        hasCreditCards={hasCreditCards}
+        onOpenPayment={handleOpenAccountId}
+      />
 
       <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-96 flex-1">
@@ -163,7 +225,7 @@ export function CreditCards() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search bank name, account name, holder, last 4 digits…"
+            placeholder="Search bank name, product, holder, last 4 digits…"
             className="pl-9"
             aria-label="Search accounts"
           />
@@ -174,6 +236,7 @@ export function CreditCards() {
               key={f.value}
               size="sm"
               variant={typeFilter === f.value ? 'default' : 'outline'}
+              className="rounded-full"
               onClick={() => setTypeFilter(f.value)}
             >
               {f.label}
@@ -182,16 +245,9 @@ export function CreditCards() {
         </div>
       </div>
 
-      {typeFilter === 'Credit Card' && (
-        <CreditCardPaymentSummaryWidget
-          summary={creditCardPaymentSummary}
-          insights={creditCardDueDateInsights}
-        />
-      )}
-
       <div className="flex items-center justify-between px-xs text-body-sm text-muted-foreground">
         <span>
-          Showing <span className="font-bold text-foreground">{filteredTiles.length}</span> of{' '}
+          Showing <span className="font-bold text-foreground">{visibleTiles.length}</span> of{' '}
           {tilesQuery.data?.length ?? 0} accounts
         </span>
       </div>
@@ -199,7 +255,7 @@ export function CreditCards() {
       <QueryBoundary
         query={tilesQuery}
         skeleton={<TileGridSkeleton />}
-        isEmpty={() => filteredTiles.length === 0}
+        isEmpty={() => visibleTiles.length === 0}
         empty={
           <EmptyState
             icon={FileStack}
@@ -214,7 +270,7 @@ export function CreditCards() {
       >
         {() => (
           <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTiles.map((tile, index) => (
+            {visibleTiles.map((tile, index) => (
               <AccountStatementTileCard
                 key={tile.id}
                 tile={tile}
@@ -225,36 +281,6 @@ export function CreditCards() {
           </div>
         )}
       </QueryBoundary>
-
-      <CreditCardFormDialog
-        open={creditCardFormOpen}
-        onOpenChange={setCreditCardFormOpen}
-        isPending={createCard.isPending}
-        onSubmit={(input) => {
-          createCard.mutate(input, {
-            onSuccess: () => {
-              setCreditCardFormOpen(false)
-              setToastMessage(`${input.cardName} added.`)
-            },
-          })
-        }}
-      />
-
-      <BankAccountFormDialog
-        open={bankAccountFormOpen}
-        onOpenChange={setBankAccountFormOpen}
-        isPending={createAccount.isPending}
-        onSubmit={(input) => {
-          createAccount.mutate(input, {
-            onSuccess: () => {
-              setBankAccountFormOpen(false)
-              setToastMessage(`${input.accountName} linked.`)
-            },
-          })
-        }}
-      />
-
-      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
     </PageContainer>
   )
 }

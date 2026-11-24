@@ -4,6 +4,7 @@ import type { MerchantRecord } from '@/domain/Merchant'
 import type { ClientRecord } from '@/domain/Client'
 import type { Statement } from '@/domain/Statement'
 import type { AnalyticsRankedRow } from '@/domain/Analytics'
+import type { AccountCredentialRecord } from '@/domain/Credential'
 
 function escapeCsvValue(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -168,6 +169,21 @@ export function analyticsRowsToCsv(
   )
 
   return rowsToCsv(headers, rows_)
+}
+
+/** Never includes the credential value itself — see Credentials' password-handling rules. */
+export function credentialsToCsv(records: readonly AccountCredentialRecord[]): string {
+  const headers = ['Bank Entity', 'Card/Product', 'Last 4', 'Status', 'Last Updated']
+
+  const rows = records.map((record) => [
+    record.institutionName,
+    record.cardProduct ?? '',
+    record.last4,
+    record.statementPassword ? 'Configured' : 'Missing Credential',
+    record.updatedAt,
+  ])
+
+  return rowsToCsv(headers, rows)
 }
 
 export function downloadCsv(filename: string, csvContent: string): void {

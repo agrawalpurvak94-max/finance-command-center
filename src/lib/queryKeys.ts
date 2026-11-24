@@ -55,6 +55,12 @@ export const queryKeys = {
     list: (params: CreditCardListParams) => ['credit-cards', 'list', params] as const,
     summary: ['credit-cards', 'summary'] as const,
   },
+  credentials: {
+    all: ['credentials'] as const,
+  },
+  apiKeys: {
+    all: ['api-keys'] as const,
+  },
   clients: {
     all: ['clients'] as const,
     list: (params: ClientListParams) => ['clients', 'list', params] as const,

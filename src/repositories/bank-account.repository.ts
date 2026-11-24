@@ -6,6 +6,7 @@ import type {
   BankAccountSummary,
   BankAccountUpdateInput,
 } from '@/domain/Account'
+import type { AccountCredentialRecord } from '@/domain/Credential'
 
 /**
  * Swap point for real backend integration. Implement this interface with a
@@ -27,4 +28,11 @@ export interface BankAccountRepository {
    * `CreditCardRepository.updateAccountHolder`'s doc comment.
    */
   updateAccountHolder(id: string, accountHolder: string | null): Promise<string | null>
+  /**
+   * Settings → Credentials read — see `AccountCredentialRecord`'s doc
+   * comment for why this bypasses `vw_accounts` (reads `accounts` directly).
+   */
+  listCredentials(): Promise<AccountCredentialRecord[]>
+  /** Narrow write for `accounts.statement_password` — mirrors `updateAccountHolder` above. */
+  updateStatementPassword(id: string, statementPassword: string | null): Promise<string | null>
 }

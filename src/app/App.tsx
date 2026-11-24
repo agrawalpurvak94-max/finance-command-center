@@ -14,7 +14,7 @@ const Categories = lazy(() => import('@/pages/Categories'))
 const Clients = lazy(() => import('@/pages/Clients'))
 const CreditCards = lazy(() => import('@/pages/CreditCards'))
 const Analytics = lazy(() => import('@/pages/Analytics'))
-const Settings = lazy(() => import('@/pages/Settings'))
+const Credentials = lazy(() => import('@/pages/Credentials'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 
 /**
@@ -60,7 +60,7 @@ export default function App() {
               <Route path="categories" element={<Categories />} />
               <Route path="merchants" element={<Merchants />} />
               <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="credentials" element={<Credentials />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

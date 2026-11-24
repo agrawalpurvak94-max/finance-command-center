@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountStatementsService } from '@/services/account-statements.service'
 import type { AccountStatementTile } from '@/domain/AccountStatements'
 
@@ -10,6 +10,7 @@ function tile(overrides: Partial<AccountStatementTile> = {}): AccountStatementTi
     name: 'HDFC Bank Credit Card',
     institutionName: 'HDFC Bank',
     maskedNumber: '•••• 1581',
+    cardProduct: 'Infinia',
     accountHolder: 'Purvak Agrawal',
     hasStatement: true,
     statementId: 'stmt-1',
@@ -96,60 +97,129 @@ describe('getCreditCardPaymentSummary', () => {
   })
 })
 
-describe('getCreditCardDueDateInsights', () => {
-  it('combines cards that share the EXACT same due date into one line', () => {
+describe('getUpcomingCardPayments', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-17T12:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('returns one line per card, never merging cards even when due dates match', () => {
     const tiles = [
       tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-09-25' }),
       tile({ id: 'card-b', statementTotalAmountDue: 30000, dueDate: '2026-09-25' }),
     ]
-    const insights = accountStatementsService.getCreditCardDueDateInsights(tiles)
-    expect(insights).toHaveLength(1)
-    expect(insights[0].amount).toBe(50000)
-    expect(insights[0].label).toBe('₹50,000 due by 25th of the month.')
+    const payments = accountStatementsService.getUpcomingCardPayments(tiles)
+    expect(payments).toHaveLength(2)
+    expect(payments.map((p) => p.amount)).toEqual([20000, 30000])
   })
 
-  it('does NOT merge cards that land on the same day-of-month in different months', () => {
-    const tiles = [
-      tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-09-25' }),
-      tile({ id: 'card-b', statementTotalAmountDue: 30000, dueDate: '2026-10-25' }),
-    ]
-    const insights = accountStatementsService.getCreditCardDueDateInsights(tiles)
-    expect(insights).toHaveLength(2)
+  it('computes daysRemaining against the current UTC date', () => {
+    const tiles = [tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-09-25' })]
+    const payments = accountStatementsService.getUpcomingCardPayments(tiles)
+    expect(payments[0].daysRemaining).toBe(8)
   })
 
-  it('sorts insights by due date ascending', () => {
+  it('daysRemaining is negative for an overdue payment', () => {
+    const tiles = [tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-09-10' })]
+    const payments = accountStatementsService.getUpcomingCardPayments(tiles)
+    expect(payments[0].daysRemaining).toBe(-7)
+  })
+
+  it('sorts payments by due date ascending', () => {
     const tiles = [
       tile({ id: 'card-a', dueDate: '2026-09-27' }),
       tile({ id: 'card-b', dueDate: '2026-09-07' }),
     ]
-    const insights = accountStatementsService.getCreditCardDueDateInsights(tiles)
-    expect(insights.map((i) => i.dueDate)).toEqual(['2026-09-07', '2026-09-27'])
+    const payments = accountStatementsService.getUpcomingCardPayments(tiles)
+    expect(payments.map((p) => p.dueDate)).toEqual(['2026-09-07', '2026-09-27'])
+  })
+
+  it('carries the card product through from the tile, and null when unset', () => {
+    const tiles = [
+      tile({ id: 'card-a', cardProduct: 'Infinia', dueDate: '2026-09-25' }),
+      tile({ id: 'card-b', cardProduct: null, dueDate: '2026-09-25' }),
+    ]
+    const payments = accountStatementsService.getUpcomingCardPayments(tiles)
+    expect(payments.map((p) => p.cardProduct)).toEqual(['Infinia', null])
   })
 
   it('excludes cards with nothing outstanding, rather than showing a zero-value line', () => {
     const tiles = [tile({ id: 'card-a', statementTotalAmountDue: 0, dueDate: '2026-09-25' })]
-    expect(accountStatementsService.getCreditCardDueDateInsights(tiles)).toEqual([])
+    expect(accountStatementsService.getUpcomingCardPayments(tiles)).toEqual([])
   })
 
-  it('returns an empty array (meaningful empty state upstream) when there are no cards at all', () => {
-    expect(accountStatementsService.getCreditCardDueDateInsights([])).toEqual([])
+  it('returns an empty array when there are no cards at all', () => {
+    expect(accountStatementsService.getUpcomingCardPayments([])).toEqual([])
+  })
+})
+
+describe('getAccountIntelligenceInsights', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-17T12:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
-  it('correctly formats ordinal suffixes (1st, 2nd, 3rd, 11th-13th, 21st)', () => {
-    const cases: [string, string][] = [
-      ['2026-09-01', '1st'],
-      ['2026-09-02', '2nd'],
-      ['2026-09-03', '3rd'],
-      ['2026-09-11', '11th'],
-      ['2026-09-12', '12th'],
-      ['2026-09-13', '13th'],
-      ['2026-09-21', '21st'],
+  it('returns no insights for an empty tile list', () => {
+    expect(accountStatementsService.getAccountIntelligenceInsights([])).toEqual([])
+  })
+
+  it('flags an upcoming payment concentration when a card is due within 7 days', () => {
+    const tiles = [tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-09-20' })]
+    const insights = accountStatementsService.getAccountIntelligenceInsights(tiles)
+    expect(insights.some((i) => i.id === 'upcoming-payment-concentration')).toBe(true)
+  })
+
+  it('does not flag upcoming payment concentration when the only due date is more than 7 days out', () => {
+    const tiles = [tile({ id: 'card-a', statementTotalAmountDue: 20000, dueDate: '2026-10-15' })]
+    const insights = accountStatementsService.getAccountIntelligenceInsights(tiles)
+    expect(insights.some((i) => i.id === 'upcoming-payment-concentration')).toBe(false)
+  })
+
+  it('identifies the single card with the highest outstanding balance', () => {
+    const tiles = [
+      tile({ id: 'card-a', name: 'Card A', statementTotalAmountDue: 20000, dueDate: '2026-10-15' }),
+      tile({ id: 'card-b', name: 'Card B', statementTotalAmountDue: 80000, dueDate: '2026-10-20' }),
     ]
-    for (const [dueDate, suffix] of cases) {
-      const insights = accountStatementsService.getCreditCardDueDateInsights([
-        tile({ id: `card-${dueDate}`, statementTotalAmountDue: 100, dueDate }),
-      ])
-      expect(insights[0].label).toContain(`due by ${suffix} of the month.`)
-    }
+    const insights = accountStatementsService.getAccountIntelligenceInsights(tiles)
+    const insight = insights.find((i) => i.id === 'highest-outstanding-card')
+    expect(insight?.title).toContain('Card B')
+  })
+
+  it('flags spend concentration only when one card represents at least 40% of card spend across 2+ cards', () => {
+    const concentrated = [
+      tile({ id: 'card-a', name: 'Card A', totalDebits: 80000 }),
+      tile({ id: 'card-b', name: 'Card B', totalDebits: 20000 }),
+    ]
+    expect(
+      accountStatementsService
+        .getAccountIntelligenceInsights(concentrated)
+        .some((i) => i.id === 'card-spend-concentration'),
+    ).toBe(true)
+
+    const balanced = [
+      tile({ id: 'card-a', name: 'Card A', totalDebits: 34000 }),
+      tile({ id: 'card-b', name: 'Card B', totalDebits: 33000 }),
+      tile({ id: 'card-c', name: 'Card C', totalDebits: 33000 }),
+    ]
+    expect(
+      accountStatementsService
+        .getAccountIntelligenceInsights(balanced)
+        .some((i) => i.id === 'card-spend-concentration'),
+    ).toBe(false)
+  })
+
+  it('does not flag spend concentration for a single card (trivially 100%)', () => {
+    const tiles = [tile({ id: 'card-a', totalDebits: 10000 })]
+    expect(
+      accountStatementsService
+        .getAccountIntelligenceInsights(tiles)
+        .some((i) => i.id === 'card-spend-concentration'),
+    ).toBe(false)
   })
 })

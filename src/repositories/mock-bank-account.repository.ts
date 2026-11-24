@@ -9,6 +9,7 @@ import type {
 import type { BankAccountRepository } from '@/repositories/bank-account.repository'
 import { mockBankAccountRecords } from '@/repositories/mock-data/generate-bank-accounts'
 import { mockStatements } from '@/repositories/mock-data/generate-statements'
+import type { AccountCredentialRecord } from '@/domain/Credential'
 
 function withLatency<T>(data: T, ms = 350): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
@@ -74,6 +75,11 @@ function todayIso(): string {
 
 export class MockBankAccountRepository implements BankAccountRepository {
   private accounts: BankAccountRecord[] = [...mockBankAccountRecords]
+  // Settings → Credentials fields aren't part of BankAccountRecord (see
+  // domain/Credential.ts's doc comment) — kept as a side-map here so this
+  // mock (currently unused; Module 12A swapped to Supabase) still satisfies
+  // BankAccountRepository.
+  private statementPasswords = new Map<string, string | null>()
 
   async list(params: BankAccountListParams): Promise<BankAccountListResult> {
     const filtered = this.accounts
@@ -167,5 +173,33 @@ export class MockBankAccountRepository implements BankAccountRepository {
       health: a.health === 'sync_required' ? 'healthy' : a.health,
     }))
     return withLatency(undefined, 600)
+  }
+
+  async listCredentials(): Promise<AccountCredentialRecord[]> {
+    return withLatency(
+      this.accounts.map((a) => ({
+        id: a.id,
+        kind: 'bank',
+        institutionName: a.bankName,
+        cardProduct: null,
+        last4: a.last4,
+        accountTypeLabel: a.accountType,
+        accountCategory: null,
+        currency: 'INR',
+        statementPassword: this.statementPasswords.get(a.id) ?? null,
+        status: a.status === 'inactive' ? 'inactive' : 'active',
+        updatedAt: a.lastSyncAt,
+      })),
+      250,
+    )
+  }
+
+  async updateStatementPassword(
+    id: string,
+    statementPassword: string | null,
+  ): Promise<string | null> {
+    if (!this.accounts.some((a) => a.id === id)) throw new Error(`Bank account ${id} not found`)
+    this.statementPasswords.set(id, statementPassword)
+    return withLatency(statementPassword, 200)
   }
 }

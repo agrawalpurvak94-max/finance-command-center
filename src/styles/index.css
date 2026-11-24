@@ -254,3 +254,69 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Premium visual polish layer (Account Intelligence depth pass) — a small,
+ * centrally-defined set of restrained hover/motion primitives, reused
+ * across account tiles, KPI cards, payment rows and the primary CTA rather
+ * than duplicated per component. Every color used here comes from an
+ * existing token (`--primary`) or an institution's own `glowColor`
+ * (`lib/institutionIdentity.ts`) — never a new palette.
+ */
+@layer utilities {
+  /* Border illumination: neutral --border at rest, brightens toward
+     --glow-ring-color (an institution accent, or --primary when unset) with
+     a soft low-opacity outer glow on hover. Never a hard neon outline. */
+  .glow-ring-hover {
+    transition:
+      box-shadow 200ms ease,
+      border-color 200ms ease;
+  }
+  .glow-ring-hover:hover {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--glow-ring-color, var(--primary)) 45%, var(--border)),
+      0 0 20px -6px color-mix(in srgb, var(--glow-ring-color, var(--primary)) 55%, transparent);
+  }
+
+  /* Restrained, slow shimmer sweep for a single primary CTA (Account
+     Intelligence's "Add Credit Card") — pure CSS transform animation, no JS. */
+  .btn-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      color-mix(in srgb, white 22%, transparent) 50%,
+      transparent 70%
+    );
+    transform: translateX(-120%);
+    animation: btn-shimmer-sweep 3.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glow-ring-hover:hover {
+      transition: none;
+    }
+    .btn-shimmer::after {
+      animation: none;
+      display: none;
+    }
+  }
+}
+
+@keyframes btn-shimmer-sweep {
+  0%,
+  15% {
+    transform: translateX(-120%);
+  }
+  55%,
+  100% {
+    transform: translateX(120%);
+  }
+}

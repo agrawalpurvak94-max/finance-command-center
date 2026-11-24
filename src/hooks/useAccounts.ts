@@ -28,6 +28,8 @@ export function useCreateBankAccount() {
     mutationFn: (input: BankAccountCreateInput) => bankAccountRepository.create(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all })
+      // A newly created account also appears in Settings → Credentials' list.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.credentials.all })
     },
   })
 }

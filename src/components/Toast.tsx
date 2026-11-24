@@ -6,6 +6,8 @@ interface ToastProps {
   message: string
   onDismiss: () => void
   durationMs?: number
+  /** Optional second line (e.g. "Stored to Supabase") — omit for the original single-line toast. */
+  description?: string
 }
 
 /**
@@ -16,7 +18,7 @@ interface ToastProps {
  * from a prop), so this doesn't hit the "no setState in effect" issue
  * CategoryFormDialog/MerchantFormDialog worked around elsewhere.
  */
-export function Toast({ message, onDismiss, durationMs = 3000 }: ToastProps) {
+export function Toast({ message, onDismiss, durationMs = 3000, description }: ToastProps) {
   useEffect(() => {
     const timer = setTimeout(onDismiss, durationMs)
     return () => clearTimeout(timer)
@@ -29,7 +31,10 @@ export function Toast({ message, onDismiss, durationMs = 3000 }: ToastProps) {
       className="fixed bottom-lg right-lg z-[60] flex items-center gap-sm rounded-lg border border-border bg-popover px-md py-sm shadow-lg"
     >
       <CircleCheck className="size-4 shrink-0 text-emerald-400" aria-hidden="true" />
-      <span className="text-body-sm text-foreground">{message}</span>
+      <div className="flex flex-col">
+        <span className="text-body-sm text-foreground">{message}</span>
+        {description && <span className="text-[11px] text-muted-foreground">{description}</span>}
+      </div>
       <Button
         variant="ghost"
         size="icon-sm"

@@ -137,6 +137,16 @@ export interface BankAccountCreateInput {
   readonly status: BankAccountRecordStatus
   /** See `TransactionAccount.accountHolder`'s doc comment. Optional at creation — null/omitted means genuinely unset, not a guessed value. */
   readonly accountHolder?: string | null
+  /**
+   * Settings → Credentials fields (`accounts.statement_password` /
+   * `account_category` / `currency`). Optional so the existing
+   * `BankAccountFormDialog` (which predates Credentials) keeps compiling
+   * unchanged — `SupabaseBankAccountRepository.create()` defaults
+   * `accountCategory` to `'Personal'` and `currency` to `'INR'` when omitted.
+   */
+  readonly statementPassword?: string | null
+  readonly accountCategory?: 'Personal' | 'Business'
+  readonly currency?: string
 }
 
 export interface BankAccountUpdateInput {
