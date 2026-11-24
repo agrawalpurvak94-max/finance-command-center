@@ -1,0 +1,348 @@
+{
+  "updatedAt": "2026-11-23T14:37:42.556Z",
+  "createdAt": "2026-11-23T13:21:26.368Z",
+  "id": "g5bMaNEel7dHIz49",
+  "name": "Workflow C Poller - Inbox alerts",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 2 }] } },
+      "id": "61c57266-3135-4886-a0f9-8933c17d2dc1",
+      "name": "Every 2 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "labelIds": ["INBOX"],
+          "q": "-has:attachment newer_than:14d -label:FCC-Needs-Review"
+        }
+      },
+      "id": "e93241a0-897c-468a-949a-c38644c01c9d",
+      "name": "List Inbox Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [272, 0],
+      "webhookId": "e282a1ab-41a4-48a7-9c28-586082c220be",
+      "credentials": { "gmailOAuth2": { "id": "TfVSEuuOO1bKoPOt", "name": "Gmail account 3" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retry sweep: every email still in the Inbox is either brand new or a previous attempt failed.\n// - attempt at most once per 5 minutes (a slow statement run may still be in flight)\n// - give up after 3 attempts: tag \"FCC Needs Review\" so it stops being retried and a human looks at it\nconst sd = $getWorkflowStaticData('global');\nsd.attempts = sd.attempts || {};\nconst now = Date.now(), COOLDOWN = 5 * 60 * 1000, MAX = 3;\nconst seen = new Set();\nconst out = [];\nfor (const it of $input.all()) {\n  const id = it.json.id; seen.add(id);\n  const a = sd.attempts[id] || { n: 0, last: 0 };\n  if (a.n >= MAX) { out.push({ json: { id, action: 'give_up', attempts: a.n } }); continue; }\n  if (now - a.last < COOLDOWN) continue;\n  a.n += 1; a.last = now; sd.attempts[id] = a;\n  out.push({ json: { id, action: 'process', attempts: a.n } });\n}\nfor (const id of Object.keys(sd.attempts)) if (!seen.has(id)) delete sd.attempts[id];\nreturn out;"
+      },
+      "id": "8f2559e9-4278-4d77-bd68-9255a6be3fc2",
+      "name": "Pick Due Emails (retry limit)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [528, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d6af56cb-529c-4538-9dd6-4b6bfc1ed175",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "process",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bfd70318-5491-4938-80f5-7cdff2816dd4",
+      "name": "Process or Give Up",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [656, 128]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/fcc-c-ingest",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [{ "name": "id", "value": "={{ $json.id }}" }] },
+        "options": { "response": { "response": { "neverError": true } }, "timeout": 900000 }
+      },
+      "id": "86c1f589-fcb7-4887-8efc-64fe21037564",
+      "name": "Run Ingest (one email per execution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1328, -96]
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": ["Label_1"]
+      },
+      "id": "a8ee7846-fcb1-4533-91f8-6e9e43ee8945",
+      "name": "Tag FCC Needs Review",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 144],
+      "webhookId": "5639466c-7ee5-4073-9839-7571f7698601",
+      "credentials": { "gmailOAuth2": { "id": "TfVSEuuOO1bKoPOt", "name": "Gmail account 3" } }
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "loop-one-at-a-time",
+      "name": "Loop One Email At A Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [832, -64]
+    }
+  ],
+  "connections": {
+    "Every 2 minutes": { "main": [[{ "node": "List Inbox Emails", "type": "main", "index": 0 }]] },
+    "List Inbox Emails": {
+      "main": [[{ "node": "Pick Due Emails (retry limit)", "type": "main", "index": 0 }]]
+    },
+    "Pick Due Emails (retry limit)": {
+      "main": [[{ "node": "Process or Give Up", "type": "main", "index": 0 }]]
+    },
+    "Process or Give Up": {
+      "main": [
+        [{ "node": "Loop One Email At A Time", "type": "main", "index": 0 }],
+        [{ "node": "Tag FCC Needs Review", "type": "main", "index": 0 }]
+      ]
+    },
+    "Loop One Email At A Time": {
+      "main": [[], [{ "node": "Run Ingest (one email per execution)", "type": "main", "index": 0 }]]
+    },
+    "Run Ingest (one email per execution)": {
+      "main": [[{ "node": "Loop One Email At A Time", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
+  "staticData": {
+    "node:Gmail Trigger": {
+      "lastTimeChecked": 1795440282,
+      "possibleDuplicates": ["1a208948c26ce218"]
+    },
+    "node:Every 2 minutes": { "recurrenceRules": [null], "recurrenceRuleSignatures": [null] },
+    "global": {
+      "attempts": {
+        "1a20e45f8d690f97": { "n": 3, "last": 1795536634990 },
+        "1a20e45e73f177bc": { "n": 3, "last": 1795536634990 }
+      }
+    }
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+  "activeVersionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+  "versionCounter": 9,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-11-23T13:21:26.385Z",
+      "createdAt": "2026-11-23T13:21:26.385Z",
+      "role": "workflow:owner",
+      "workflowId": "g5bMaNEel7dHIz49",
+      "projectId": "0MP8mYLYMo7D0Pup",
+      "project": {
+        "updatedAt": "2026-07-16T17:18:28.616Z",
+        "createdAt": "2026-07-16T17:17:20.965Z",
+        "id": "0MP8mYLYMo7D0Pup",
+        "name": "Purvak Agrawal <agrawalpurvak94@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-11-23T14:37:42.562Z",
+    "createdAt": "2026-11-23T14:37:42.562Z",
+    "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+    "workflowId": "g5bMaNEel7dHIz49",
+    "nodes": [
+      {
+        "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 2 }] } },
+        "id": "61c57266-3135-4886-a0f9-8933c17d2dc1",
+        "name": "Every 2 minutes",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0]
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "filters": {
+            "labelIds": ["INBOX"],
+            "q": "-has:attachment newer_than:14d -label:FCC-Needs-Review"
+          }
+        },
+        "id": "e93241a0-897c-468a-949a-c38644c01c9d",
+        "name": "List Inbox Emails",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.1,
+        "position": [272, 0],
+        "webhookId": "e282a1ab-41a4-48a7-9c28-586082c220be",
+        "credentials": { "gmailOAuth2": { "id": "TfVSEuuOO1bKoPOt", "name": "Gmail account 3" } }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Retry sweep: every email still in the Inbox is either brand new or a previous attempt failed.\n// - attempt at most once per 5 minutes (a slow statement run may still be in flight)\n// - give up after 3 attempts: tag \"FCC Needs Review\" so it stops being retried and a human looks at it\nconst sd = $getWorkflowStaticData('global');\nsd.attempts = sd.attempts || {};\nconst now = Date.now(), COOLDOWN = 5 * 60 * 1000, MAX = 3;\nconst seen = new Set();\nconst out = [];\nfor (const it of $input.all()) {\n  const id = it.json.id; seen.add(id);\n  const a = sd.attempts[id] || { n: 0, last: 0 };\n  if (a.n >= MAX) { out.push({ json: { id, action: 'give_up', attempts: a.n } }); continue; }\n  if (now - a.last < COOLDOWN) continue;\n  a.n += 1; a.last = now; sd.attempts[id] = a;\n  out.push({ json: { id, action: 'process', attempts: a.n } });\n}\nfor (const id of Object.keys(sd.attempts)) if (!seen.has(id)) delete sd.attempts[id];\nreturn out;"
+        },
+        "id": "8f2559e9-4278-4d77-bd68-9255a6be3fc2",
+        "name": "Pick Due Emails (retry limit)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [528, 0]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "d6af56cb-529c-4538-9dd6-4b6bfc1ed175",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "process",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "bfd70318-5491-4938-80f5-7cdff2816dd4",
+        "name": "Process or Give Up",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [656, 128]
+      },
+      {
+        "parameters": {
+          "url": "http://localhost:5678/webhook/fcc-c-ingest",
+          "sendQuery": true,
+          "queryParameters": { "parameters": [{ "name": "id", "value": "={{ $json.id }}" }] },
+          "options": { "response": { "response": { "neverError": true } }, "timeout": 900000 }
+        },
+        "id": "86c1f589-fcb7-4887-8efc-64fe21037564",
+        "name": "Run Ingest (one email per execution)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1328, -96]
+      },
+      {
+        "parameters": {
+          "operation": "addLabels",
+          "messageId": "={{ $json.id }}",
+          "labelIds": ["Label_1"]
+        },
+        "id": "a8ee7846-fcb1-4533-91f8-6e9e43ee8945",
+        "name": "Tag FCC Needs Review",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.1,
+        "position": [960, 144],
+        "webhookId": "5639466c-7ee5-4073-9839-7571f7698601",
+        "credentials": { "gmailOAuth2": { "id": "TfVSEuuOO1bKoPOt", "name": "Gmail account 3" } }
+      },
+      {
+        "parameters": { "options": {} },
+        "id": "loop-one-at-a-time",
+        "name": "Loop One Email At A Time",
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [832, -64]
+      }
+    ],
+    "connections": {
+      "Every 2 minutes": {
+        "main": [[{ "node": "List Inbox Emails", "type": "main", "index": 0 }]]
+      },
+      "List Inbox Emails": {
+        "main": [[{ "node": "Pick Due Emails (retry limit)", "type": "main", "index": 0 }]]
+      },
+      "Pick Due Emails (retry limit)": {
+        "main": [[{ "node": "Process or Give Up", "type": "main", "index": 0 }]]
+      },
+      "Process or Give Up": {
+        "main": [
+          [{ "node": "Loop One Email At A Time", "type": "main", "index": 0 }],
+          [{ "node": "Tag FCC Needs Review", "type": "main", "index": 0 }]
+        ]
+      },
+      "Loop One Email At A Time": {
+        "main": [
+          [],
+          [{ "node": "Run Ingest (one email per execution)", "type": "main", "index": 0 }]
+        ]
+      },
+      "Run Ingest (one email per execution)": {
+        "main": [[{ "node": "Loop One Email At A Time", "type": "main", "index": 0 }]]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Purvak Agrawal",
+    "name": null,
+    "description": null,
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-11-23T14:40:55.354Z",
+        "id": 1805,
+        "workflowId": "g5bMaNEel7dHIz49",
+        "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+        "event": "activated",
+        "userId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      },
+      {
+        "createdAt": "2026-11-23T14:45:16.685Z",
+        "id": 1817,
+        "workflowId": "g5bMaNEel7dHIz49",
+        "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+        "event": "activated",
+        "userId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      },
+      {
+        "createdAt": "2026-11-23T15:03:33.918Z",
+        "id": 1834,
+        "workflowId": "g5bMaNEel7dHIz49",
+        "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+        "event": "activated",
+        "userId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      },
+      {
+        "createdAt": "2026-11-23T14:45:16.565Z",
+        "id": 1816,
+        "workflowId": "g5bMaNEel7dHIz49",
+        "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+        "event": "deactivated",
+        "userId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      },
+      {
+        "createdAt": "2026-11-23T15:00:33.657Z",
+        "id": 1820,
+        "workflowId": "g5bMaNEel7dHIz49",
+        "versionId": "632a0ae2-3995-4db9-9e3c-e1a679c9067b",
+        "event": "deactivated",
+        "userId": "80065f92-43ee-44f2-964b-241e52d5bd21"
+      }
+    ]
+  }
+}
