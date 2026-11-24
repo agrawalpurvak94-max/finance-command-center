@@ -7,7 +7,7 @@ import {
   Tags,
   Store,
   BarChart3,
-  Settings,
+  KeyRound,
 } from 'lucide-react'
 import type { NavItem } from '@/types/nav'
 
@@ -23,6 +23,13 @@ import type { NavItem } from '@/types/nav'
  * follow-up) — it's been folded into "Account Statements" (still the
  * `/credit-cards` route/file internally), which now covers Credit Cards,
  * Savings, Current, and OD as one unified statement-analysis area.
+ *
+ * "Settings" is no longer part of the product roadmap (roadmap correction,
+ * 2026-09-17) — "Credentials" is its direct standalone replacement, last in
+ * the primary list per the Stitch Credentials export's own sidebar (which
+ * shows it as a first-class item, not nested under Settings). Uses `KeyRound`
+ * rather than the Stitch mock's reused gear icon, since Credentials is no
+ * longer a generic-settings concept and shouldn't look like one.
  */
 export const primaryNavItems: readonly NavItem[] = [
   { label: 'Financial Pulse', href: '/', icon: LayoutDashboard },
@@ -33,8 +40,8 @@ export const primaryNavItems: readonly NavItem[] = [
   { label: 'Categories', href: '/categories', icon: Tags },
   { label: 'Merchant Center', href: '/merchants', icon: Store },
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { label: 'Credentials', href: '/credentials', icon: KeyRound },
 ]
 
-export const secondaryNavItems: readonly NavItem[] = [
-  { label: 'Settings', href: '/settings', icon: Settings },
-]
+/** No secondary nav items remain now that Settings is gone — see Sidebar.tsx's empty-array guard. */
+export const secondaryNavItems: readonly NavItem[] = []

@@ -180,16 +180,18 @@ export function Sidebar({
           ))}
         </div>
 
-        <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-border pt-md">
-          {secondaryNavItems.map((item) => (
-            <SidebarLink
-              key={item.href}
-              item={item}
-              onNavigate={onNavigate}
-              collapsed={collapsed}
-            />
-          ))}
-        </div>
+        {secondaryNavItems.length > 0 && (
+          <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-border pt-md">
+            {secondaryNavItems.map((item) => (
+              <SidebarLink
+                key={item.href}
+                item={item}
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+              />
+            ))}
+          </div>
+        )}
       </nav>
     </TooltipProvider>
   )

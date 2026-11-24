@@ -42,12 +42,39 @@ Status as of 2026-08-03: ARCHITECTURE FROZEN.
 The architecture, shared components, domain layer, and project foundation are now considered complete.
 
 \- Application Shell — done  
-\- Dashboard — done  
+\- Dashboard — UI done, data layer live (Supabase repositories; the earlier "still mock" note was stale — corrected 2026-11-23)  
 \- Domain layer (\`src/domain/\*\`) — done, shared, do not fork  
 \- Repository/service/hook layering — done, do not redesign  
 \- Shared components (\`PageContainer\`, \`QueryBoundary\`, \`EmptyState\`, \`ConfirmDialog\`, \`Pagination\`, \`FloatingActionButton\`, shadcn/ui primitives) — done, reuse only
 
 The project has transitioned from architecture-first to feature delivery.
+
+\---
+
+\#\# Verified status as of 2026-11-22 (project recovery audit)
+
+This section reconciles the module table below with what is actually in the repository and the live Supabase project, confirmed by direct inspection (not assumption). Where this section and the rest of Part 1 disagree, this section is correct — update the rest of the document to match it as each module is next touched, per "Update CLAUDE.md only after the new architecture is verified."
+
+\- Modules 5–9 (Categories, Merchants, Clients, Accounts, Credit Cards) are substantially built already, ahead of where the original module table assumed. \`src/pages/CreditCards.tsx\`, \`src/pages/StatementExplorer.tsx\`, and their supporting repositories/hooks/services exist and are wired to Supabase. \`src/pages/Accounts.tsx\` and its components are present but orphaned (not reachable from navigation) — confirm before building Module 8 whether to wire it in or delete it.
+\- Module 11 (Settings) was replaced with a different, approved feature: \`src/pages/Settings.tsx\` was deliberately removed in favor of a new Credentials module (\`src/pages/Credentials.tsx\`, \`src/domain/Credential.ts\`, \`src/hooks/useCredentials.ts\`, \`src/components/credentials/\`) — see \`src/lib/navigation.ts\` comment dated 2026-09-17 ("roadmap correction"). Credentials stores/edits bank and credit-card statement passwords, currently as **plaintext visible to the browser** — this is an open security gap, see "DATABASE SECURITY" and the Credentials note under "n8n INTEGRATION" below. Do not remove the Credentials feature; secure it instead.
+\- Module 12A (Supabase Integration) is **substantially already done**, not upcoming: 9 of 10 \`*.service.ts\` files resolve to a \`Supabase\*Repository\`, not a mock. **Correction 2026-11-23:** the dashboard also reads live repositories (verified in the browser against live data) — there is no remaining mock service; Module 12A is done.
+\- Live Supabase schema (project \`fincommand\`, id \`cnxfrlirhycbqnwfxvpm\`) confirmed via direct inspection: **11 tables**, **27 views** (all 27 are \`SECURITY DEFINER\` — confirmed by the Postgres linter; whether each one independently re-filters by \`auth.uid()\` has NOT yet been verified per-view and remains an open security item), **4 RPC functions**: \`lookup_merchant\`, \`upsert_merchant_memory\`, \`fn_resolve_merchant_default_category\`, \`set_updated_at\`. These are the real RPC names — ignore the illustrative \`rpc_*\` names in the "RPC FUNCTIONS" section below, which describe the intended pattern, not actual function names.
+\- **Critical, unresolved security findings** (do not treat as fixed by this audit): (1) \`application_settings\`, \`audit_logs\`, \`notifications\` have RLS disabled — fully exposed to the anon key; (2) a live Supabase service-role JWT was found hardcoded in plaintext in an n8n workflow node (a decoy workflow called "Workflow C - Production Ready", not one of the canonical C/D/E) — rotate this key and never assume redacting a file is sufficient; (3) Credentials module exposes statement passwords in plaintext to the browser. See \`docs/security/SECURITY_REMEDIATION_REPORT.md\` once written.
+\- n8n workflow naming: the three real backend automations are **Workflow C, D, E** (see the corrected "n8n INTEGRATION" section below), not "Workflow A/B/C" as originally described in "EXISTING BACKEND (CRITICAL)". That section is kept below for historical reference to the original architecture intent, but the concrete current workflow identities, canonical versions, and status live in \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\`.
+\- CC Parser is a separate FastAPI microservice (\`cc-parser-api\`, Dockerized, port 8000) already handling **both** credit-card and bank-account statement parsing — Statements support for both account types already exists there, it is not new work. Its repo also holds \`Card Registry - Prakash Singh.xlsx\`, which is the source of record for bank/card statement passwords (do not invent credentials — resolve Workflow D/E's missing password configurations from this file, with the user's involvement, not by fabrication).
+
+\---
+
+\#\# Verified status as of 2026-11-23 (D worker 500-fix, node cleanup, workflow archive reorg, deployment prep)
+
+This section updates "Verified status as of 2026-11-22" above — where they disagree, this is correct.
+
+\- \*\*New table, not previously documented here:\*\* \`public.api\_keys\` (migration \`add\_api\_keys\_table\`, 2026-11-23) — write-only third-party API key storage (currently holds \`gemini\_api\_key\`). RLS enabled. Authenticated users can set a key but never read its value back; n8n reads it with the service-role key via the \`Load API Keys\` node. Live schema is now \*\*12 tables\*\*, not 11 — see the corrected list in "EXISTING DATABASE" below.
+\- \*\*New RPC, not previously documented here:\*\* \`start\_statement\` (migration \`add\_start\_statement\_function\`, 2026-11-23), used by Workflow D's worker to begin a statement-processing run. Live RPC count is now \*\*5\*\*, not 4 — see "RPC FUNCTIONS" below.
+\- \*\*Workflow D "already processed" duplicate path returned HTTP 500 — fixed.\*\* Root cause: the \`Ingest Webhook\` node used \`responseMode: lastNode\`, so whichever node happened to execute last on a given run determined the HTTP response; on the duplicate-statement short-circuit path, that was not a node producing a clean JSON body. Fix: switched to \`responseMode: responseNode\` and added an explicit \`Respond OK\` (\`respondToWebhook\`) node wired from every true terminal node. Verified live: the previously-500ing duplicate message now returns \`HTTP 200 {"status":"ok"}\`.
+\- \*\*Dead node branch deleted from D worker.\*\* While tracing the 500 fix, found \`Code in JavaScript1 → Merge Statement + PDF → Split Out\` was an unreachable/dead-end branch (3 nodes) left over from an earlier refactor. Confirmed harmless (not on the real save path) and deleted. D worker is now \*\*54 nodes\*\* (was 56 as of 2026-11-22, briefly 57 mid-fix, now 54 after the 500-fix net node and the 3-node deletion). C worker unchanged at 29 nodes.
+\- \*\*\`workflows/active/\` reorganized.\*\* Fresh, timestamped, redacted exports of the current live C (29 nodes) and D (54 nodes) workers were saved as \`Workflow {C,D} - Worker (live 2026-11-23\_2218).json\`. The 3 canonical frozen files and the superseded same-day worker exports were moved to \`workflows/archive/\`. \`workflows/active/\` now holds exactly 4 files: the C and D pollers (unchanged) plus the 2 newly-timestamped workers — this is the current deployable set. \`workflows/canonical/\` is untouched, still the frozen rollback copies.
+\- \*\*Cloud VM / hosting split decided and documented, not yet executed.\*\* Plan: n8n + \`cc-parser-api\` move to a small self-hosted VM (Docker Compose, see the \`n8n-self-hosting\` skill); frontend moves to Netlify's free tier (static Vite SPA, no server code — confirmed sufficient, needs a \`netlify.toml\` with an SPA redirect rule plus \`VITE\_SUPABASE\_URL\`/\`VITE\_SUPABASE\_ANON\_KEY\` set in the Netlify dashboard, since \`.env.local\` is gitignored); Supabase database moves to a new Supabase account/login (new org), full runbook drafted covering schema replay, \`pg\_dump\`/\`pg\_restore\` data migration, frontend/n8n re-pointing, and rollback. VM sizing floor identified: \*\*2 vCPU / 4GB RAM / 50GB SSD\*\*, lowest-cost well-established option researched was Hetzner CX22/CX23 (~€4.50-5/mo, no India datacenter); cheaper India-hosted alternatives (WebeyeSoft, Webyne, URLStart, ~₹400-750/mo) were flagged for independent reliability/SLA verification before use, given this runs unattended financial-data infrastructure. See \`docs/workflows/CLOUD\_VM\_DEPLOYMENT\_CHECKLIST.md\` for the VM/n8n/CC-parser side; the Supabase migration runbook has not yet been saved to a file (exists only in chat as of this writing) pending the user providing the new Supabase account's credentials.
 
 \---
 
@@ -117,12 +144,12 @@ Upcoming — build in this order, one at a time, stopping for explicit approval 
 \| 5 \| Categories \| Master data for transaction categorization. \|  
 \| 6 \| Merchants \| Merchant management and merchant-category mapping. \|  
 \| 7 \| Clients \| Client master data and client assignment. \|  
-\| 8 \| Accounts \| Bank account management. \|  
-\| 9 \| Credit Cards \| Credit card management. \|  
+\| 8 \| Accounts \| Bank account management. (Page exists but is currently orphaned from navigation — confirm before extending.) \|  
+\| 9 \| Credit Cards \| Credit card management. (Substantially built — see "Verified status as of 2026-11-22".) \|  
 \| 10 \| Analytics \| Historical insights and reporting. \|  
-\| 11 \| Settings \| Application configuration. \|  
-\| 12A \| Supabase Integration \| Replace mock repositories with live Supabase repositories, Authentication, and Storage. No UI redesign. \|  
-\| 12B \| n8n Integration \| Connect and verify n8n workflows (A/B/C) against the live Supabase schema built in 12A. No UI redesign, no workflow changes. \|
+\| 11 \| Settings \| Superseded by Credentials module (plaintext password exposure is an open security gap — see "Verified status as of 2026-11-22"). \|  
+\| 12A \| Supabase Integration \| Replace mock repositories with live Supabase repositories, Authentication, and Storage. No UI redesign. Done — all services (including the dashboard) use live Supabase repositories (verified 2026-11-23). \|  
+\| 12B \| n8n Integration \| Connect and verify n8n Workflows C, D, E (see \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\` for canonical versions) against the live Supabase schema built in 12A. No UI redesign, no workflow changes beyond the approved node-count optimization and security remediation tracked in that register. \|
 
 Deferred — not part of the current module sequence (Modules 1–11, plus 12A/12B) (see the "DEFERRED MODULES" note at the end of Part 5 for why, and what re-approval requires)
 
@@ -313,11 +340,11 @@ Finance Dashboard
 
 \---
 
-There are THREE existing workflows.
+\*\*Historical note:\*\* the three workflows were originally planned as "Workflow A/B/C" below. The real, currently-live automation is Workflows \*\*C, D, E\*\* — see the corrected "n8n INTEGRATION" section in Part 3 and \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\` for the authoritative current description, canonical versions, and live n8n IDs. The diagrams immediately below are kept for historical context on the original architecture intent only — do not use them as the current source of truth for what each workflow does.
 
 \---
 
-Workflow A
+Workflow A (historical name — see note above)
 
 Transaction Email Processing
 
@@ -351,7 +378,7 @@ Processed Label
 
 \---
 
-Workflow B
+Workflow B (historical name — see note above)
 
 Statement Processing
 
@@ -389,7 +416,7 @@ Statement Linked
 
 \---
 
-Workflow C
+Workflow C (historical name — see note above)
 
 Merchant Learning
 
@@ -429,7 +456,7 @@ Merchant Memory Updated
 
 These workflows already work.
 
-Do not redesign them.
+Do not redesign them beyond the approved node-count optimization and security remediation tracked in \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\`.
 
 \---
 
@@ -814,7 +841,7 @@ Dashboard
 
 /analytics
 
-/settings
+/credentials (replaces the originally-planned /settings — \`src/pages/Settings.tsx\` was removed 2026-09-17 in favor of this; see "Verified status as of 2026-11-22")
 
 \---
 
@@ -1378,45 +1405,25 @@ Never reverse this architecture.
 
 \# EXISTING DATABASE
 
-The following tables already exist and are considered production assets.
+Live schema confirmed 2026-11-22, re-verified 2026-11-23, against Supabase project \`fincommand\` (\`cnxfrlirhycbqnwfxvpm\`): \*\*12 tables total\*\*. All of the originally-listed tables plus all of the originally-planned "NEW TABLES" already exist, plus one new table (\`api\_keys\`) added 2026-11-23 — there is no remaining "to be added" set.
 
-transactions
+\`transactions\`, \`statement\_transactions\`, \`processed\_messages\`, \`merchant\_memory\`, \`banks\`, \`categories\`, \`email\_sources\`, \`accounts\`, \`statements\`, \`clients\`, \`application\_settings\`, \`audit\_logs\`, \`notifications\`, \`api\_keys\`.
 
-statement\_transactions
+\`api\_keys\` (added 2026-11-23, migration \`add\_api\_keys\_table\`): write-only third-party API key storage (currently \`gemini\_api\_key\`, 1 row). RLS \*\*enabled\*\* — unlike the 3 tables flagged below, this one is not an open gap. Authenticated users can set a value but the repository/view layer never returns it; n8n's \`Load API Keys\` node reads it with the service-role key, not the anon key.
 
-processed\_messages
-
-merchant\_memory
-
-monthly\_summaries
-
-banks
-
-categories
-
-email\_sources
+(Note: \`monthly\_summaries\` is implemented as a \*\*view\*\*, not a table — see "REQUIRED SQL VIEWS" below. Do not recreate it as a table.)
 
 These tables must NOT be redesigned.
 
 Only extend them through approved migrations.
 
+\*\*Open security gap:\*\* \`application\_settings\`, \`audit\_logs\`, and \`notifications\` currently have \*\*RLS disabled\*\* — confirmed by the Postgres security linter, fully exposed to the anon key. This has NOT been remediated. Do not blindly apply the same RLS policy to all three; each table's actual ownership/access model must be reasoned through first (see Task 5A in the Phase 1 workflow-consolidation brief). Present the remediation SQL to the user before applying it.
+
 \---
 
 \# NEW TABLES
 
-The following tables may be added.
-
-accounts
-
-statements
-
-clients
-
-audit\_logs
-
-notifications
-
-application\_settings
+All tables originally planned here (\`accounts\`, \`statements\`, \`clients\`, \`audit\_logs\`, \`notifications\`, \`application\_settings\`) have already been created — see "EXISTING DATABASE" above, which is now the complete table list. This section is kept only as a historical record that these were additions beyond the original 8 tables, not a pending-work list.
 
 Every migration must be reversible.
 
@@ -1602,6 +1609,12 @@ Those belong in SQL Views.
 
 \# REQUIRED SQL VIEWS
 
+\*\*Correction, 2026-11-22:\*\* the list below is the original target list, not the live one. The actual 27 live views (confirmed by direct query against project \`fincommand\`) are: \`monthly\_summaries\`, \`vw\_account\_analytics\`, \`vw\_account\_health\`, \`vw\_account\_summary\`, \`vw\_account\_transactions\`, \`vw\_accounts\`, \`vw\_cashflow\`, \`vw\_categories\`, \`vw\_category\_spend\`, \`vw\_client\_summary\`, \`vw\_client\_top\_categories\`, \`vw\_client\_top\_merchants\`, \`vw\_credit\_card\_utilization\` (not \`vw\_credit\_utilization\`), \`vw\_dashboard\_accounts\`, \`vw\_dashboard\_due\_cards\`, \`vw\_dashboard\_summary\`, \`vw\_merchant\_spend\`, \`vw\_merchant\_transactions\`, \`vw\_merchants\`, \`vw\_monthly\_spend\`, \`vw\_statement\_summary\`, \`vw\_statement\_transactions\`, \`vw\_statements\`, \`vw\_transaction\_details\`, \`vw\_transaction\_search\`, \`vw\_transaction\_trends\`, \`vw\_transactions\`. All 27 are \`SECURITY DEFINER\`. There is no \`vw\_ai\_\*\`, \`vw\_global\_search\`, \`vw\_system\_health\`, or \`vw\_settings\_\*\` view — those were never built, consistent with AI Review and Global Search being deferred (see Part 5) and Settings being replaced by Credentials. Before building a new view, check this list first; before assuming a planned view below exists, verify it against this list, not the plan.
+
+\---
+
+Original target list (kept for intent/grouping context only — see correction above for what actually exists):
+
 Dashboard
 
 vw\_dashboard\_summary
@@ -1714,7 +1727,7 @@ Requires Complex Processing
 
 \---
 
-Examples
+Examples (illustrative pattern — NOT the actual function names, see below)
 
 rpc\_search()
 
@@ -1731,6 +1744,14 @@ rpc\_recalculate\_health()
 rpc\_refresh\_materialized\_views()
 
 rpc\_statement\_reconciliation()
+
+\---
+
+\*\*Actual live RPC functions\*\* (confirmed 2026-11-22, re-verified 2026-11-23, project \`fincommand\`) — 5 total, none following the \`rpc\_\*\` naming convention above:
+
+\`lookup\_merchant\`, \`upsert\_merchant\_memory\`, \`fn\_resolve\_merchant\_default\_category\`, \`set\_updated\_at\`, \`start\_statement\` (added 2026-11-23, migration \`add\_start\_statement\_function\`; called by Workflow D's worker to begin a statement-processing run).
+
+All 5 currently have a mutable \`search\_path\` (a Postgres linter WARN, not yet remediated) — set \`search\_path\` explicitly on each when next modifying them.
 
 \---
 
@@ -1834,19 +1855,21 @@ Example Folder
 
 services/
 
-dashboard.service.ts
+dashboard.service.ts — live Supabase (verified 2026-11-23; the earlier "still mock" note was stale)
 
-transactions.service.ts
+transactions.service.ts — live Supabase
 
-accounts.service.ts
+accounts.service.ts — live Supabase
 
-statements.service.ts
+statements.service.ts — live Supabase
 
-merchant.service.ts
+merchant.service.ts — live Supabase
 
-analytics.service.ts
+analytics.service.ts — live Supabase
 
-settings.service.ts
+credentials.service.ts — live Supabase (new, backs the Credentials module; see the plaintext-password gap noted under "Verified status as of 2026-11-22" and "n8n INTEGRATION")
+
+(\`settings.service.ts\` was not built — Settings was replaced by Credentials, see "Verified status as of 2026-11-22")
 
 \---
 
@@ -1904,6 +1927,8 @@ Raw Gmail Messages
 
 Use Environment Variables.
 
+\*\*Open as of 2026-11-22 — not yet remediated:\*\* a live Supabase service-role JWT is hardcoded in plaintext in an n8n workflow node, and the Credentials module currently returns bank/credit-card statement passwords to the browser in plaintext. Both violate this rule today. See "n8n INTEGRATION" below and "Verified status as of 2026-11-22" near the top of this document for what each requires.
+
 \---
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
@@ -1912,59 +1937,52 @@ Use Environment Variables.
 
 \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
-The backend automation is COMPLETE.
-
-Claude is NOT responsible for redesigning n8n.
-
-Claude consumes its output.
+\*\*Corrected 2026-11-22.\*\* The real workflow identities are \*\*C, D, E\*\*, not A/B/C — the section above ("EXISTING BACKEND") kept the old A/B/C names for historical context only. This section is the current source of truth. The backend automation exists and works; Claude is not responsible for redesigning it, only for the specific, approved node-count optimization and security fixes tracked in \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\`. Claude otherwise consumes its output.
 
 \---
 
-Workflow A
+Workflow C — Gmail Transaction Email Processing
 
-Transaction Emails
+Produces: \`transactions\`, \`merchant\_memory\`, \`processed\_messages\`
 
-Produces
-
-transactions
-
-merchant\_memory
-
-processed\_messages
+Canonical: Phase 8 (\`workflows/active/Workflow C - Phase 8 (canonical).json\`, live n8n ID \`BOZ47nx7DBtFFmXL\`, 55 nodes). Frozen rollback copy in \`workflows/canonical/\`.
 
 \---
 
-Workflow B
+Workflow D — Credit Card Statement Processing (CC Parser + Gemini fallback)
 
-Statement Processing
+Produces: \`statements\`, \`statement\_transactions\`, \`transactions\`
 
-Produces
-
-statements
-
-statement\_transactions
-
-transactions
+Canonical: Phase 11.1 (\`workflows/active/Workflow D - Phase 11.1 (canonical).json\`, live n8n ID \`iNs91Jxbx3OUIgq2\`, 80 nodes). Frozen rollback copy in \`workflows/canonical/\`. This is the most complex of the three and has known outstanding bugs — see the register.
 
 \---
 
-Workflow C
+Workflow E — Bank Account Statement Processing
 
-Merchant Learning
+Produces: \`statements\`, \`statement\_transactions\`, \`transactions\`
 
-Updates
-
-merchant\_memory
+Canonical: Phase 1, the only version that exists (\`workflows/active/Workflow E - Phase 1 (canonical).json\`, live n8n ID \`T2rq9vPWeOwbgFvS\`, 78 nodes). Deliberately a separate workflow from D — do not merge E into D. Currently blocked on a placeholder Gmail label; see the register.
 
 \---
 
-Never rewrite Workflow A.
+\*\*Live status (updated 2026-11-23, verified end to end via real Gmail triggers):\*\* the three canonical workflows (\`BOZ47nx7DBtFFmXL\` C, \`iNs91Jxbx3OUIgq2\` D, \`T2rq9vPWeOwbgFvS\` E) remain \`active: false\` and frozen. What actually runs is a **poller → worker** pair per pipeline, derived from the canonical C/D (the canonical files are not modified):
 
-Never rewrite Workflow B.
+\- Pollers (schedule, every 2 min): C \`g5bMaNEel7dHIz49\`, D \`FzNXkwAb7NSQJMpb\`. They list INBOX emails (last 14 days), then a **Loop One Email At A Time** node calls the worker once per email, strictly sequentially (parallel calls caused a dedupe race). Retry sweep: at most once per 5 min per email, max 3 attempts, then the Gmail label \`FCC Needs Review\` (\`Label_1\`) is added and the email is no longer retried. Success moves the mail out of the Inbox, so anything left in the Inbox is pending/failed. To reprocess a tagged email: remove the label and put it back in the Inbox.
+\- Workers (webhook, one execution per email): C \`YzRE1XBEPU9uGgFw\` (\`/webhook/fcc-c-ingest?id=<gmailMessageId>\`), D \`12rHwNuiRESxSlXq\` (\`/webhook/fcc-d-ingest?id=<gmailMessageId>\`). Per-item lookups use \`Accept: application/vnd.pgrst.object+json\` with neverError + JSON response format.
+\- **Duplicate detection (C):** same \`source_message_id\`, OR same card + day + amount + merchant (case-insensitive) + \`transaction_time\`. \`transactions.transaction_time\` (nullable \`time\`, added by migration \`add_transactions_transaction_time\` on 2026-11-23) is parsed from the alert body (forwarded-message header times are ignored). If either side has no time, the match falls back to card + day + amount + merchant. Two genuine identical purchases at different times are therefore both kept; a re-forward of the same alert (same printed time) is dropped. Rollback: \`alter table public.transactions drop column transaction_time;\`
+\- **Card number aliasing (D):** \`accounts.source_card_last4\` holds a reissued/previous number (e.g. ICICI "0016" is the Sapphiro 7010 card); D's account validation matches \`card_last4\` OR \`source_card_last4\`.
+\- **Node reduction (2026-11-23):** C worker now 29 nodes, D worker **54** (both load Gemini key from Supabase `api_keys` via a `Load API Keys` node; D uses RPC `start_statement`) (was 55 / 80 after dedupe of dead nodes: 36 / 63). Redacted exports of the live pollers/workers: `workflows/active/Workflow {C,D} - {Poller,Worker} (live 2026-11-23).json`. Plan/results: `docs/workflows/NODE_REDUCTION_PLAN.md`; playbook skill: `.claude/skills/n8n-node-reduction/SKILL.md`. Labels are now moved with one Gmail `modify` HTTP call.
+\- **D worker HTTP-500 fix + dead-branch deletion (2026-11-23, later the same day):** the "already processed" duplicate-statement short-circuit returned HTTP 500 to the webhook caller despite the n8n execution itself succeeding, because `Ingest Webhook` used `responseMode: lastNode` (whichever node happened to run last decided the response). Fixed by switching to `responseMode: responseNode` plus an explicit `Respond OK` node wired from every true terminal node (56→57 nodes). While tracing this, found and deleted a genuinely dead 3-node branch (`Code in JavaScript1 → Merge Statement + PDF → Split Out`, unreachable from the real save path) (57→54 nodes, the current live count above). Both changes verified live by re-firing the same already-processed message and confirming `HTTP 200`. Fresh timestamped exports: `workflows/active/Workflow {C,D} - Worker (live 2026-11-23_2218).json` — these, plus the unchanged pollers, are the 4 files now in `workflows/active/`; the prior same-day worker exports and the 3 canonical files moved to `workflows/archive/` (canonical files only moved, never edited).
+- Workflow E is deferred — not yet tested end to end.
+\- Operational notes: n8n public REST API used for deploys (workflows are PUT with name/nodes/connections/settings only); workers/pollers still carry the hardcoded Supabase service-role JWT (see Security below) — rotation is deferred and tracked in \`docs/workflows/E2E_STATUS_2026-11-23.md\`. Full proof, test data and cleanup SQL are in that file.
 
-Never rewrite Workflow C.
+\*\*CC Parser microservice\*\* (separate repo: \`cc-parser-api\`, FastAPI, Dockerized on port 8000) is the shared parsing backend Workflows D and E both call. It already supports both response shapes — credit-card (\`EnrichedStatement\`: \`data.transactions\`, \`narration\`, \`card\_number\`) and bank-account (\`BankAccountStatement\`: \`data.statement\_transactions\`, \`raw\_description\`, \`account\_last4\`) — across 17 supported banks. Statement parsing for both account types is NOT new work; it already exists. The repo also holds \`Card Registry - Prakash Singh.xlsx\`, the source of record for bank/credit-card statement passwords — use it to resolve Workflow D/E's missing credential configurations; never invent a password.
 
-Only build interfaces around them.
+\*\*Node-count optimization constraint (user decision, 2026-11-22):\*\* target fewer than 20 active nodes per workflow where practical, achieved \*\*without\*\* sub-workflows and \*\*without\*\* large multi-purpose Code nodes (both explicitly ruled out — concern was long-run debuggability). Approach instead: replace long Set/IF/Switch chains with several small, single-purpose, clearly-named Code nodes (one per logical step), keeping native nodes for I/O. Realistic expectation: Workflow D likely lands near 25-35 nodes rather than strictly under 20, given its preserved business logic; C and E have a better chance of landing near or under 20. Full detail in \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\`.
+
+\*\*Security (open, unresolved as of 2026-11-22):\*\* a live Supabase service-role JWT was found hardcoded in plaintext in an n8n node belonging to a decoy workflow ("Workflow C - Production Ready", NOT the canonical Phase 8) — this key must be rotated via the Supabase dashboard and never assumed safe just because a file was redacted. All three canonical workflows must move their Supabase credential off hardcoded headers and onto a managed n8n credential.
+
+Never rewrite Workflow C, D, or E beyond what \`docs/workflows/WORKFLOW_VERSION_REGISTER.md\` explicitly tracks as approved. Only build interfaces around them.
 
 \---
 
